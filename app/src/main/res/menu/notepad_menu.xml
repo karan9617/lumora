@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_save"
+        android:title="Save"
+        android:icon="@drawable/ic_save"
+       />
+    <item
+        android:id="@+id/action_color"
+        android:title="Color"
+        android:icon="@drawable/ic_color_lens"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_voice"
+        android:title="Voice"
+        android:icon="@drawable/ic_mic"
+         />
+</menu>
