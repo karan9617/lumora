@@ -12,6 +12,11 @@
         android:icon="@drawable/ic_color_lens"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_pin_unpin"
+        android:title="pin"
+        android:icon="@drawable/ic_mic"
+        />
+    <item
         android:id="@+id/action_voice"
         android:title="Voice"
         android:icon="@drawable/ic_mic"

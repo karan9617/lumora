@@ -80,6 +80,7 @@ public class NotesListActivity extends AppCompatActivity {
 
         // Setup the search functionality
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+
             @Override
             public boolean onQueryTextSubmit(String query) {
                 filterNotes(query);
@@ -240,8 +241,8 @@ public class NotesListActivity extends AppCompatActivity {
                 return true;
             } else if (id == R.id.action_pin) {
                 // Handle pin/unpin action
-                // You would need to add a "pinned" column to your database and update it here
-                Toast.makeText(NotesListActivity.this, "Note Pinned", Toast.LENGTH_SHORT).show();
+                boolean isPinned = selectedNote.isPinned();
+                notesAdapter.onPinUnpinNote(selectedNote, !isPinned);
                 mode.finish();
                 return true;
             } else if (id == R.id.action_color) {

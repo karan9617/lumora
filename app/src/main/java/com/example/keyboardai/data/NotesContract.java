@@ -13,8 +13,11 @@ public final class NotesContract {
         public static final String COLUMN_TITLE = "title";
         public static final String COLUMN_CONTENT = "content";
         public static final String COLUMN_DATE = "date";
-        public static final String COLUMN_DRAWING_DATA = "drawing_data"; // New column
-        public static final String COLUMN_COLOR = "color"; // Add this new column
+        public static final String COLUMN_DRAWING_DATA = "drawing_data";
+        public static final String COLUMN_COLOR = "color";
         public static final String COLUMN_ORDER = "note_order";
+        // NEW COLUMN: To store the pinned status of the note.
+        public static final String COLUMN_IS_PINNED = "is_pinned";
+
     }
 }

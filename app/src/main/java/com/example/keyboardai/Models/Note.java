@@ -16,27 +16,39 @@ public class Note implements Serializable {
     private int color;
     // NEW FIELD: To store the display order of the note
     private int order;
+    // NEW FIELD: To determine if the note is pinned
+    private boolean isPinned;
 
     // Full constructor for loading notes from the database
-    public Note(long id, String title, String content, String date, byte[] drawingData, int color) {
+    public Note(long id, String title, String content, String date, byte[] drawingData, int color, int order, boolean isPinned) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.date = date;
         this.drawingData = drawingData;
         this.color = color;
-        // The order will be set separately after retrieval
+        this.order = order;
+        this.isPinned = isPinned;
     }
 
     // Constructor for creating a new note before insertion
-    public Note(String title, String content, String date, byte[] drawingData, int color) {
+    public Note(String title, String content, String date, byte[] drawingData, int color, boolean isPinned) {
         this.title = title;
         this.content = content;
         this.date = date;
         this.drawingData = drawingData;
         this.color = color;
+        this.isPinned = isPinned;
     }
-
+    public Note(String title, String content, String date, byte[] drawingData, int color, int order, boolean isPinned) {
+        this.title = title;
+        this.content = content;
+        this.date = date;
+        this.drawingData = drawingData;
+        this.color = color;
+        this.order = order;
+        this.isPinned = isPinned;
+    }
     // --- Getters and Setters ---
 
     public long getId() {
@@ -94,5 +106,14 @@ public class Note implements Serializable {
 
     public void setOrder(int order) {
         this.order = order;
+    }
+
+    // NEW: Getter and setter for the 'isPinned' field
+    public boolean isPinned() {
+        return isPinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        isPinned = pinned;
     }
 }

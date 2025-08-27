@@ -10,12 +10,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.example.keyboardai.Models.Note;
+import com.example.keyboardai.NotesListActivity;
 import com.example.keyboardai.R;
+import com.example.keyboardai.data.NoteRepository;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
-import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,6 +31,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     private final List<Note> notes;
     private final OnNoteClickListener listener;
     private final OnNoteLongClickListener longClickListener;
+    private final NoteRepository noteRepository;
     private int selectedPosition = RecyclerView.NO_POSITION;
 
     public interface OnNoteClickListener {
@@ -43,6 +47,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         this.notes = notes;
         this.listener = listener;
         this.longClickListener = longClickListener;
+        this.noteRepository = new NoteRepository(context);
     }
 
     @NonNull
@@ -60,7 +65,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         holder.noteContent.setText(note.getContent());
         holder.noteDate.setText(note.getDate());
 
-        // Check for drawing data and display it
         byte[] drawingData = note.getDrawingData();
         if (drawingData != null && drawingData.length > 0) {
             Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
@@ -70,17 +74,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             holder.noteDrawing.setVisibility(View.GONE);
         }
 
-        // Apply the note's color to the CardView background
         holder.noteCard.setCardBackgroundColor(note.getColor());
 
-        // **CRITICAL FIX**: Set the transition name on the entire CardView
         ViewCompat.setTransitionName(holder.noteCard, "note_card_transition_" + note.getId());
 
-        // Create a border for the long-pressed state
         GradientDrawable border = new GradientDrawable();
         border.setColor(Color.TRANSPARENT);
         border.setCornerRadius(16);
-        border.setStroke(4, Color.parseColor("#ADD8E6")); // Light blue border
+        border.setStroke(4, Color.parseColor("#ADD8E6"));
 
         if (position == selectedPosition) {
             holder.noteCard.setForeground(border);
@@ -88,17 +89,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             holder.noteCard.setForeground(null);
         }
 
-        // Handle both click and long-click events
         holder.itemView.setOnClickListener(v -> {
-            // FIX: Use getAdapterPosition() to get the current, valid position
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note clickedNote = notes.get(currentPosition);
-
-                // Deselect on click if a note is currently selected
-                if (selectedPosition != RecyclerView.NO_POSITION) {
-                    int oldSelectedPosition = selectedPosition;
-                    selectedPosition = RecyclerView.NO_POSITION;
+                int oldSelectedPosition = selectedPosition;
+                selectedPosition = RecyclerView.NO_POSITION;
+                if (oldSelectedPosition != RecyclerView.NO_POSITION && oldSelectedPosition < notes.size()) {
                     notifyItemChanged(oldSelectedPosition);
                 }
                 listener.onNoteClick(clickedNote, holder.noteCard);
@@ -106,7 +103,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         });
 
         holder.itemView.setOnLongClickListener(v -> {
-            // FIX: Use getAdapterPosition() to get the current, valid position
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note longPressedNote = notes.get(currentPosition);
@@ -114,11 +110,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 if (currentPosition != selectedPosition) {
                     int oldSelectedPosition = selectedPosition;
                     selectedPosition = currentPosition;
-                    notifyItemChanged(oldSelectedPosition);
+                    if (oldSelectedPosition != RecyclerView.NO_POSITION && oldSelectedPosition < notes.size()) {
+                        notifyItemChanged(oldSelectedPosition);
+                    }
                     notifyItemChanged(selectedPosition);
                 }
                 longClickListener.onNoteLongClick(longPressedNote, holder.noteCard);
-                return true; // Consume the long-press event
+                return true;
             }
             return false;
         });
@@ -140,7 +138,55 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 Collections.swap(notes, i, i - 1);
             }
         }
+
+        if (selectedPosition != RecyclerView.NO_POSITION) {
+            int oldSelectedPosition = selectedPosition;
+            selectedPosition = RecyclerView.NO_POSITION;
+            if (oldSelectedPosition < notes.size()) {
+                notifyItemChanged(oldSelectedPosition);
+            }
+        }
         notifyItemMoved(fromPosition, toPosition);
+    }
+
+    @Override
+    public void onItemsMoved() {
+        new Thread(() -> {
+            for (int i = 0; i < notes.size(); i++) {
+                Note note = notes.get(i);
+                note.setOrder(i);
+                noteRepository.updateNoteOrder(note.getId(), i);
+            }
+        }).start();
+    }
+
+    public void onPinUnpinNote(Note note, boolean isPinned) {
+        new Thread(() -> {
+            noteRepository.updateNotePinStatus(note.getId(), isPinned);
+            List<Note> updatedNotes = noteRepository.getAllNotes();
+
+            ((NotesListActivity) context).runOnUiThread(() -> {
+                notes.clear();
+                notes.addAll(updatedNotes);
+                notifyDataSetChanged();
+
+                if (isPinned) {
+                    Toast.makeText(context, "Note pinned to top", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "Note unpinned", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }).start();
+    }
+
+    public void clearSelection() {
+        if (selectedPosition != RecyclerView.NO_POSITION) {
+            int oldSelectedPosition = selectedPosition;
+            selectedPosition = RecyclerView.NO_POSITION;
+            if (oldSelectedPosition < notes.size()) {
+                notifyItemChanged(oldSelectedPosition);
+            }
+        }
     }
 
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
@@ -148,7 +194,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         TextView noteContent;
         TextView noteDate;
         ImageView noteDrawing;
-        CardView noteCard; // Reference to the CardView
+        CardView noteCard;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -156,7 +202,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             noteContent = itemView.findViewById(R.id.noteContentTextView);
             noteDate = itemView.findViewById(R.id.noteDateTextView);
             noteDrawing = itemView.findViewById(R.id.noteDrawingImageView);
-            noteCard = itemView.findViewById(R.id.note_card_container); // Link the CardView
+            noteCard = itemView.findViewById(R.id.note_card_container);
         }
     }
 }

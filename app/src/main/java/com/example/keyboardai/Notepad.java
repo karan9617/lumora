@@ -18,7 +18,6 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -62,7 +61,7 @@ public class Notepad extends AppCompatActivity {
     private ProgressBar listeningProgress;
     private EditText resultText;
     private EditText titleText;
-    private TextView hintTextView; // The TextView for the inline hint
+    private TextView hintTextView;
     private Intent recognizerIntent;
     private NoteRepository noteRepository;
     private DrawingView drawingView;
@@ -78,16 +77,18 @@ public class Notepad extends AppCompatActivity {
     private Runnable suggestionRunnable;
     private final long DELAY = 500;
     private String currentHint = "";
+    // NEW: Variable to hold the note's pinned status
+    private boolean isPinned = false;
+    // NEW: Variable to hold the note's order
+    private int noteOrder;
 
     // API Key for Gemini API, will be provided at runtime
     private static final String API_KEY = "AIzaSyCes8zNYgUuYAfpKGLGYmG5r0oQW5cx_2o";
-    // FIX: Updated the API URL to use the working model name
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         postponeEnterTransition();
         setContentView(R.layout.notepad_layout);
 
@@ -108,6 +109,11 @@ public class Notepad extends AppCompatActivity {
         noteDate = getIntent().getStringExtra("note_date");
         selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
         drawingData = getIntent().getByteArrayExtra("drawing_data");
+        // NEW: Retrieve the pinned status from the intent
+        isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
+        // NEW: Retrieve the note's order from the intent
+        noteOrder = getIntent().getIntExtra("note_order", -1);
+
 
         if (noteId != -1) {
             titleText.setText(noteTitle);
@@ -119,10 +125,6 @@ public class Notepad extends AppCompatActivity {
         }
 
         mainContentLayout.setBackgroundColor(selectedColor);
-        titleText.setBackgroundColor(selectedColor);
-        resultText.setBackgroundColor(selectedColor);
-        hintTextView.setBackgroundColor(selectedColor);
-        // FIX: Set the background of the EditTexts and TextView to null to prevent them from having a white background
         titleText.setBackground(null);
         resultText.setBackground(null);
         hintTextView.setBackground(null);
@@ -141,6 +143,9 @@ public class Notepad extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
         toolbar.setOnMenuItemClickListener(this::onOptionsItemSelected);
 
+        // NEW: Call the method to set the correct pin icon when the activity is created.
+        setPinIcon(isPinned);
+
         toggleModeButton.setOnClickListener(v -> toggleMode());
         Button clearDrawingButton = findViewById(R.id.clearDrawingButton);
         clearDrawingButton.setOnClickListener(v -> {
@@ -155,15 +160,10 @@ public class Notepad extends AppCompatActivity {
 
         // Inline suggestion logic
         resultText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // Do nothing
-            }
-
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 isNoteModified = true;
-                // Clear the hint if the text is empty
                 if (s.length() == 0) {
                     hintTextView.setText("");
                     currentHint = "";
@@ -173,17 +173,12 @@ public class Notepad extends AppCompatActivity {
                     handler.removeCallbacks(suggestionRunnable);
                 }
 
-                // Only generate a new hint if the text is not empty and the last character is a space
                 if (s.length() > 0 && s.charAt(s.length() - 1) == ' ') {
                     suggestionRunnable = () -> generateSuggestions(s.toString());
                     handler.postDelayed(suggestionRunnable, DELAY);
                 }
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // Do nothing
-            }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
         // NEW: Add a key listener to handle "accepting" the hint with a space or enter
@@ -194,15 +189,13 @@ public class Notepad extends AppCompatActivity {
                         resultText.append(currentHint);
                         hintTextView.setText("");
                         currentHint = "";
-                        return true; // Consume the event so space/enter isn't added
+                        return true;
                     }
                 }
             }
             return false;
         });
 
-        // FIX: Removed the non-working OnTouchListener on hintTextView
-        // NEW: Add an OnClickListener to the resultText to handle taps on the hint
         resultText.setOnClickListener(v -> {
             if (!currentHint.isEmpty() && resultText.getSelectionEnd() == resultText.getText().length()) {
                 resultText.append(currentHint);
@@ -212,14 +205,9 @@ public class Notepad extends AppCompatActivity {
         });
 
         titleText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                isNoteModified = true;
-            }
-            @Override
-            public void afterTextChanged(Editable s) {}
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { isNoteModified = true; }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
@@ -252,7 +240,7 @@ public class Notepad extends AppCompatActivity {
                     }
                     resultBuilder.append(spokenText).append(" ");
                     resultText.setText(resultBuilder.toString());
-                    isNoteModified = true; // Mark as modified from voice input
+                    isNoteModified = true;
                     if (isListening) {
                         speechRecognizer.startListening(recognizerIntent);
                     }
@@ -270,39 +258,24 @@ public class Notepad extends AppCompatActivity {
     }
 
     private void toggleMode() {
-        if (isDrawingMode) {
-            isDrawingMode = false;
-            resultText.setVisibility(View.VISIBLE);
-            drawingView.setVisibility(View.GONE);
-            toggleModeButton.setText("Draw");
-        } else {
-            isDrawingMode = true;
-            resultText.setVisibility(View.GONE);
-            drawingView.setVisibility(View.VISIBLE);
-            toggleModeButton.setText("Text");
-        }
+        isDrawingMode = !isDrawingMode;
+        resultText.setVisibility(isDrawingMode ? View.GONE : View.VISIBLE);
+        drawingView.setVisibility(isDrawingMode ? View.VISIBLE : View.GONE);
+        toggleModeButton.setText(isDrawingMode ? "Text" : "Draw");
     }
 
     // UPDATED: Override onBackPressed to check for unsaved changes
     @Override
     public void onBackPressed() {
-        Log.d(TAG, "on back press");
         if (isNoteModified) {
             new AlertDialog.Builder(this)
                     .setTitle("Save Note?")
                     .setMessage("You have unsaved changes. Do you want to save this note?")
-                    .setPositiveButton("Save", (dialog, which) -> {
-                        saveNote();
-                    })
-                    .setNegativeButton("Discard", (dialog, which) -> {
-                        supportFinishAfterTransition();
-                    })
-                    .setNeutralButton("Cancel", (dialog, which) -> {
-                        // Do nothing, stay on the same screen
-                    })
+                    .setPositiveButton("Save", (dialog, which) -> saveNote())
+                    .setNegativeButton("Discard", (dialog, which) -> supportFinishAfterTransition())
+                    .setNeutralButton("Cancel", (dialog, which) -> {})
                     .show();
         } else {
-            // No changes, just exit
             supportFinishAfterTransition();
         }
     }
@@ -337,8 +310,39 @@ public class Notepad extends AppCompatActivity {
         } else if (id == R.id.action_color) {
             showColorPickerDialog();
             return true;
+        } else if (id == R.id.action_pin_unpin) {
+            // NEW: Handle the pin/unpin action
+            togglePinStatus();
+            return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    // NEW: Method to handle toggling the pin status
+    private void togglePinStatus() {
+        isPinned = !isPinned;
+        setPinIcon(isPinned);
+        if (noteId != -1) {
+            Executors.newSingleThreadExecutor().execute(() -> {
+                noteRepository.updateNotePinStatus(noteId, isPinned);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, isPinned ? "Note pinned!" : "Note unpinned!", Toast.LENGTH_SHORT).show();
+                });
+            });
+        }
+    }
+
+    // NEW: Method to set the correct icon on the toolbar
+    private void setPinIcon(boolean isPinned) {
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        MenuItem pinItem = toolbar.getMenu().findItem(R.id.action_pin_unpin);
+        if (pinItem != null) {
+            if (isPinned) {
+                pinItem.setIcon(R.drawable.ic_pin_off);
+            } else {
+                pinItem.setIcon(R.drawable.ic_pin);
+            }
+        }
     }
 
     private void showColorPickerDialog() {
@@ -354,16 +358,13 @@ public class Notepad extends AppCompatActivity {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Choose Background Color");
-        builder.setItems(colorNames, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                selectedColor = colors[which];
-                mainContentLayout.setBackgroundColor(selectedColor);
-                titleText.setBackgroundColor(selectedColor);
-                resultText.setBackgroundColor(selectedColor);
-                hintTextView.setBackgroundColor(selectedColor);
-                isNoteModified = true;
-            }
+        builder.setItems(colorNames, (dialog, which) -> {
+            selectedColor = colors[which];
+            mainContentLayout.setBackgroundColor(selectedColor);
+            titleText.setBackgroundColor(selectedColor);
+            resultText.setBackgroundColor(selectedColor);
+            hintTextView.setBackgroundColor(selectedColor);
+            isNoteModified = true;
         });
         builder.show();
     }
@@ -388,17 +389,19 @@ public class Notepad extends AppCompatActivity {
 
         final int finalColorToSave = colorToSave;
 
-        new Thread(() -> {
+        Executors.newSingleThreadExecutor().execute(() -> {
             if (noteId != -1) {
-                Note existingNote = new Note(noteId, title, content, noteDate, drawingDataToSave, finalColorToSave);
+                // NEW: Pass the pinned status and order to the Note object
+                Note existingNote = new Note(noteId, title, content, noteDate, drawingDataToSave, finalColorToSave, noteOrder, isPinned);
                 noteRepository.updateNote(existingNote);
                 runOnUiThread(() -> Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show());
             } else {
-                Note newNote = new Note(title, content, noteDate, drawingDataToSave, finalColorToSave);
+                // NEW: Pass the pinned status to the new Note object. The order will be set by the repository.
+                Note newNote = new Note(title, content, noteDate, drawingDataToSave, finalColorToSave, 0, isPinned);
                 noteRepository.insertNote(newNote);
                 runOnUiThread(() -> Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show());
             }
-        }).start();
+        });
 
         isNoteModified = false;
         supportFinishAfterTransition();
@@ -443,12 +446,9 @@ public class Notepad extends AppCompatActivity {
                             .post(body)
                             .build();
                     Response response = client.newCall(request).execute();
-                    Log.d(TAG, " Response: " + response.body());
-
                     if (response.isSuccessful() && response.body() != null) {
                         String responseBody = response.body().string();
                         Log.d(TAG, "API call successful. Response body length: " + responseBody.length());
-
                         JSONObject jsonResponse = new JSONObject(responseBody);
                         JSONArray candidates = jsonResponse.getJSONArray("candidates");
                         if (candidates.length() > 0) {
@@ -458,18 +458,12 @@ public class Notepad extends AppCompatActivity {
                             if (partsArray.length() > 0) {
                                 JSONObject firstPart = partsArray.getJSONObject(0);
                                 String generatedText = firstPart.getString("text").trim();
-
-                                // Find the common prefix to avoid re-typing
                                 String[] words = text.split(" ");
                                 String lastWord = words[words.length - 1];
-
                                 if (generatedText.toLowerCase().startsWith(lastWord.toLowerCase())) {
                                     generatedText = generatedText.substring(lastWord.length());
                                 }
-
                                 final String finalGeneratedText = generatedText;
-
-                                // Update UI on the main thread
                                 runOnUiThread(() -> {
                                     currentHint = finalGeneratedText.trim();
                                     hintTextView.setText(text + currentHint);
@@ -479,9 +473,6 @@ public class Notepad extends AppCompatActivity {
                         }
                     } else {
                         Log.e(TAG, "API call failed with code: " + response.code() + ". Message: " + response.message());
-                        if (response.body() != null) {
-                            Log.e(TAG, "Failed response body: " + response.body().string());
-                        }
                     }
                 } catch (IOException | JSONException e) {
                     Log.e(TAG, "Error during API call (attempt " + (i + 1) + "): " + e.getMessage(), e);
@@ -493,7 +484,6 @@ public class Notepad extends AppCompatActivity {
                     Thread.currentThread().interrupt();
                 }
             }
-            // Hide suggestions if all retries fail
             runOnUiThread(() -> {
                 hintTextView.setText("");
                 currentHint = "";
