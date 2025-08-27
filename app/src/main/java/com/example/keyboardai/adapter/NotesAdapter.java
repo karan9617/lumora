@@ -65,6 +65,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         holder.noteContent.setText(note.getContent());
         holder.noteDate.setText(note.getDate());
 
+        // Check if the note has a drawing and set its visibility
         byte[] drawingData = note.getDrawingData();
         if (drawingData != null && drawingData.length > 0) {
             Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
@@ -74,10 +75,20 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             holder.noteDrawing.setVisibility(View.GONE);
         }
 
+        // Set the note's background color
         holder.noteCard.setCardBackgroundColor(note.getColor());
 
+        // Set transition name for shared element transition
         ViewCompat.setTransitionName(holder.noteCard, "note_card_transition_" + note.getId());
 
+        // Manage the visibility of the pin icon based on the note's pinned status
+        if (note.isPinned()) {
+            holder.notePinImageView.setVisibility(View.VISIBLE);
+        } else {
+            holder.notePinImageView.setVisibility(View.GONE);
+        }
+
+        // Add a border for the selected note
         GradientDrawable border = new GradientDrawable();
         border.setColor(Color.TRANSPARENT);
         border.setCornerRadius(16);
@@ -194,6 +205,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         TextView noteContent;
         TextView noteDate;
         ImageView noteDrawing;
+        ImageView notePinImageView; // New ImageView for the pin icon
         CardView noteCard;
 
         public NoteViewHolder(@NonNull View itemView) {
@@ -202,6 +214,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             noteContent = itemView.findViewById(R.id.noteContentTextView);
             noteDate = itemView.findViewById(R.id.noteDateTextView);
             noteDrawing = itemView.findViewById(R.id.noteDrawingImageView);
+            notePinImageView = itemView.findViewById(R.id.pinImageView); // Initialize the new ImageView
             noteCard = itemView.findViewById(R.id.note_card_container);
         }
     }
