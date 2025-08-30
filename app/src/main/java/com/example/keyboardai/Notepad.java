@@ -398,7 +398,7 @@ public class Notepad extends AppCompatActivity {
             } else {
                 // NEW: Pass the pinned status to the new Note object. The order will be set by the repository.
                 Note newNote = new Note(title, content, noteDate, drawingDataToSave, finalColorToSave, 0, isPinned);
-                noteRepository.insertNote(newNote);
+                noteRepository.addNote(newNote);
                 runOnUiThread(() -> Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show());
             }
         });

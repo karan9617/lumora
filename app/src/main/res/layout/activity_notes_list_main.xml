@@ -10,12 +10,11 @@
     tools:openDrawer="start">
 
     <!-- This is the main content area of the screen -->
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <!-- The Toolbar with the search bar and drawer toggle icon -->
+        <!-- Toolbar is at the top -->
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
@@ -34,32 +33,91 @@
                 app:queryBackground="@android:color/transparent"
                 android:textColorHint="@android:color/darker_gray"
                 android:textColor="@android:color/white"/>
-
         </androidx.appcompat.widget.Toolbar>
 
-        <!-- RecyclerView for Notes -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/notesRecyclerView"
+        <!-- NestedScrollView for unified scrolling of all note lists -->
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:padding="8dp"
-            android:clipToPadding="false"
-            android:scrollbars="vertical" />
+            android:layout_height="match_parent"
+            android:layout_below="@id/toolbar">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <!-- Header for Pinned Notes -->
+                <TextView
+                    android:id="@+id/pinnedNotesHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pinned"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <!-- RecyclerView for Pinned Notes -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/notesRecyclerViewPinned"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="3"
+                    tools:listitem="@layout/note_item_layout"/>
+
+                <!-- Separator line -->
+                <View
+                    android:id="@+id/separatorLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="#333333"/>
+
+                <!-- Header for Other Notes -->
+                <TextView
+                    android:id="@+id/otherNotesHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Other"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <!-- RecyclerView for Regular Notes -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/notesRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="10"
+                    tools:listitem="@layout/note_item_layout"/>
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
 
         <!-- Floating Add Note Button -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabAddNote"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
             android:layout_margin="20dp"
             android:contentDescription="Add Note"
             app:srcCompat="@android:drawable/ic_input_add"
             app:backgroundTint="@color/purple_500"
             app:tint="@android:color/white"/>
 
-    </LinearLayout>
+    </RelativeLayout>
 
     <!-- The Navigation View for the side menu -->
     <com.google.android.material.navigation.NavigationView

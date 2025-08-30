@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_pin"
+        android:icon="@drawable/ic_pin_24"
+        android:title="Pin"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_label"
+        android:icon="@drawable/ic_label_24"
+        android:title="Label"
+        app:showAsAction="ifRoom" />
+
+</menu>

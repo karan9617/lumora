@@ -29,7 +29,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.Collections;
 import java.util.List;
 
-public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> implements ItemTouchHelperAdapter {
+public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.NoteViewHolder> implements ItemTouchHelperAdapter {
 
     private final Context context;
     private final List<Note> notes;
@@ -46,7 +46,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         void onNoteLongClick(Note note, View sharedView);
     }
 
-    public NotesAdapter(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener) {
+    public NotesAdapterPinned(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener) {
         this.context = context;
         this.notes = notes;
         this.listener = listener;

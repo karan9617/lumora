@@ -1,13 +1,13 @@
-// File: com.example.keyboardai.data.NoteRepository.java
-
 package com.example.keyboardai.data;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
+
+import com.example.keyboardai.Models.Label;
 import com.example.keyboardai.Models.Note;
-import com.example.keyboardai.data.NotesContract.NoteEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,189 +20,241 @@ public class NoteRepository {
         dbHelper = new NotesDbHelper(context);
     }
 
-    /**
-     * Inserts a new note into the database.
-     * The method is updated to handle 'order' and 'isPinned' fields.
-     *
-     * @param note The note to be inserted.
-     * @return The ID of the newly inserted row, or -1 if an error occurred.
-     */
-    public long insertNote(Note note) {
-        // Gets the data repository in write mode
+    // --- Note-related methods (existing) ---
+    public long addNote(Note note) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-
         ContentValues values = new ContentValues();
-        values.put(NoteEntry.COLUMN_TITLE, note.getTitle());
-        values.put(NoteEntry.COLUMN_CONTENT, note.getContent());
-        values.put(NoteEntry.COLUMN_DATE, note.getDate());
-        values.put(NoteEntry.COLUMN_DRAWING_DATA, note.getDrawingData());
-        values.put(NoteEntry.COLUMN_COLOR, note.getColor());
-        values.put(NoteEntry.COLUMN_ORDER, note.getOrder());
-        // NEW: Add the note's pinned status, converting boolean to integer (0 or 1)
-        values.put(NoteEntry.COLUMN_IS_PINNED, note.isPinned() ? 1 : 0);
+        values.put(NotesDbHelper.COLUMN_TITLE, note.getTitle());
+        values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
+        values.put(NotesDbHelper.COLUMN_DATE, note.getDate());
+        values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
+        values.put(NotesDbHelper.COLUMN_DRAWING_DATA, note.getDrawingData());
+        values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
+        values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
+        //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+        //values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
-        return db.insert(NoteEntry.TABLE_NAME, null, values);
+        long newRowId = db.insert(NotesDbHelper.TABLE_NOTES, null, values);
+        db.close();
+        return newRowId;
     }
 
-    /**
-     * Retrieves all notes from the database.
-     * The results are now sorted by 'isPinned' (pinned notes first),
-     * and then by 'order' to maintain a consistent display order.
-     *
-     * @return A list of all notes.
-     */
     public List<Note> getAllNotes() {
+        List<Note> notes = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String[] projection = {
-                NoteEntry._ID,
-                NoteEntry.COLUMN_TITLE,
-                NoteEntry.COLUMN_CONTENT,
-                NoteEntry.COLUMN_DATE,
-                NoteEntry.COLUMN_DRAWING_DATA,
-                NoteEntry.COLUMN_COLOR,
-                NoteEntry.COLUMN_ORDER,
-                NoteEntry.COLUMN_IS_PINNED
-        };
 
-        // The sorting is crucial here: pinned notes (1) come before unpinned notes (0), then by order.
-        String sortOrder = NoteEntry.COLUMN_IS_PINNED + " DESC, " + NoteEntry.COLUMN_ORDER + " ASC";
-        Cursor cursor = db.query(
-                NoteEntry.TABLE_NAME,
-                projection,
-                null,
-                null,
-                null,
-                null,
-                sortOrder
-        );
+        String query = "SELECT * FROM " + NotesDbHelper.TABLE_NOTES +
+                " WHERE " + NotesDbHelper.COLUMN_PINNED + " = 0 " +
+                " ORDER BY " + NotesDbHelper.COLUMN_ORDER + " ASC;";
+        Cursor cursor = db.rawQuery(query, null);
 
-        List<Note> notes = new ArrayList<>();
-        while (cursor.moveToNext()) {
-            long itemId = cursor.getLong(cursor.getColumnIndexOrThrow(NoteEntry._ID));
-            String title = cursor.getString(cursor.getColumnIndexOrThrow(NoteEntry.COLUMN_TITLE));
-            String content = cursor.getString(cursor.getColumnIndexOrThrow(NoteEntry.COLUMN_CONTENT));
-            String date = cursor.getString(cursor.getColumnIndexOrThrow(NoteEntry.COLUMN_DATE));
-            byte[] drawingData = cursor.getBlob(cursor.getColumnIndexOrThrow(NoteEntry.COLUMN_DRAWING_DATA));
-            int color = cursor.getInt(cursor.getColumnIndexOrThrow(NoteEntry.COLUMN_COLOR));
-            int order = cursor.getInt(cursor.getColumnIndexOrThrow(NoteEntry.COLUMN_ORDER));
-            // Get the pinned status (0 for false, 1 for true)
-            boolean isPinned = cursor.getInt(cursor.getColumnIndexOrThrow(NoteEntry.COLUMN_IS_PINNED)) == 1;
+        if (cursor.moveToFirst()) {
+            do {
+                Note note = new Note();
+                note.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ID)));
+                note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_TITLE)));
+                note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
+                note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
+                note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
+                note.setDrawingData(cursor.getBlob(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DRAWING_DATA)));
+                note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
+                note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
+             //   note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+             //   note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+             //   note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
 
-            Note note = new Note(itemId, title, content, date, drawingData, color, order, isPinned);
-            notes.add(note);
+                notes.add(note);
+            } while (cursor.moveToNext());
         }
         cursor.close();
+        db.close();
         return notes;
     }
-
-    /**
-     * Unpins a note and updates its order in the database.
-     * The unpinned note is placed at the end of the list.
-     *
-     * @param note The note to unpin.
-     */
-    public void unpinNote(Note note) {
-        // Find the maximum 'order' value in the database to place this note last
-        int maxOrder = getMaxNoteOrder();
-
-        // Update the note's local state
-        note.setPinned(false);
-        note.setOrder(maxOrder + 1);
-
-        // Save the updated note to the database
-        updateNote(note);
-    }
-
-    /**
-     * Updates an existing note in the database.
-     * This method is now used to save changes for both unpinning and other edits.
-     *
-     * @param note The note to be updated.
-     * @return The number of rows affected.
-     */
-    public int updateNote(Note note) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        ContentValues values = new ContentValues();
-        values.put(NoteEntry.COLUMN_TITLE, note.getTitle());
-        values.put(NoteEntry.COLUMN_CONTENT, note.getContent());
-        values.put(NoteEntry.COLUMN_DATE, note.getDate());
-        values.put(NoteEntry.COLUMN_DRAWING_DATA, note.getDrawingData());
-        values.put(NoteEntry.COLUMN_COLOR, note.getColor());
-        values.put(NoteEntry.COLUMN_ORDER, note.getOrder());
-        values.put(NoteEntry.COLUMN_IS_PINNED, note.isPinned() ? 1 : 0);
-
-        String selection = NoteEntry._ID + " = ?";
-        String[] selectionArgs = { String.valueOf(note.getId()) };
-
-        return db.update(
-                NoteEntry.TABLE_NAME,
-                values,
-                selection,
-                selectionArgs);
-    }
-
-    /**
-     * Deletes a note from the database.
-     *
-     * @param noteId The ID of the note to be deleted.
-     * @return The number of rows affected.
-     */
-    public int deleteNote(long noteId) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        String selection = NoteEntry._ID + " = ?";
-        String[] selectionArgs = { String.valueOf(noteId) };
-
-        return db.delete(NoteEntry.TABLE_NAME, selection, selectionArgs);
-    }
-
-    /**
-     * Updates only the pinned status of a note.
-     * This is an alternative to the general `updateNote` method.
-     *
-     * @param noteId The ID of the note to update.
-     * @param isPinned The new pinned status.
-     * @return The number of rows affected.
-     */
-    public int updateNotePinStatus(long noteId, boolean isPinned) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(NoteEntry.COLUMN_IS_PINNED, isPinned ? 1 : 0);
-
-        String selection = NoteEntry._ID + " = ?";
-        String[] selectionArgs = { String.valueOf(noteId) };
-
-        return db.update(NoteEntry.TABLE_NAME, values, selection, selectionArgs);
-    }
-
-    /**
-     * Retrieves the maximum 'order' value from the notes table.
-     * This is a private helper method used by `unpinNote`.
-     *
-     * @return The maximum integer value in the 'order' column.
-     */
-    private int getMaxNoteOrder() {
+    public List<Note> getAllPinnedNotes() {
+        List<Note> notes = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        int maxOrder = 0;
-        Cursor cursor = db.rawQuery("SELECT MAX(" + NoteEntry.COLUMN_ORDER + ") FROM " + NoteEntry.TABLE_NAME, null);
+
+        // Changed the query to filter for notes where the 'pinned' column is 1.
+        String query = "SELECT * FROM " + NotesDbHelper.TABLE_NOTES +
+                " WHERE " + NotesDbHelper.COLUMN_PINNED + " = 1 " +
+                " ORDER BY " + NotesDbHelper.COLUMN_ORDER + " ASC;";
+
+        Cursor cursor = db.rawQuery(query, null);
+
         if (cursor.moveToFirst()) {
-            maxOrder = cursor.getInt(0);
+            do {
+                Note note = new Note();
+                note.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ID)));
+                note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_TITLE)));
+                note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
+                note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
+                note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
+                note.setDrawingData(cursor.getBlob(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DRAWING_DATA)));
+                note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
+                note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
+                // The font properties are commented out, assuming they are not in the database yet.
+                // note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+                // note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+                // note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
+
+                notes.add(note);
+            } while (cursor.moveToNext());
         }
         cursor.close();
-        return maxOrder;
+        db.close();
+        return notes;
     }
-    // New method to update the order of a note
-    public void updateNoteOrder(long noteId, int order) {
+    public Note getNoteById(long id) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(NotesDbHelper.TABLE_NOTES,
+                null,
+                NotesDbHelper.COLUMN_ID + "=?",
+                new String[]{String.valueOf(id)},
+                null, null, null);
+
+        Note note = null;
+        if (cursor.moveToFirst()) {
+            note = new Note();
+            note.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ID)));
+            note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_TITLE)));
+            note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
+            note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
+            note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
+            note.setDrawingData(cursor.getBlob(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DRAWING_DATA)));
+            note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
+            note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
+          //  note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+          //  note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+          //  note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
+        }
+        cursor.close();
+        db.close();
+        return note;
+    }
+
+    public int updateNote(Note note) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(NotesContract.NoteEntry.COLUMN_ORDER, order);
+        values.put(NotesDbHelper.COLUMN_TITLE, note.getTitle());
+        values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
+        values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
+        values.put(NotesDbHelper.COLUMN_DRAWING_DATA, note.getDrawingData());
+      //  values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+      //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+      //  values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
-        String selection = NotesContract.NoteEntry._ID + " = ?";
-        String[] selectionArgs = {String.valueOf(noteId)};
-
-        db.update(NotesContract.NoteEntry.TABLE_NAME, values, selection, selectionArgs);
+        int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,
+                values,
+                NotesDbHelper.COLUMN_ID + " = ?",
+                new String[]{String.valueOf(note.getId())});
         db.close();
+        return updatedRows;
+    }
+
+    public void updateNoteOrder(long noteId, int newOrder) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(NotesDbHelper.COLUMN_ORDER, newOrder);
+        db.update(NotesDbHelper.TABLE_NOTES,
+                values,
+                NotesDbHelper.COLUMN_ID + " = ?",
+                new String[]{String.valueOf(noteId)});
+        db.close();
+    }
+
+    public void updateNotePinStatus(long noteId, boolean isPinned) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(NotesDbHelper.COLUMN_PINNED, isPinned ? 1 : 0);
+        db.update(NotesDbHelper.TABLE_NOTES,
+                values,
+                NotesDbHelper.COLUMN_ID + " = ?",
+                new String[]{String.valueOf(noteId)});
+        db.close();
+    }
+
+    public int deleteNote(long id) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = db.delete(NotesDbHelper.TABLE_NOTES,
+                NotesDbHelper.COLUMN_ID + " = ?",
+                new String[]{String.valueOf(id)});
+        db.close();
+        return deletedRows;
+    }
+
+    // --- New Label-related methods ---
+    public long addLabel(Label label) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(NotesDbHelper.COLUMN_LABEL_NAME, label.getName());
+        values.put(NotesDbHelper.COLUMN_LABEL_COLOR, label.getColor());
+        long newRowId = db.insertWithOnConflict(NotesDbHelper.TABLE_LABELS, null, values, SQLiteDatabase.CONFLICT_IGNORE);
+        db.close();
+        return newRowId;
+    }
+
+    public void addLabelToNote(long noteId, long labelId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(NotesDbHelper.COLUMN_NOTE_ID_FK, noteId);
+        values.put(NotesDbHelper.COLUMN_LABEL_ID_FK, labelId);
+        db.insert(NotesDbHelper.TABLE_NOTE_LABELS, null, values);
+        db.close();
+    }
+
+    public void removeLabelFromNote(long noteId, long labelId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(NotesDbHelper.TABLE_NOTE_LABELS,
+                NotesDbHelper.COLUMN_NOTE_ID_FK + " = ? AND " + NotesDbHelper.COLUMN_LABEL_ID_FK + " = ?",
+                new String[]{String.valueOf(noteId), String.valueOf(labelId)});
+        db.close();
+    }
+
+    public List<Label> getLabelsForNote(long noteId) {
+        List<Label> labels = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT T1.* FROM " + NotesDbHelper.TABLE_LABELS + " T1 INNER JOIN " +
+                NotesDbHelper.TABLE_NOTE_LABELS + " T2 ON T1." + NotesDbHelper.COLUMN_LABEL_ID +
+                " = T2." + NotesDbHelper.COLUMN_LABEL_ID_FK + " WHERE T2." +
+                NotesDbHelper.COLUMN_NOTE_ID_FK + " = ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{String.valueOf(noteId)});
+
+        if (cursor.moveToFirst()) {
+            do {
+                Label label = new Label();
+                label.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_ID)));
+                label.setName(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_NAME)));
+                label.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_COLOR)));
+                labels.add(label);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        //db.close();
+        return labels;
+    }
+
+    public List<Label> getAllLabels() {
+        List<Label> labels = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT * FROM " + NotesDbHelper.TABLE_LABELS;
+        Cursor cursor = db.rawQuery(query, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                Label label = new Label();
+                label.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_ID)));
+                label.setName(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_NAME)));
+                label.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_COLOR)));
+                labels.add(label);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return labels;
     }
 }

@@ -19,6 +19,8 @@ public class Note implements Serializable {
     // NEW FIELD: To determine if the note is pinned
     private boolean isPinned;
 
+    public Note(){}
+
     // Full constructor for loading notes from the database
     public Note(long id, String title, String content, String date, byte[] drawingData, int color, int order, boolean isPinned) {
         this.id = id;

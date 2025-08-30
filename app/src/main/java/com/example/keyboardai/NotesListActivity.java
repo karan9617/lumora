@@ -12,6 +12,7 @@ import android.widget.Toast;
 import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.adapter.ItemMoveCallback;
 import com.example.keyboardai.adapter.NotesAdapter;
+import com.example.keyboardai.adapter.NotesAdapterPinned;
 import com.example.keyboardai.data.NoteRepository;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
@@ -32,14 +33,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NotesListActivity extends AppCompatActivity {
-    private RecyclerView notesRecyclerView;
+    private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
+    private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
     private NoteRepository noteRepository;
     FloatingActionButton fabAddNote;
     private DrawerLayout drawerLayout;
     private SearchView searchView;
-    private List<Note> allNotes; // To hold the full, unfiltered list of notes
+    private List<Note> allNotes, pinnedNotes; // To hold the full, unfiltered list of notes
 
     // Contextual Action Bar variables
     private ActionMode actionMode;
@@ -65,7 +67,7 @@ public class NotesListActivity extends AppCompatActivity {
         searchView = findViewById(R.id.search_view);
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
-
+        notesRecyclerViewPinned = findViewById(R.id.notesRecyclerViewPinned);
         // Setup the drawer toggle button
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -104,9 +106,13 @@ public class NotesListActivity extends AppCompatActivity {
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
 
+        // Set up the RecyclerView
+        StaggeredGridLayoutManager layoutManagerPinned = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+        notesRecyclerViewPinned.setLayoutManager(layoutManagerPinned);
+
         notesList = new ArrayList<>();
         allNotes = new ArrayList<>();
-
+        pinnedNotes = new ArrayList<>();
         // NEW: Instantiate the NotesAdapter correctly and pass the listeners
         notesAdapter = new NotesAdapter(this, notesList, new NotesAdapter.OnNoteClickListener() {
             @Override
@@ -152,10 +158,57 @@ public class NotesListActivity extends AppCompatActivity {
 
         notesRecyclerView.setAdapter(notesAdapter);
 
+
+        notesAdapterPinned = new NotesAdapterPinned(this, pinnedNotes, new NotesAdapterPinned.OnNoteClickListener() {
+            @Override
+            public void onNoteClick(Note note, View sharedView) {
+                if (actionMode != null) {
+                    // Deselect the note if CAB is active and a note is clicked
+                    actionMode.finish();
+                    return;
+                }
+                Intent intent = new Intent(NotesListActivity.this, Notepad.class);
+                intent.putExtra("note_id", note.getId());
+                intent.putExtra("note_title", note.getTitle());
+                intent.putExtra("note_content", note.getContent());
+                intent.putExtra("note_date", note.getDate());
+                intent.putExtra("note_color", note.getColor());
+                intent.putExtra("drawing_data", note.getDrawingData());
+
+                String transitionName = ViewCompat.getTransitionName(sharedView);
+
+                if (transitionName != null) {
+                    intent.putExtra("TRANSITION_NAME", transitionName);
+
+                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
+                            NotesListActivity.this,
+                            sharedView,
+                            transitionName
+                    );
+                    startActivity(intent, options.toBundle());
+                } else {
+                    startActivity(intent);
+                }
+            }
+        }, new NotesAdapterPinned.OnNoteLongClickListener() {
+            @Override
+            public void onNoteLongClick(Note note, View sharedView) {
+                if (actionMode == null) {
+                    // Start the contextual action mode
+                    actionMode = startSupportActionMode(actionModeCallback);
+                }
+                selectedNote = note;
+            }
+        });
+        notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
         // FIX: The adapter itself now implements ItemTouchHelperAdapter, so we pass it directly
         ItemTouchHelper.Callback callback = new ItemMoveCallback(notesAdapter);
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(notesRecyclerView);
+
+        ItemTouchHelper.Callback callbackPinned = new ItemMoveCallback(notesAdapterPinned);
+        ItemTouchHelper touchHelperPinned = new ItemTouchHelper(callbackPinned);
+        touchHelperPinned.attachToRecyclerView(notesRecyclerViewPinned);
     }
 
     @Override
@@ -176,13 +229,19 @@ public class NotesListActivity extends AppCompatActivity {
     private void loadNotesFromDatabase() {
         new Thread(() -> {
             List<Note> allNotesFromDb = noteRepository.getAllNotes();
-
+            List<Note> allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
             runOnUiThread(() -> {
                 allNotes.clear();
                 allNotes.addAll(allNotesFromDb);
+
+                pinnedNotes.clear();
+                pinnedNotes.addAll(allPinnedNotesFromDb);
+
                 notesList.clear();
                 notesList.addAll(allNotes);
+
                 notesAdapter.notifyDataSetChanged();
+                notesAdapterPinned.notifyDataSetChanged();
             });
         }).start();
     }
@@ -276,6 +335,8 @@ public class NotesListActivity extends AppCompatActivity {
             selectedNote = null;
             // The adapter will handle deselecting the note
             notesAdapter.notifyDataSetChanged();
+
+            notesAdapterPinned.notifyDataSetChanged();
         }
     };
 }
