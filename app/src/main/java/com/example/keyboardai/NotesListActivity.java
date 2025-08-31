@@ -164,7 +164,8 @@ public class NotesListActivity extends AppCompatActivity {
 
         optionDrawing.setOnClickListener(v -> {
             Toast.makeText(this, "Opening Drawing Note", Toast.LENGTH_SHORT).show();
-            // TODO: Start the activity for adding a drawing note here
+            Intent intent = new Intent(NotesListActivity.this, DrawingActivity.class);
+            startActivity(intent);
             hideOptions();
         });
         // Set up the RecyclerView

@@ -56,26 +56,22 @@ public class DrawingView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        if (w <= 0 || h <= 0) {
-            return;
-        }
-
-        // If mBitmap is null, it means we are creating the canvas for the first time.
-        if (mBitmap == null) {
+        // **CRITICAL FIX**: Only create the bitmap if dimensions are valid.
+        if (w > 0 && h > 0) {
             mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             mCanvas = new Canvas(mBitmap);
-        } else {
-            // If the bitmap already exists, create a new one with the correct size,
-            // draw the old bitmap onto it, and then replace the old bitmap.
-            Bitmap newBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            Canvas newCanvas = new Canvas(newBitmap);
-            newCanvas.drawBitmap(mBitmap, 0, 0, null);
-            mBitmap.recycle(); // Release memory from the old bitmap
-            mBitmap = newBitmap;
-            mCanvas = newCanvas;
         }
     }
-
+    public void setColor(int color) {
+        if (mPaint != null) {
+            mPaint.setColor(color);
+        }
+    }
+    public void setStrokeWidth(float width) {
+        if (mPaint != null) {
+            mPaint.setStrokeWidth(width);
+        }
+    }
     @Override
     protected void onDraw(Canvas canvas) {
         if (mBitmap != null) {
