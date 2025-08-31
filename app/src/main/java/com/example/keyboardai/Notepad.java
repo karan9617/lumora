@@ -4,7 +4,10 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -21,6 +24,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -65,7 +69,7 @@ public class Notepad extends AppCompatActivity {
     private Intent recognizerIntent;
     private NoteRepository noteRepository;
     private DrawingView drawingView;
-    private Button toggleModeButton;
+    private Button toggleModeButton,toggleModeDrawSave;
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
@@ -76,6 +80,7 @@ public class Notepad extends AppCompatActivity {
     private Handler handler;
     private Runnable suggestionRunnable;
     private final long DELAY = 500;
+    private ImageView imagesketch;
     private String currentHint = "";
     // NEW: Variable to hold the note's pinned status
     private boolean isPinned = false;
@@ -98,7 +103,10 @@ public class Notepad extends AppCompatActivity {
         titleText = findViewById(R.id.noteTitleEditText);
         mainContentLayout = findViewById(R.id.main_content_layout);
         hintTextView = findViewById(R.id.hintTextView);
-
+        toggleModeDrawSave =  findViewById(R.id.toggleModeDrawSave);
+        toggleModeDrawSave.setVisibility(View.INVISIBLE);
+        imagesketch = findViewById(R.id.imagesketch);
+        registerListeners();
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
         toggleModeButton = findViewById(R.id.toggleModeButton);
@@ -113,6 +121,17 @@ public class Notepad extends AppCompatActivity {
         isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
         // NEW: Retrieve the note's order from the intent
         noteOrder = getIntent().getIntExtra("note_order", -1);
+        if(drawingData != null && drawingData.length > 0){
+            Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+            Toast.makeText(getApplicationContext(),"rendering image",Toast.LENGTH_SHORT).show();
+            // Check if the bitmap was successfully created
+            if (savedBitmap != null) {
+                // Assign the bitmap to your ImageView and make it visible
+                imagesketch.setImageBitmap(savedBitmap);
+                imagesketch.setVisibility(View.VISIBLE);
+                Toast.makeText(getApplicationContext(),"image assigned",Toast.LENGTH_SHORT).show();
+            }
+        }
 
 
         if (noteId != -1) {
@@ -256,12 +275,47 @@ public class Notepad extends AppCompatActivity {
             @Override public void onEvent(int eventType, Bundle params) {}
         });
     }
+    public void registerListeners(){
+        toggleModeDrawSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 
+            }
+        });
+
+        // NEW: OnClickListener for imagesketch
+        imagesketch.setOnClickListener(v -> {
+            // Check if there is an image loaded to the ImageView
+            if (imagesketch.getDrawable() != null) {
+                // Get the bitmap from the ImageView
+                BitmapDrawable drawable = (BitmapDrawable) imagesketch.getDrawable();
+                Bitmap existingBitmap = drawable.getBitmap();
+
+                // Load the bitmap onto the drawing view and switch to drawing mode
+                if (existingBitmap != null) {
+                    drawingView.setDrawingBitmap(existingBitmap);
+                    toggleMode(); // Call the toggleMode method to switch views
+                }
+            }
+        });
+    }
     private void toggleMode() {
         isDrawingMode = !isDrawingMode;
-        resultText.setVisibility(isDrawingMode ? View.GONE : View.VISIBLE);
-        drawingView.setVisibility(isDrawingMode ? View.VISIBLE : View.GONE);
-        toggleModeButton.setText(isDrawingMode ? "Text" : "Draw");
+        if (isDrawingMode) {
+            resultText.setVisibility(View.GONE);
+            imagesketch.setVisibility(View.GONE); // Hide the ImageView when drawing
+            drawingView.setVisibility(View.VISIBLE);
+            toggleModeDrawSave.setVisibility(View.VISIBLE);
+            toggleModeButton.setText("Text");
+        } else {
+            resultText.setVisibility(View.VISIBLE);
+            if (imagesketch.getDrawable() != null) { // Only show imagesketch if it has an image
+                imagesketch.setVisibility(View.VISIBLE);
+            }
+            drawingView.setVisibility(View.GONE);
+            toggleModeDrawSave.setVisibility(View.GONE);
+            toggleModeButton.setText("Draw");
+        }
     }
 
     // UPDATED: Override onBackPressed to check for unsaved changes
@@ -402,6 +456,23 @@ public class Notepad extends AppCompatActivity {
                 runOnUiThread(() -> Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show());
             }
         });
+
+// Check if the drawing data is not null or empty
+        if (drawingDataToSave != null && drawingDataToSave.length > 0) {
+            // Convert the byte array back into a Bitmap
+            Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
+            Toast.makeText(getApplicationContext(),"saving image",Toast.LENGTH_SHORT).show();
+            // Check if the bitmap was successfully created
+            if (savedBitmap != null) {
+                // Assign the bitmap to your ImageView and make it visible
+                imagesketch.setImageBitmap(savedBitmap);
+                imagesketch.setVisibility(View.VISIBLE);
+                Toast.makeText(getApplicationContext(),"image assigned",Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            // If there is no drawing data, hide the ImageView
+            imagesketch.setVisibility(View.GONE);
+        }
 
         isNoteModified = false;
         supportFinishAfterTransition();

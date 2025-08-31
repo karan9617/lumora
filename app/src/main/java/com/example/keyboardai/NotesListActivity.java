@@ -6,7 +6,14 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.keyboardai.Models.Note;
@@ -34,6 +41,7 @@ import java.util.List;
 
 public class NotesListActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
+  //  RelativeLayout mainLayout;
     private NotesAdapter notesAdapter;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
@@ -47,6 +55,8 @@ public class NotesListActivity extends AppCompatActivity {
     private ActionMode actionMode;
     private Note selectedNote;
 
+    private LinearLayout optionsLayout;
+    private boolean isOptionsVisible = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +78,16 @@ public class NotesListActivity extends AppCompatActivity {
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
         notesRecyclerViewPinned = findViewById(R.id.notesRecyclerViewPinned);
+
+        final Animation slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+        final Animation slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
+
+
+        optionsLayout = findViewById(R.id.options_layout);
+        TextView optionImage = findViewById(R.id.option_images);
+        TextView optionText = findViewById(R.id.option_text);
+        TextView optionDrawing = findViewById(R.id.option_drawings);
+
         // Setup the drawer toggle button
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -98,10 +118,55 @@ public class NotesListActivity extends AppCompatActivity {
 
         // Set up the FAB
         fabAddNote.setOnClickListener(v -> {
-            Intent intent = new Intent(NotesListActivity.this, Notepad.class);
-            startActivity(intent);
+            if (isOptionsVisible) {
+                optionsLayout.setVisibility(View.VISIBLE);
+                optionsLayout.startAnimation(slideUpAnimation);
+                hideOptions();
+            } else {
+                optionsLayout.startAnimation(slideDownAnimation);
+                slideDownAnimation.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+                        // Do nothing here
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        // When the animation is over, hide the layout to free up space
+                        optionsLayout.setVisibility(View.GONE);
+                        // Clear the animation to prevent it from causing issues later
+                        optionsLayout.clearAnimation();
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+                        // Do nothing here
+                    }
+                });
+                showOptions();
+            }
+            //Intent intent = new Intent(NotesListActivity.this, Notepad.class);
+           // startActivity(intent);
         });
 
+        optionImage.setOnClickListener(v -> {
+            Toast.makeText(this, "Opening Image Note", Toast.LENGTH_SHORT).show();
+            // TODO: Start the activity for adding an image note here
+            hideOptions();
+        });
+
+        optionText.setOnClickListener(v -> {
+            Toast.makeText(this, "Opening Text Note", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(NotesListActivity.this, Notepad.class);
+            startActivity(intent);
+            hideOptions();
+        });
+
+        optionDrawing.setOnClickListener(v -> {
+            Toast.makeText(this, "Opening Drawing Note", Toast.LENGTH_SHORT).show();
+            // TODO: Start the activity for adding a drawing note here
+            hideOptions();
+        });
         // Set up the RecyclerView
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
@@ -209,8 +274,50 @@ public class NotesListActivity extends AppCompatActivity {
         ItemTouchHelper.Callback callbackPinned = new ItemMoveCallback(notesAdapterPinned);
         ItemTouchHelper touchHelperPinned = new ItemTouchHelper(callbackPinned);
         touchHelperPinned.attachToRecyclerView(notesRecyclerViewPinned);
-    }
 
+        drawerLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                // Check if a touch event occurred outside the options menu
+                if (isOptionsVisible && event.getAction() == MotionEvent.ACTION_DOWN) {
+                    // Check if the touch is outside the bounds of the options layout
+                    if (!isTouchInsideView(optionsLayout, event)) {
+                        hideOptions(slideDownAnimation);
+                        // Return true to consume the touch event
+                        return true;
+                    }
+                }
+                // Return false to let the touch event pass through to other views if needed
+                return false;
+            }
+        });
+    }
+    private void hideOptions(final Animation animation) {
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                optionsLayout.setVisibility(View.GONE);
+                optionsLayout.clearAnimation();
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+        optionsLayout.startAnimation(animation);
+        isOptionsVisible = false;
+    }
+    private boolean isTouchInsideView(View view, MotionEvent event) {
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        int x = location[0];
+        int y = location[1];
+
+        return !(event.getRawX() < x || event.getRawX() > x + view.getWidth() ||
+                event.getRawY() < y || event.getRawY() > y + view.getHeight());
+    }
     @Override
     protected void onResume() {
         super.onResume();
@@ -225,7 +332,30 @@ public class NotesListActivity extends AppCompatActivity {
             actionMode.finish();
         }
     }
+    private void showOptions() {
+        optionsLayout.setVisibility(View.VISIBLE);
+        AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
+        fadeIn.setDuration(250);
+        optionsLayout.startAnimation(fadeIn);
+        isOptionsVisible = true;
+    }
+    private void hideOptions() {
+        Animation animation = AnimationUtils.loadAnimation(this, R.anim.fab_options_slide_down);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
 
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                optionsLayout.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+        optionsLayout.startAnimation(animation);
+        isOptionsVisible = false;
+    }
     private void loadNotesFromDatabase() {
         new Thread(() -> {
             List<Note> allNotesFromDb = noteRepository.getAllNotes();

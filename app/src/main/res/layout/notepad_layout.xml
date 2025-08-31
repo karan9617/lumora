@@ -11,9 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
-        app:title="Voice Notes"
-        app:titleCentered="true"
+        android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+
         app:menu="@menu/notepad_menu" />
 
     <EditText
@@ -50,7 +49,7 @@
         <EditText
             android:id="@+id/resultText"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="@drawable/note_background"
             android:gravity="start|top"
             android:padding="16dp"
@@ -59,7 +58,13 @@
             android:textColor="@android:color/black"
             android:textSize="18sp"
             android:inputType="textMultiLine" />
-
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:id="@+id/imagesketch"
+                android:src="@drawable/ic_launcher_background"
+                android:layout_marginTop="100dp"
+                />
         <com.example.keyboardai.ui.DrawingView
             android:id="@+id/drawingView"
             android:layout_width="match_parent"
@@ -90,7 +95,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:text="Clear Drawing" />
+            android:text="Erase" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/toggleModeButton"
@@ -98,6 +103,12 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="Draw" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toggleModeDrawSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Save" />
     </LinearLayout>
 
 </RelativeLayout>

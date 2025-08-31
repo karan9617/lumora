@@ -41,15 +41,38 @@ public class DrawingView extends View {
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeWidth(10);
     }
+    /**
+     * Gets the current drawing as a Bitmap.
+     * @return A Bitmap of the drawing canvas.
+     */
+    public Bitmap getDrawingBitmap() {
+        if (mBitmap != null) {
+            return mBitmap;
+        }
+        return null;
+    }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        // **CRITICAL FIX**: Only create the bitmap if dimensions are valid.
-        if (w > 0 && h > 0) {
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+
+        // If mBitmap is null, it means we are creating the canvas for the first time.
+        if (mBitmap == null) {
             mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             mCanvas = new Canvas(mBitmap);
+        } else {
+            // If the bitmap already exists, create a new one with the correct size,
+            // draw the old bitmap onto it, and then replace the old bitmap.
+            Bitmap newBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas newCanvas = new Canvas(newBitmap);
+            newCanvas.drawBitmap(mBitmap, 0, 0, null);
+            mBitmap.recycle(); // Release memory from the old bitmap
+            mBitmap = newBitmap;
+            mCanvas = newCanvas;
         }
     }
 
@@ -84,7 +107,24 @@ public class DrawingView extends View {
         mCanvas.drawPath(mPath, mPaint);
         mPath.reset();
     }
+    public void setDrawingBitmap(Bitmap bitmap) {
+        if (bitmap != null) {
+            // Create a mutable copy of the bitmap so we can draw on it.
+            mBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
 
+            // Set the canvas to draw on this new bitmap
+            if (mCanvas == null) {
+                mCanvas = new Canvas(mBitmap);
+            } else {
+                mCanvas.setBitmap(mBitmap);
+            }
+        }
+
+        // Reset the path so old lines aren't drawn over the new bitmap
+        mPath.reset();
+
+        invalidate(); // Redraw the view with the new bitmap
+    }
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (mBitmap == null) {

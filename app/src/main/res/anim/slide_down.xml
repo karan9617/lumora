@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+
+    <!-- This animation translates the view from its original position (0) to its bottom edge (100%p) -->
+    <translate
+        android:duration="@android:integer/config_shortAnimTime"
+        android:fromYDelta="0"
+        android:toYDelta="100%p" />
+</set>
