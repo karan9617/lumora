@@ -2,11 +2,13 @@ package com.example.keyboardai.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -176,7 +178,24 @@ public class DrawingView extends View {
             } else {
                 mCanvas.setBitmap(mBitmap);
             }
+            // Add this line to clear the drawing path after loading a new bitmap
+            mPath.reset();
         }
         invalidate();
+    }
+    public void loadDrawingFromBytes(byte[] data) {
+        Log.d("com.example.keyboardai","loadDrawingFromBytes");
+        if (data != null && data.length > 0) {
+            Log.d("com.example.keyboardai","loadDrawingFromBytes 1");
+            Bitmap loadedBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+            if (loadedBitmap != null) {
+                Log.d("com.example.keyboardai","loadDrawingFromBytes 2");
+                this.mBitmap = loadedBitmap.copy(loadedBitmap.getConfig(), true);
+                this.mCanvas = new Canvas(this.mBitmap);
+                // Corrected: Path.clear() does not exist. Use Path.reset() instead.
+                this.mPath.reset();
+                invalidate();
+            }
+        }
     }
 }

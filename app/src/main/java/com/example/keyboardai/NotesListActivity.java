@@ -41,7 +41,7 @@ import java.util.List;
 
 public class NotesListActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
-  //  RelativeLayout mainLayout;
+    //  RelativeLayout mainLayout;
     private NotesAdapter notesAdapter;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
@@ -146,7 +146,7 @@ public class NotesListActivity extends AppCompatActivity {
                 showOptions();
             }
             //Intent intent = new Intent(NotesListActivity.this, Notepad.class);
-           // startActivity(intent);
+            // startActivity(intent);
         });
 
         optionImage.setOnClickListener(v -> {
@@ -188,7 +188,17 @@ public class NotesListActivity extends AppCompatActivity {
                     actionMode.finish();
                     return;
                 }
-                Intent intent = new Intent(NotesListActivity.this, Notepad.class);
+
+                // ** CRITICAL FIX: Check if the note has drawing data **
+                Intent intent;
+                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
+                    // If it's a drawing, open the DrawingActivity
+                    intent = new Intent(NotesListActivity.this, DrawingActivity.class);
+                } else {
+                    // Otherwise, open the Notepad activity for text
+                    intent = new Intent(NotesListActivity.this, Notepad.class);
+                }
+
                 intent.putExtra("note_id", note.getId());
                 intent.putExtra("note_title", note.getTitle());
                 intent.putExtra("note_content", note.getContent());
@@ -233,7 +243,17 @@ public class NotesListActivity extends AppCompatActivity {
                     actionMode.finish();
                     return;
                 }
-                Intent intent = new Intent(NotesListActivity.this, Notepad.class);
+
+                // ** CRITICAL FIX: Check if the note has drawing data **
+                Intent intent;
+                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
+                    // If it's a drawing, open the DrawingActivity
+                    intent = new Intent(NotesListActivity.this, DrawingActivity.class);
+                } else {
+                    // Otherwise, open the Notepad activity for text
+                    intent = new Intent(NotesListActivity.this, Notepad.class);
+                }
+
                 intent.putExtra("note_id", note.getId());
                 intent.putExtra("note_title", note.getTitle());
                 intent.putExtra("note_content", note.getContent());

@@ -66,18 +66,36 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         Note note = notes.get(position);
 
         holder.noteTitle.setText(note.getTitle());
-        holder.noteContent.setText(note.getContent());
         holder.noteDate.setText(note.getDate());
 
-        // Check if the note has a drawing and set its visibility
+        // --- FIXED: Conditionally show/hide drawing and text content views ---
         byte[] drawingData = note.getDrawingData();
         if (drawingData != null && drawingData.length > 0) {
-            Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-            holder.noteDrawing.setImageBitmap(drawingBitmap);
-            holder.noteDrawing.setVisibility(View.VISIBLE);
+            // This is a drawing note. Decode the drawing data and display it.
+            try {
+                Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+                if (drawingBitmap != null) {
+                    holder.noteDrawing.setImageBitmap(drawingBitmap);
+                    holder.noteDrawing.setVisibility(View.VISIBLE);
+                    holder.noteContent.setVisibility(View.GONE);
+                } else {
+                    // Handle case where bitmap decoding fails
+                    holder.noteDrawing.setVisibility(View.GONE);
+                    holder.noteContent.setVisibility(View.GONE);
+                }
+            } catch (Exception e) {
+                // Log the exception to understand why it failed
+                e.printStackTrace();
+                holder.noteDrawing.setVisibility(View.GONE);
+                holder.noteContent.setVisibility(View.GONE);
+            }
         } else {
+            // This is a text note. Display the text content.
+            holder.noteContent.setText(note.getContent());
+            holder.noteContent.setVisibility(View.VISIBLE);
             holder.noteDrawing.setVisibility(View.GONE);
         }
+        // --- END OF FIX ---
 
         // Set the note's background color
         holder.noteCard.setCardBackgroundColor(note.getColor());
