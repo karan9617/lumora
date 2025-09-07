@@ -24,6 +24,7 @@ import com.example.keyboardai.data.NoteRepository;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.Collections;
@@ -37,6 +38,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     private final OnNoteLongClickListener longClickListener;
     private final NoteRepository noteRepository;
     private int selectedPosition = RecyclerView.NO_POSITION;
+    private final ItemTouchHelper itemTouchHelper;
 
     public interface OnNoteClickListener {
         void onNoteClick(Note note, View sharedView);
@@ -46,12 +48,13 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         void onNoteLongClick(Note note, View sharedView);
     }
 
-    public NotesAdapterPinned(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener) {
+    public NotesAdapterPinned(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener, ItemTouchHelper itemTouchHelper) {
         this.context = context;
         this.notes = notes;
         this.listener = listener;
         this.longClickListener = longClickListener;
         this.noteRepository = new NoteRepository(context);
+        this.itemTouchHelper = itemTouchHelper;
     }
 
     @NonNull
@@ -164,6 +167,10 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                     notifyItemChanged(selectedPosition);
                 }
                 longClickListener.onNoteLongClick(longPressedNote, holder.noteCard);
+                // Start the drag
+                if (itemTouchHelper != null) {
+                    itemTouchHelper.startDrag(holder);
+                }
                 return true;
             }
             return false;
@@ -244,7 +251,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     public void onPinUnpinNote(Note note, boolean isPinned) {
         new Thread(() -> {
             noteRepository.updateNotePinStatus(note.getId(), isPinned);
-            List<Note> updatedNotes = noteRepository.getAllNotes();
+            List<Note> updatedNotes = noteRepository.getAllPinnedNotes();
 
             ((NotesListActivity) context).runOnUiThread(() -> {
                 notes.clear();

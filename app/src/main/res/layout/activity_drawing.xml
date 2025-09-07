@@ -7,7 +7,6 @@
     android:id="@+id/main_layout"
     android:background="@android:color/white"
     android:layout_width="match_parent"
-
     android:layout_height="match_parent"
     tools:context=".DrawingActivity">
 
@@ -66,7 +65,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toEndOf="@id/button_undo"
                 app:layout_constraintTop_toTopOf="parent"
-               />
+                />
 
             <!-- Pen/Brush size options -->
             <LinearLayout
@@ -97,7 +96,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="medium_pen_button_description"
                     android:src="@drawable/ic_pin_24"
-                     />
+                    />
 
                 <ImageButton
                     android:id="@+id/pen_large"
@@ -107,7 +106,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="large_pen_button_description"
                     android:src="@drawable/ic_large_pen"
-                   />
+                    />
 
             </LinearLayout>
 
@@ -194,4 +193,92 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Custom Dialog for Save/Discard functionality -->
+    <RelativeLayout
+        android:id="@+id/save_discard_dialog"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:id="@+id/dialog_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unsaved Changes"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_gravity="center_horizontal"/>
+
+                <TextView
+                    android:id="@+id/dialog_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Do you want to save your drawing?"
+                    android:textSize="16sp"
+                    android:layout_gravity="center_horizontal"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="24dp"
+                    android:layout_gravity="center_horizontal">
+
+                    <TextView
+                        android:id="@+id/dialog_discard_btn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="8dp"
+                        android:text="DISCARD"
+                        android:textColor="@android:color/holo_red_dark"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="16dp"/>
+
+                    <TextView
+                        android:id="@+id/dialog_cancel_btn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="8dp"
+                        android:text="CANCEL"
+                        android:textColor="@android:color/black"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="16dp"/>
+
+                    <TextView
+                        android:id="@+id/dialog_save_btn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="8dp"
+                        android:text="SAVE"
+                        android:textColor="@android:color/holo_blue_dark"
+                        android:textStyle="bold"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+    </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

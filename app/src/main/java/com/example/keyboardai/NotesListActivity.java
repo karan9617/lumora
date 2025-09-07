@@ -17,13 +17,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.keyboardai.Models.Note;
-import com.example.keyboardai.adapter.ItemMoveCallback;
 import com.example.keyboardai.adapter.NotesAdapter;
 import com.example.keyboardai.adapter.NotesAdapterPinned;
 import com.example.keyboardai.data.NoteRepository;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
@@ -43,11 +43,13 @@ public class NotesListActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
     //  RelativeLayout mainLayout;
     private NotesAdapter notesAdapter;
+    TextView option_excel;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
     private NoteRepository noteRepository;
     FloatingActionButton fabAddNote;
     private DrawerLayout drawerLayout;
+    ItemTouchHelper itemTouchHelper,itemTouchHelperPinned;
     private SearchView searchView;
     private List<Note> allNotes, pinnedNotes; // To hold the full, unfiltered list of notes
 
@@ -74,6 +76,7 @@ public class NotesListActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        option_excel = findViewById(R.id.option_excel);
         searchView = findViewById(R.id.search_view);
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
@@ -111,9 +114,10 @@ public class NotesListActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                filterNotes(newText);
-                return true;
+                return false;
             }
+
+
         });
 
         // Set up the FAB
@@ -145,10 +149,14 @@ public class NotesListActivity extends AppCompatActivity {
                 });
                 showOptions();
             }
-            //Intent intent = new Intent(NotesListActivity.this, Notepad.class);
-            // startActivity(intent);
         });
-
+        option_excel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(NotesListActivity.this, ExcelSheetActivity.class);
+                startActivity(i);
+            }
+        });
         optionImage.setOnClickListener(v -> {
             Toast.makeText(this, "Opening Image Note", Toast.LENGTH_SHORT).show();
             // TODO: Start the activity for adding an image note here
@@ -168,6 +176,7 @@ public class NotesListActivity extends AppCompatActivity {
             startActivity(intent);
             hideOptions();
         });
+
         // Set up the RecyclerView
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
@@ -179,38 +188,62 @@ public class NotesListActivity extends AppCompatActivity {
         notesList = new ArrayList<>();
         allNotes = new ArrayList<>();
         pinnedNotes = new ArrayList<>();
-        // NEW: Instantiate the NotesAdapter correctly and pass the listeners
+
+        // Create the callback and ItemTouchHelper for notesAdapter
+        ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                int fromPosition = viewHolder.getAdapterPosition();
+                int toPosition = target.getAdapterPosition();
+                notesAdapter.onItemMove(fromPosition, toPosition);
+                return true;
+            }
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                // Not used in this case
+            }
+            @Override
+            public void onMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y) {
+                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
+                notesAdapter.onItemsMoved();
+            }
+            @Override
+            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
+                    notesAdapter.onItemsMoved();
+                }
+            }
+
+        };
+
+        itemTouchHelper = new ItemTouchHelper(callback);
+        itemTouchHelper.attachToRecyclerView(notesRecyclerView);
+
         notesAdapter = new NotesAdapter(this, notesList, new NotesAdapter.OnNoteClickListener() {
             @Override
             public void onNoteClick(Note note, View sharedView) {
                 if (actionMode != null) {
-                    // Deselect the note if CAB is active and a note is clicked
                     actionMode.finish();
                     return;
                 }
-
-                // ** CRITICAL FIX: Check if the note has drawing data **
                 Intent intent;
-                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
-                    // If it's a drawing, open the DrawingActivity
+                if (note.getContent() != null && !note.getContent().isEmpty()) {
+                    intent = new Intent(NotesListActivity.this, Notepad.class);
+                } else if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
                 } else {
-                    // Otherwise, open the Notepad activity for text
                     intent = new Intent(NotesListActivity.this, Notepad.class);
                 }
-
                 intent.putExtra("note_id", note.getId());
                 intent.putExtra("note_title", note.getTitle());
                 intent.putExtra("note_content", note.getContent());
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("drawing_data", note.getDrawingData());
-
                 String transitionName = ViewCompat.getTransitionName(sharedView);
-
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
-
                     ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
                             NotesListActivity.this,
                             sharedView,
@@ -225,47 +258,65 @@ public class NotesListActivity extends AppCompatActivity {
             @Override
             public void onNoteLongClick(Note note, View sharedView) {
                 if (actionMode == null) {
-                    // Start the contextual action mode
                     actionMode = startSupportActionMode(actionModeCallback);
                 }
                 selectedNote = note;
             }
-        });
-
+        }, itemTouchHelper);
         notesRecyclerView.setAdapter(notesAdapter);
 
+        // Create the callback and ItemTouchHelper for notesAdapterPinned
+        ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                int fromPosition = viewHolder.getAdapterPosition();
+                int toPosition = target.getAdapterPosition();
+                notesAdapterPinned.onItemMove(fromPosition, toPosition);
+                return true;
+            }
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                // Not used in this case
+            }
+            @Override
+            public void onMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y) {
+                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
+                notesAdapterPinned.onItemsMoved();
+            }
+            @Override
+            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
+                    notesAdapterPinned.onItemsMoved();
+                }
+            }
+        };
+
+        itemTouchHelperPinned = new ItemTouchHelper(callbackPinned);
+        itemTouchHelperPinned.attachToRecyclerView(notesRecyclerViewPinned);
 
         notesAdapterPinned = new NotesAdapterPinned(this, pinnedNotes, new NotesAdapterPinned.OnNoteClickListener() {
             @Override
             public void onNoteClick(Note note, View sharedView) {
                 if (actionMode != null) {
-                    // Deselect the note if CAB is active and a note is clicked
                     actionMode.finish();
                     return;
                 }
-
-                // ** CRITICAL FIX: Check if the note has drawing data **
                 Intent intent;
                 if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
-                    // If it's a drawing, open the DrawingActivity
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
                 } else {
-                    // Otherwise, open the Notepad activity for text
                     intent = new Intent(NotesListActivity.this, Notepad.class);
                 }
-
                 intent.putExtra("note_id", note.getId());
                 intent.putExtra("note_title", note.getTitle());
                 intent.putExtra("note_content", note.getContent());
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("drawing_data", note.getDrawingData());
-
                 String transitionName = ViewCompat.getTransitionName(sharedView);
-
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
-
                     ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
                             NotesListActivity.this,
                             sharedView,
@@ -280,21 +331,12 @@ public class NotesListActivity extends AppCompatActivity {
             @Override
             public void onNoteLongClick(Note note, View sharedView) {
                 if (actionMode == null) {
-                    // Start the contextual action mode
                     actionMode = startSupportActionMode(actionModeCallback);
                 }
                 selectedNote = note;
             }
-        });
+        }, itemTouchHelperPinned);
         notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
-        // FIX: The adapter itself now implements ItemTouchHelperAdapter, so we pass it directly
-        ItemTouchHelper.Callback callback = new ItemMoveCallback(notesAdapter);
-        ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
-        touchHelper.attachToRecyclerView(notesRecyclerView);
-
-        ItemTouchHelper.Callback callbackPinned = new ItemMoveCallback(notesAdapterPinned);
-        ItemTouchHelper touchHelperPinned = new ItemTouchHelper(callbackPinned);
-        touchHelperPinned.attachToRecyclerView(notesRecyclerViewPinned);
 
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -313,6 +355,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
     }
+
     private void hideOptions(final Animation animation) {
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -342,6 +385,7 @@ public class NotesListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
         loadNotesFromDatabase();
     }
 
@@ -349,6 +393,7 @@ public class NotesListActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
         if (actionMode != null) {
             actionMode.finish();
         }
@@ -453,6 +498,7 @@ public class NotesListActivity extends AppCompatActivity {
                 // Handle pin/unpin action
                 boolean isPinned = selectedNote.isPinned();
                 notesAdapter.onPinUnpinNote(selectedNote, !isPinned);
+                notesAdapterPinned.onPinUnpinNote(selectedNote,!isPinned);
                 mode.finish();
                 return true;
             } else if (id == R.id.action_color) {
@@ -484,9 +530,7 @@ public class NotesListActivity extends AppCompatActivity {
         public void onDestroyActionMode(ActionMode mode) {
             actionMode = null;
             selectedNote = null;
-            // The adapter will handle deselecting the note
             notesAdapter.notifyDataSetChanged();
-
             notesAdapterPinned.notifyDataSetChanged();
         }
     };

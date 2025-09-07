@@ -71,4 +71,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.cardview:cardview:1.0.0")
+
 }

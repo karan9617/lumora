@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,13 +24,15 @@ import java.util.Date;
 import java.util.Locale;
 
 public class DrawingActivity extends AppCompatActivity {
-
+    private RelativeLayout saveDiscardDialog;
     private DrawingView drawingView;
     private ImageButton blackBtn, redBtn, blueBtn, smallPen, mediumPen, largePen;
-    private TextView button_save;
+    private TextView button_save,dialog_discard_btn,dialog_cancel_btn,dialog_save_btn;
     private SeekBar strokeWidthSeekBar;
     private NoteRepository noteRepository;
     private long currentNoteId = -1;
+    private boolean isDirty = false; // Flag to track unsaved changes
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,8 +75,20 @@ public class DrawingActivity extends AppCompatActivity {
         largePen = findViewById(R.id.pen_large);
         drawingView = findViewById(R.id.drawing_view);
         button_save = findViewById(R.id.button_save);
+        saveDiscardDialog= findViewById(R.id.save_discard_dialog);
         strokeWidthSeekBar = findViewById(R.id.stroke_width_seek_bar);
         noteRepository = new NoteRepository(this);
+        dialog_discard_btn = findViewById(R.id.dialog_discard_btn);
+        dialog_cancel_btn = findViewById(R.id.dialog_cancel_btn);
+        dialog_save_btn = findViewById(R.id.dialog_save_btn);
+        // Add a listener to the drawing view to detect changes
+        drawingView.setOnDrawListener(new DrawingView.OnDrawListener() {
+
+            @Override
+            public void onDrawFinished() {
+                isDirty = true;
+            }
+        });
     }
 
     private void saveOrUpdateDrawing() {
@@ -84,6 +99,7 @@ public class DrawingActivity extends AppCompatActivity {
                 // We are updating an existing note
                 Note existingNote = new Note();
                 existingNote.setId(currentNoteId);
+                existingNote.setColor(Color.WHITE);
                 existingNote.setDrawingData(drawingData);
                 noteRepository.updateNote(existingNote);
                 Toast.makeText(this, "Drawing updated successfully!", Toast.LENGTH_SHORT).show();
@@ -91,10 +107,10 @@ public class DrawingActivity extends AppCompatActivity {
                 // We are saving a new note
                 Note drawingNote = new Note();
                 drawingNote.setTitle("My Drawing");
+                drawingNote.setColor(Color.WHITE);
                 drawingNote.setDrawingData(drawingData);
                 drawingNote.setDate(getCurrentDate());
                 drawingNote.setPinned(false);
-                drawingNote.setColor(0);
                 long newRowId = noteRepository.addNote(drawingNote);
                 if (newRowId != -1) {
                     Toast.makeText(this, "Drawing saved successfully!", Toast.LENGTH_SHORT).show();
@@ -103,12 +119,22 @@ public class DrawingActivity extends AppCompatActivity {
                     Toast.makeText(this, "Failed to save drawing.", Toast.LENGTH_SHORT).show();
                 }
             }
+            isDirty = false; // Reset the dirty flag after saving
             finish(); // Close the activity after saving
         } else {
             Toast.makeText(this, "No drawing to save.", Toast.LENGTH_SHORT).show();
         }
     }
+    @Override
+    public void onBackPressed() {
+        if (isDirty) {
+            // Show the custom dialog if there are unsaved changes
+            saveDiscardDialog.setVisibility(View.VISIBLE);
 
+        } else {
+            super.onBackPressed();
+        }
+    }
     /**
      * Helper method to get the current date as a formatted string.
      */
@@ -118,6 +144,25 @@ public class DrawingActivity extends AppCompatActivity {
     }
 
     public void listeners(){
+        dialog_discard_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        dialog_cancel_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveDiscardDialog.setVisibility(View.INVISIBLE);
+            }
+        });
+        dialog_save_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveOrUpdateDrawing();
+                finish();
+            }
+        });
         button_save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

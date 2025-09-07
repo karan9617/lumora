@@ -34,7 +34,9 @@
                 app:queryHint="Search your notes"
                 app:queryBackground="@android:color/transparent"
                 android:textColorHint="@android:color/darker_gray"
-                android:textColor="@android:color/white"/>
+                android:textColor="@android:color/white"
+                android:gravity="right"
+                />
         </androidx.appcompat.widget.Toolbar>
 
         <!-- NestedScrollView for unified scrolling of all note lists -->
@@ -151,6 +153,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
+                android:text="Draw"
+                android:background="@drawable/rounded_background"
+                android:padding="12dp"
+                android:elevation="4dp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+            <TextView
+                android:id="@+id/option_excel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:text="Excel"
                 android:background="@drawable/rounded_background"
                 android:padding="12dp"
@@ -174,7 +187,7 @@
         </LinearLayout>
     </RelativeLayout>
 
-    <!-- The Navigation View for the side menu -->
+    <!-- The Navigation View for the side menu-->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"

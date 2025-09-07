@@ -24,6 +24,7 @@ import com.example.keyboardai.data.NoteRepository;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.Collections;
@@ -36,6 +37,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     private final OnNoteClickListener listener;
     private final OnNoteLongClickListener longClickListener;
     private final NoteRepository noteRepository;
+    private final ItemTouchHelper itemTouchHelper;
     private int selectedPosition = RecyclerView.NO_POSITION;
 
     public interface OnNoteClickListener {
@@ -46,12 +48,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         void onNoteLongClick(Note note, View sharedView);
     }
 
-    public NotesAdapter(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener) {
+    // This constructor expects an ItemTouchHelper instance as the last argument
+    public NotesAdapter(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener, ItemTouchHelper itemTouchHelper) {
         this.context = context;
         this.notes = notes;
         this.listener = listener;
         this.longClickListener = longClickListener;
         this.noteRepository = new NoteRepository(context);
+        this.itemTouchHelper = itemTouchHelper;
     }
 
     @NonNull
@@ -68,10 +72,9 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         holder.noteTitle.setText(note.getTitle());
         holder.noteDate.setText(note.getDate());
 
-        // --- FIXED: Conditionally show/hide drawing and text content views ---
+        // Conditionally show/hide drawing and text content views
         byte[] drawingData = note.getDrawingData();
         if (drawingData != null && drawingData.length > 0) {
-            // This is a drawing note. Decode the drawing data and display it.
             try {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
                 if (drawingBitmap != null) {
@@ -79,23 +82,19 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                     holder.noteDrawing.setVisibility(View.VISIBLE);
                     holder.noteContent.setVisibility(View.GONE);
                 } else {
-                    // Handle case where bitmap decoding fails
                     holder.noteDrawing.setVisibility(View.GONE);
                     holder.noteContent.setVisibility(View.GONE);
                 }
             } catch (Exception e) {
-                // Log the exception to understand why it failed
                 e.printStackTrace();
                 holder.noteDrawing.setVisibility(View.GONE);
                 holder.noteContent.setVisibility(View.GONE);
             }
         } else {
-            // This is a text note. Display the text content.
             holder.noteContent.setText(note.getContent());
             holder.noteContent.setVisibility(View.VISIBLE);
             holder.noteDrawing.setVisibility(View.GONE);
         }
-        // --- END OF FIX ---
 
         // Set the note's background color
         holder.noteCard.setCardBackgroundColor(note.getColor());
@@ -182,6 +181,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                     notifyItemChanged(selectedPosition);
                 }
                 longClickListener.onNoteLongClick(longPressedNote, holder.noteCard);
+
+                // Start the drag
+                if (itemTouchHelper != null) {
+                    itemTouchHelper.startDrag(holder);
+                }
+
+                // Return true to consume the event and prevent other long-press listeners from firing
                 return true;
             }
             return false;
@@ -263,10 +269,10 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         new Thread(() -> {
             noteRepository.updateNotePinStatus(note.getId(), isPinned);
             List<Note> updatedNotes = noteRepository.getAllNotes();
-
             ((NotesListActivity) context).runOnUiThread(() -> {
                 notes.clear();
                 notes.addAll(updatedNotes);
+
                 notifyDataSetChanged();
 
                 if (isPinned) {

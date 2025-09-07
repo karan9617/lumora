@@ -13,12 +13,12 @@ public class ItemMoveCallback extends ItemTouchHelper.Callback {
 
     @Override
     public boolean isLongPressDragEnabled() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isItemViewSwipeEnabled() {
-        return false; // Disable swipe
+        return true; // Disable swipe
     }
 
     @Override

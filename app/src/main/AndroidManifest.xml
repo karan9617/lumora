@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -15,13 +16,15 @@
         android:theme="@style/Theme.KeyboardAi"
         tools:targetApi="31">
         <activity
+            android:name=".ExcelSheetActivity"
+            android:exported="false"
+            android:label="@string/title_activity_excel_sheet"
+            android:theme="@style/Theme.KeyboardAi" />
+        <activity
             android:name=".NotesListActivity"
             android:exported="true"
             android:label="@string/title_activity_notes_list"
-            android:theme="@style/Theme.KeyboardAi" >
-
-
-        </activity>
+            android:theme="@style/Theme.KeyboardAi"></activity>
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -37,12 +40,12 @@
             android:name=".Notepad"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Material3.DayNight.NoActionBar"></activity>
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
         <activity
             android:name=".DrawingActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Material3.DayNight.NoActionBar"></activity>
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
     </application>
 
 </manifest>

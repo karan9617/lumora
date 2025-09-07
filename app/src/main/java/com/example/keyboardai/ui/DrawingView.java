@@ -11,6 +11,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import androidx.annotation.Nullable;
 
@@ -25,12 +26,17 @@ public class DrawingView extends View {
     private Paint mPaint;
     private static final float TOUCH_TOLERANCE = 4;
     private float mX, mY;
-
+    private OnDrawListener mListener;
     public DrawingView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         setupDrawing();
     }
-
+    public interface OnDrawListener {
+        void onDrawFinished();
+    }
+    public void setOnDrawListener(OnDrawListener listener) {
+        this.mListener = listener;
+    }
     private void setupDrawing() {
         mPath = new Path();
         mBitmapPaint = new Paint(Paint.DITHER_FLAG);
@@ -104,6 +110,9 @@ public class DrawingView extends View {
         mPath.lineTo(mX, mY);
         mCanvas.drawPath(mPath, mPaint);
         mPath.reset();
+        if (mListener != null) {
+            mListener.onDrawFinished();
+        }
     }
     public void setDrawingBitmap(Bitmap bitmap) {
         if (bitmap != null) {
