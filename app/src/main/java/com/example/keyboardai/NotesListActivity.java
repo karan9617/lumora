@@ -196,7 +196,7 @@ public class NotesListActivity extends AppCompatActivity {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 notesAdapter.onItemMove(fromPosition, toPosition);
-                return true;
+                return false;
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
@@ -212,9 +212,17 @@ public class NotesListActivity extends AppCompatActivity {
                 super.onSelectedChanged(viewHolder, actionState);
                 if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
                     notesAdapter.onItemsMoved();
+                } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    // Start the contextual action bar here when a drag begins
+                    if (actionMode == null) {
+                        actionMode = startSupportActionMode(actionModeCallback);
+                    }
+                    int position = viewHolder.getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        selectedNote = notesList.get(position);
+                    }
                 }
             }
-
         };
 
         itemTouchHelper = new ItemTouchHelper(callback);
@@ -254,15 +262,7 @@ public class NotesListActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             }
-        }, new NotesAdapter.OnNoteLongClickListener() {
-            @Override
-            public void onNoteLongClick(Note note, View sharedView) {
-                if (actionMode == null) {
-                    actionMode = startSupportActionMode(actionModeCallback);
-                }
-                selectedNote = note;
-            }
-        }, itemTouchHelper);
+        }, null, itemTouchHelper); // Pass null for the long click listener here.
         notesRecyclerView.setAdapter(notesAdapter);
 
         // Create the callback and ItemTouchHelper for notesAdapterPinned
@@ -272,7 +272,7 @@ public class NotesListActivity extends AppCompatActivity {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 notesAdapterPinned.onItemMove(fromPosition, toPosition);
-                return true;
+                return false;
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
@@ -288,6 +288,15 @@ public class NotesListActivity extends AppCompatActivity {
                 super.onSelectedChanged(viewHolder, actionState);
                 if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
                     notesAdapterPinned.onItemsMoved();
+                } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    // Start the contextual action bar here when a drag begins
+                    if (actionMode == null) {
+                        actionMode = startSupportActionMode(actionModeCallback);
+                    }
+                    int position = viewHolder.getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        selectedNote = pinnedNotes.get(position);
+                    }
                 }
             }
         };
@@ -327,15 +336,7 @@ public class NotesListActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             }
-        }, new NotesAdapterPinned.OnNoteLongClickListener() {
-            @Override
-            public void onNoteLongClick(Note note, View sharedView) {
-                if (actionMode == null) {
-                    actionMode = startSupportActionMode(actionModeCallback);
-                }
-                selectedNote = note;
-            }
-        }, itemTouchHelperPinned);
+        }, null, itemTouchHelperPinned); // Pass null for the long click listener here.
         notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
 
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
@@ -530,8 +531,9 @@ public class NotesListActivity extends AppCompatActivity {
         public void onDestroyActionMode(ActionMode mode) {
             actionMode = null;
             selectedNote = null;
-            notesAdapter.notifyDataSetChanged();
-            notesAdapterPinned.notifyDataSetChanged();
+            // This is important to clear the visual selection border
+            notesAdapter.clearSelection();
+            notesAdapterPinned.clearSelection();
         }
     };
 }

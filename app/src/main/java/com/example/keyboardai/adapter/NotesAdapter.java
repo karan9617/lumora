@@ -49,7 +49,11 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     }
 
     // This constructor expects an ItemTouchHelper instance as the last argument
-    public NotesAdapter(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener, ItemTouchHelper itemTouchHelper) {
+    public NotesAdapter(Context context,
+                        List<Note> notes,
+                        OnNoteClickListener listener,
+                        OnNoteLongClickListener longClickListener,
+                        ItemTouchHelper itemTouchHelper) {
         this.context = context;
         this.notes = notes;
         this.listener = listener;
@@ -64,7 +68,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         View view = LayoutInflater.from(context).inflate(R.layout.list_item_note, parent, false);
         return new NoteViewHolder(view);
     }
-
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
@@ -133,98 +136,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
-
-        // Add the color animation on long press
-        holder.itemView.setOnLongClickListener(v -> {
-            int currentPosition = holder.getAdapterPosition();
-            if (currentPosition != RecyclerView.NO_POSITION) {
-                Note longPressedNote = notes.get(currentPosition);
-
-                // Animate the background color to a light blue color
-                ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), longPressedNote.getColor(), Color.parseColor("#ADD8E6"));
-                colorAnimation.setDuration(300); // Animation duration in milliseconds
-
-                colorAnimation.addUpdateListener(animator -> {
-                    holder.noteCard.setCardBackgroundColor((int) animator.getAnimatedValue());
-                });
-
-                // Animate the color back to the original after the long press is finished
-                colorAnimation.addListener(new android.animation.Animator.AnimatorListener() {
-                    @Override
-                    public void onAnimationStart(android.animation.Animator animator) {}
-
-                    @Override
-                    public void onAnimationEnd(android.animation.Animator animator) {
-                        ValueAnimator reverseAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), Color.parseColor("#ADD8E6"), longPressedNote.getColor());
-                        reverseAnimation.setDuration(300);
-                        reverseAnimation.addUpdateListener(reverseAnimator -> {
-                            holder.noteCard.setCardBackgroundColor((int) reverseAnimator.getAnimatedValue());
-                        });
-                        reverseAnimation.start();
-                    }
-
-                    @Override
-                    public void onAnimationCancel(android.animation.Animator animator) {}
-
-                    @Override
-                    public void onAnimationRepeat(android.animation.Animator animator) {}
-                });
-
-                colorAnimation.start();
-
-                if (currentPosition != selectedPosition) {
-                    int oldSelectedPosition = selectedPosition;
-                    selectedPosition = currentPosition;
-                    if (oldSelectedPosition != RecyclerView.NO_POSITION && oldSelectedPosition < notes.size()) {
-                        notifyItemChanged(oldSelectedPosition);
-                    }
-                    notifyItemChanged(selectedPosition);
-                }
-                longClickListener.onNoteLongClick(longPressedNote, holder.noteCard);
-
-                // Start the drag
-                if (itemTouchHelper != null) {
-                    itemTouchHelper.startDrag(holder);
-                }
-
-                // Return true to consume the event and prevent other long-press listeners from firing
-                return true;
-            }
-            return false;
-        });
-
-        // Clear previous labels to prevent duplicates on recycled views
-        holder.labelsContainer.removeAllViews();
-
-        // Dynamically create and add TextViews for each label
-        new Thread(() -> {
-            List<Label> labels = noteRepository.getLabelsForNote(note.getId());
-            ((NotesListActivity) context).runOnUiThread(() -> {
-                for (Label label : labels) {
-                    TextView labelView = new TextView(context);
-                    labelView.setText(label.getName());
-                    labelView.setTextColor(Color.WHITE);
-                    labelView.setTextSize(10);
-                    labelView.setPadding(8, 4, 8, 4);
-
-                    // Create a rounded background with the label's color
-                    GradientDrawable background = new GradientDrawable();
-                    background.setColor(label.getColor());
-                    background.setCornerRadius(16);
-                    labelView.setBackground(background);
-
-                    // Add margins between label views
-                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                    );
-                    params.setMargins(0, 0, 8, 0); // Right margin for spacing
-                    labelView.setLayoutParams(params);
-
-                    holder.labelsContainer.addView(labelView);
-                }
-            });
-        }).start();
     }
 
     @Override
@@ -295,9 +206,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     }
 
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
-        TextView noteTitle;
-        TextView noteContent;
-        TextView noteDate;
+        TextView noteTitle,noteContent,noteDate;
         ImageView noteDrawing;
         ImageView notePinImageView;
         CardView noteCard;
