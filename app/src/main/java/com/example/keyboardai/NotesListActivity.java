@@ -192,6 +192,11 @@ public class NotesListActivity extends AppCompatActivity {
         // Create the callback and ItemTouchHelper for notesAdapter
         ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
             @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+                return makeMovementFlags(dragFlags, 0);
+            }
+            @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
@@ -262,11 +267,16 @@ public class NotesListActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             }
-        }, null, itemTouchHelper); // Pass null for the long click listener here.
+        }, null, itemTouchHelper);
         notesRecyclerView.setAdapter(notesAdapter);
 
         // Create the callback and ItemTouchHelper for notesAdapterPinned
         ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+                return makeMovementFlags(dragFlags, 0);
+            }
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
                 int fromPosition = viewHolder.getAdapterPosition();
@@ -336,7 +346,7 @@ public class NotesListActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             }
-        }, null, itemTouchHelperPinned); // Pass null for the long click listener here.
+        }, null, itemTouchHelperPinned);
         notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
 
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {

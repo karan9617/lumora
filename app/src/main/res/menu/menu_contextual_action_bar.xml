@@ -7,7 +7,11 @@
         android:icon="@drawable/ic_pin"
         android:title="Pin"
         app:showAsAction="ifRoom" />
-
+    <item
+        android:id="@+id/action_delete"
+        android:icon="@drawable/ic_pin"
+        android:title="Delete"
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_color"
         android:icon="@drawable/ic_palette"
