@@ -517,7 +517,7 @@ public class NotesListActivity extends AppCompatActivity {
                 Toast.makeText(NotesListActivity.this, "Change Color", Toast.LENGTH_SHORT).show();
                 mode.finish();
                 return true;
-            } else if (id == R.id.action_delete) {
+            } else if (id == R.id.action_delete_note) {
                 // Handle delete action
                 new Thread(() -> {
                     noteRepository.deleteNote(selectedNote.getId());
