@@ -13,7 +13,6 @@
         android:layout_height="?attr/actionBarSize"
         android:background="#E1201D25"
         android:theme="@style/Theme.AppCompat.Light.Dialog"
-
         app:menu="@menu/notepad_menu" />
 
     <EditText
@@ -23,7 +22,7 @@
         android:layout_below="@id/toolbar"
         android:background="@android:color/transparent"
         android:hint="Title"
-        android:textColor="@color/white"
+        android:textColor="@color/black"
         android:inputType="textCapSentences"
         android:paddingStart="16dp"
         android:paddingTop="16dp"
@@ -37,38 +36,68 @@
         android:layout_above="@id/button_bar"
         android:layout_below="@id/noteTitleEditText">
 
-        <!-- NEW: This TextView will display the inline text hint from the API -->
-        <TextView
-            android:id="@+id/hintTextView"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@android:color/transparent"
-            android:gravity="start|top"
-            android:padding="16dp"
-            android:textColor="#C0C0C0"
-            android:textSize="18sp" />
+            android:layout_height="match_parent">
 
-        <EditText
-            android:id="@+id/resultText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/note_background"
-            android:gravity="start|top"
-            android:padding="16dp"
-            android:scrollbars="vertical"
-            android:text="Your spoken text will appear here..."
-            android:textColor="@color/selected_note_background"
-            android:textSize="18sp"
-
-            android:inputType="textMultiLine" />
-            <ImageView
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:id="@+id/imagesketch"
-                android:src="@drawable/ic_launcher_background"
-                android:layout_marginTop="100dp"
-                android:visibility="invisible"
-                />
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView
+                        android:id="@+id/hintTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:gravity="start|top"
+                        android:padding="16dp"
+                        android:textColor="#C0C0C0"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/resultText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/note_background"
+                        android:gravity="start|top"
+                        android:padding="16dp"
+                        android:scrollbars="vertical"
+                        android:hint="text notes..."
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:inputType="textMultiLine" />
+                </FrameLayout>
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp">
+
+                    <ImageView
+                        android:id="@+id/imagesketch"
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp"
+                        android:visibility="invisible" />
+
+                    <ImageButton
+                        android:id="@+id/clearImageButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/ic_close"
+
+                        android:backgroundTint="@color/white"
+                        android:visibility="invisible"
+                        android:src="@drawable/ic_close"
+                        app:tint="@color/black" />
+                </FrameLayout>
+            </LinearLayout>
+        </ScrollView>
         <com.example.keyboardai.ui.DrawingView
             android:id="@+id/drawingView"
             android:layout_width="match_parent"
@@ -82,7 +111,7 @@
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+        android:layout_centerHorizontal="true"
         android:visibility="gone" />
 
     <LinearLayout
@@ -90,28 +119,43 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:background="@drawable/rounded_background"
+        android:layout_marginLeft="10px"
+        android:layout_marginRight="10px"
+        android:layout_marginBottom="5px"
         android:gravity="center"
         android:orientation="horizontal"
         android:padding="8dp">
 
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/clearDrawingButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="@drawable/rounded_white_background"
+            android:src="@drawable/baseline_brush_24"
+            android:padding="17px"
             android:layout_marginEnd="8dp"
             android:text="Erase" />
-
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_voice_icon"
+            android:id="@+id/voiceicon" />
         <com.google.android.material.button.MaterialButton
             android:id="@+id/toggleModeButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:src="@drawable/baseline_brush_24"
+            android:background="@drawable/rounded_background"
             android:layout_marginStart="8dp"
             android:text="Draw" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/toggleModeDrawSave"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:visibility="gone"
             android:text="Save" />
     </LinearLayout>
 

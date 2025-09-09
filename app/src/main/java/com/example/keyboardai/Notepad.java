@@ -22,8 +22,12 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.ProgressBar;
@@ -70,6 +74,7 @@ public class Notepad extends AppCompatActivity {
     private NoteRepository noteRepository;
     private DrawingView drawingView;
     private Button toggleModeButton,toggleModeDrawSave;
+    ImageButton clearDrawingButton,clearImageButton;
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
@@ -80,7 +85,7 @@ public class Notepad extends AppCompatActivity {
     private Handler handler;
     private Runnable suggestionRunnable;
     private final long DELAY = 500;
-    private ImageView imagesketch;
+    private ImageView imagesketch,voiceicon;
     private String currentHint = "";
     // NEW: Variable to hold the note's pinned status
     private boolean isPinned = false;
@@ -94,18 +99,11 @@ public class Notepad extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        postponeEnterTransition();
-        setContentView(R.layout.notepad_layout);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        // UI references
-        listeningProgress = findViewById(R.id.listeningProgress);
-        resultText = findViewById(R.id.resultText);
-        titleText = findViewById(R.id.noteTitleEditText);
-        mainContentLayout = findViewById(R.id.main_content_layout);
-        hintTextView = findViewById(R.id.hintTextView);
-        toggleModeDrawSave =  findViewById(R.id.toggleModeDrawSave);
-        toggleModeDrawSave.setVisibility(View.INVISIBLE);
-        imagesketch = findViewById(R.id.imagesketch);
+        postponeEnterTransition();
+        init();
         registerListeners();
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
@@ -121,6 +119,8 @@ public class Notepad extends AppCompatActivity {
         isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
         // NEW: Retrieve the note's order from the intent
         noteOrder = getIntent().getIntExtra("note_order", -1);
+
+        // setting the imagesketch from the database
         if(drawingData != null && drawingData.length > 0){
             Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
             Toast.makeText(getApplicationContext(),"rendering image",Toast.LENGTH_SHORT).show();
@@ -142,7 +142,7 @@ public class Notepad extends AppCompatActivity {
             noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
             titleText.setHint("Untitled");
         }
-
+        // setting background
         mainContentLayout.setBackgroundColor(selectedColor);
         titleText.setBackground(null);
         resultText.setBackground(null);
@@ -159,6 +159,7 @@ public class Notepad extends AppCompatActivity {
         }
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
         toolbar.setOnMenuItemClickListener(this::onOptionsItemSelected);
 
@@ -166,7 +167,7 @@ public class Notepad extends AppCompatActivity {
         setPinIcon(isPinned);
 
         toggleModeButton.setOnClickListener(v -> toggleMode());
-        Button clearDrawingButton = findViewById(R.id.clearDrawingButton);
+        clearDrawingButton = findViewById(R.id.clearDrawingButton);
         clearDrawingButton.setOnClickListener(v -> {
             drawingView.clearDrawing();
             isNoteModified = true;
@@ -276,10 +277,27 @@ public class Notepad extends AppCompatActivity {
         });
     }
     public void registerListeners(){
+        voiceicon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!isListening) {
+                    isListening = true;
+
+                    resultBuilder.setLength(0);
+                    speechRecognizer.startListening(recognizerIntent);
+                    Toast.makeText(getApplicationContext(), "Listening...", Toast.LENGTH_SHORT).show();
+                } else {
+                    isListening = false;
+                    speechRecognizer.stopListening();
+                    listeningProgress.setVisibility(ProgressBar.GONE);
+                    Toast.makeText(getApplicationContext(), "Stopped listening", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
         toggleModeDrawSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                saveNote();
             }
         });
 
@@ -287,6 +305,8 @@ public class Notepad extends AppCompatActivity {
         imagesketch.setOnClickListener(v -> {
             // Check if there is an image loaded to the ImageView
             if (imagesketch.getDrawable() != null) {
+                Toast.makeText(getApplicationContext(),"inside imagesketch",Toast.LENGTH_SHORT).show();
+                /*
                 // Get the bitmap from the ImageView
                 BitmapDrawable drawable = (BitmapDrawable) imagesketch.getDrawable();
                 Bitmap existingBitmap = drawable.getBitmap();
@@ -294,8 +314,29 @@ public class Notepad extends AppCompatActivity {
                 // Load the bitmap onto the drawing view and switch to drawing mode
                 if (existingBitmap != null) {
                     drawingView.setDrawingBitmap(existingBitmap);
+                    //drawingView.invalidate();
+                   // drawingView.setDrawingData(drawingData);
                     toggleMode(); // Call the toggleMode method to switch views
+                }*/
+
+                if (drawingData != null && drawingData.length > 0) {
+                    // Use a ViewTreeObserver to wait until the view is laid out
+                    // and its dimensions are available before loading the bitmap.
+                    drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                        @Override
+                        public void onGlobalLayout() {
+                            // Ensure the view has valid dimensions before loading the data
+                            if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
+                                drawingView.setDrawingData(drawingData);
+                                Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
+
+                                // Remove the listener to avoid repeated calls
+                                drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                            }
+                        }
+                    });
                 }
+                toggleMode();
             }
         });
     }
@@ -304,6 +345,7 @@ public class Notepad extends AppCompatActivity {
         if (isDrawingMode) {
             resultText.setVisibility(View.GONE);
             imagesketch.setVisibility(View.GONE); // Hide the ImageView when drawing
+
             drawingView.setVisibility(View.VISIBLE);
             toggleModeDrawSave.setVisibility(View.VISIBLE);
             toggleModeButton.setText("Text");
@@ -334,31 +376,12 @@ public class Notepad extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (speechRecognizer != null) {
-            speechRecognizer.destroy();
-        }
-    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_voice) {
-            if (!isListening) {
-                isListening = true;
-                resultBuilder.setLength(0);
-                speechRecognizer.startListening(recognizerIntent);
-                Toast.makeText(this, "Listening...", Toast.LENGTH_SHORT).show();
-            } else {
-                isListening = false;
-                speechRecognizer.stopListening();
-                listeningProgress.setVisibility(ProgressBar.GONE);
-                Toast.makeText(this, "Stopped listening", Toast.LENGTH_SHORT).show();
-            }
-            return true;
-        } else if (id == R.id.action_save) {
+        if (id == R.id.action_save) {
             saveNote();
             return true;
         } else if (id == R.id.action_color) {
@@ -560,5 +583,24 @@ public class Notepad extends AppCompatActivity {
                 currentHint = "";
             });
         });
+    }
+    public void init(){
+        setContentView(R.layout.notepad_layout);
+        voiceicon = findViewById(R.id.voiceicon);
+        listeningProgress = findViewById(R.id.listeningProgress);
+        resultText = findViewById(R.id.resultText);
+        titleText = findViewById(R.id.noteTitleEditText);
+        mainContentLayout = findViewById(R.id.main_content_layout);
+        hintTextView = findViewById(R.id.hintTextView);
+        toggleModeDrawSave =  findViewById(R.id.toggleModeDrawSave);
+        toggleModeDrawSave.setVisibility(View.GONE);
+        imagesketch = findViewById(R.id.imagesketch);
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (speechRecognizer != null) {
+            speechRecognizer.destroy();
+        }
     }
 }
