@@ -7,6 +7,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -27,28 +29,36 @@ public class DrawingView extends View {
     private static final float TOUCH_TOLERANCE = 4;
     private float mX, mY;
     private OnDrawListener mListener;
+    private boolean isErasing = false;
+    private float defaultStrokeWidth = 10;
+    private int currentColor = Color.BLACK;
+
     public DrawingView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         setupDrawing();
     }
+
     public interface OnDrawListener {
         void onDrawFinished();
     }
+
     public void setOnDrawListener(OnDrawListener listener) {
         this.mListener = listener;
     }
+
     private void setupDrawing() {
         mPath = new Path();
         mBitmapPaint = new Paint(Paint.DITHER_FLAG);
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);
-        mPaint.setColor(Color.BLACK);
+        mPaint.setColor(currentColor);
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
-        mPaint.setStrokeWidth(10);
+        mPaint.setStrokeWidth(defaultStrokeWidth);
     }
+
     /**
      * Gets the current drawing as a Bitmap.
      * @return A Bitmap of the drawing canvas.
@@ -64,31 +74,49 @@ public class DrawingView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        // **CRITICAL FIX**: Only create the bitmap if dimensions are valid.
         if (w > 0 && h > 0) {
             mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             mCanvas = new Canvas(mBitmap);
         }
     }
+
     public void setColor(int color) {
-        if (mPaint != null) {
-            mPaint.setColor(color);
-        }
+        this.currentColor = color;
+        mPaint.setColor(currentColor);
     }
+
     public void setStrokeWidth(float width) {
         if (mPaint != null) {
             mPaint.setStrokeWidth(width);
+            defaultStrokeWidth = width;
         }
     }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (mBitmap != null) {
             canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
         }
-        canvas.drawPath(mPath, mPaint);
+
+        // Draw the live path with appropriate visual feedback
+        if (!mPath.isEmpty()) {
+            if (isErasing) {
+                // Use a temporary paint for visual feedback while erasing
+                Paint eraserVisualPaint = new Paint();
+                eraserVisualPaint.setAntiAlias(true);
+                eraserVisualPaint.setDither(true);
+                eraserVisualPaint.setColor(Color.argb(100, 255, 255, 255)); // Semi-transparent white
+                eraserVisualPaint.setStyle(Paint.Style.STROKE);
+                eraserVisualPaint.setStrokeJoin(Paint.Join.ROUND);
+                eraserVisualPaint.setStrokeCap(Paint.Cap.ROUND);
+                eraserVisualPaint.setStrokeWidth(defaultStrokeWidth + 10);
+                canvas.drawPath(mPath, eraserVisualPaint);
+            } else {
+                canvas.drawPath(mPath, mPaint);
+            }
+        }
     }
 
-    // ... (rest of your touch_start, touch_move, touch_up methods) ...
     private void touch_start(float x, float y) {
         mPath.reset();
         mPath.moveTo(x, y);
@@ -114,24 +142,20 @@ public class DrawingView extends View {
             mListener.onDrawFinished();
         }
     }
+
     public void setDrawingBitmap(Bitmap bitmap) {
         if (bitmap != null) {
-            // Create a mutable copy of the bitmap so we can draw on it.
             mBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-
-            // Set the canvas to draw on this new bitmap
             if (mCanvas == null) {
                 mCanvas = new Canvas(mBitmap);
             } else {
                 mCanvas.setBitmap(mBitmap);
             }
         }
-
-        // Reset the path so old lines aren't drawn over the new bitmap
         mPath.reset();
-
-        invalidate(); // Redraw the view with the new bitmap
+        invalidate();
     }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (mBitmap == null) {
@@ -181,30 +205,38 @@ public class DrawingView extends View {
         }
         Bitmap loadedBitmap = android.graphics.BitmapFactory.decodeByteArray(data, 0, data.length);
         if (loadedBitmap != null) {
-            mBitmap = loadedBitmap.copy(Bitmap.Config.ARGB_8888, true); // Create a mutable copy
+            mBitmap = loadedBitmap.copy(Bitmap.Config.ARGB_8888, true);
             if (mCanvas == null) {
                 mCanvas = new Canvas(mBitmap);
             } else {
                 mCanvas.setBitmap(mBitmap);
             }
-            // Add this line to clear the drawing path after loading a new bitmap
             mPath.reset();
         }
         invalidate();
     }
+
     public void loadDrawingFromBytes(byte[] data) {
-        Log.d("com.example.keyboardai","loadDrawingFromBytes");
         if (data != null && data.length > 0) {
-            Log.d("com.example.keyboardai","loadDrawingFromBytes 1");
             Bitmap loadedBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
             if (loadedBitmap != null) {
-                Log.d("com.example.keyboardai","loadDrawingFromBytes 2");
                 this.mBitmap = loadedBitmap.copy(loadedBitmap.getConfig(), true);
                 this.mCanvas = new Canvas(this.mBitmap);
-                // Corrected: Path.clear() does not exist. Use Path.reset() instead.
                 this.mPath.reset();
                 invalidate();
             }
+        }
+    }
+
+    public void setErasing(boolean erasing) {
+        isErasing = erasing;
+        if (isErasing) {
+            mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+            mPaint.setStrokeWidth(defaultStrokeWidth + 10);
+        } else {
+            mPaint.setXfermode(null);
+            mPaint.setStrokeWidth(defaultStrokeWidth);
+            mPaint.setColor(currentColor);
         }
     }
 }

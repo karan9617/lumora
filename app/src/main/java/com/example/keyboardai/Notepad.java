@@ -73,15 +73,16 @@ public class Notepad extends AppCompatActivity {
     private Intent recognizerIntent;
     private NoteRepository noteRepository;
     private DrawingView drawingView;
-    private Button toggleModeButton,toggleModeDrawSave;
-    ImageButton clearDrawingButton,clearImageButton;
+    private Button toggleModeDrawSave;
+    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen;
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
     private boolean isDrawingMode = false;
     private RelativeLayout mainContentLayout;
     private int selectedColor = Color.WHITE;
-    private boolean isNoteModified = false;
+    private boolean isNoteModified = false,isDirty = false;
+    MaterialToolbar toolbar;
     private Handler handler;
     private Runnable suggestionRunnable;
     private final long DELAY = 500;
@@ -107,7 +108,6 @@ public class Notepad extends AppCompatActivity {
         registerListeners();
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
-        toggleModeButton = findViewById(R.id.toggleModeButton);
 
         noteId = getIntent().getLongExtra("note_id", -1);
         String noteTitle = getIntent().getStringExtra("note_title");
@@ -158,23 +158,22 @@ public class Notepad extends AppCompatActivity {
             requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
         }
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitleTextColor(Color.WHITE);
+        toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
         toolbar.setOnMenuItemClickListener(this::onOptionsItemSelected);
 
         // NEW: Call the method to set the correct pin icon when the activity is created.
         setPinIcon(isPinned);
 
-        toggleModeButton.setOnClickListener(v -> toggleMode());
+
         clearDrawingButton = findViewById(R.id.clearDrawingButton);
         clearDrawingButton.setOnClickListener(v -> {
-            drawingView.clearDrawing();
+            //drawingView.setColor(Color.TRANSPARENT);
+            drawingView.setErasing(true);
             isNoteModified = true;
         });
         resultText.setVisibility(View.VISIBLE);
         drawingView.setVisibility(View.GONE);
-        toggleModeButton.setText("Draw");
 
         handler = new Handler(Looper.getMainLooper());
 
@@ -254,10 +253,12 @@ public class Notepad extends AppCompatActivity {
                     String spokenText = matches.get(0);
                     if (spokenText.equalsIgnoreCase("done")) {
                         isListening = false;
+                        hintTextView.setVisibility(View.INVISIBLE);
                         speechRecognizer.stopListening();
                         listeningProgress.setVisibility(ProgressBar.GONE);
                         return;
                     }
+
                     resultBuilder.append(spokenText).append(" ");
                     resultText.setText(resultBuilder.toString());
                     isNoteModified = true;
@@ -277,13 +278,19 @@ public class Notepad extends AppCompatActivity {
         });
     }
     public void registerListeners(){
+        black_pen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setErasing(false);
+                drawingView.setColor(Color.BLACK);
+            }
+        });
         voiceicon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!isListening) {
                     isListening = true;
-
-                    resultBuilder.setLength(0);
+                    hintTextView.setVisibility(View.VISIBLE);
                     speechRecognizer.startListening(recognizerIntent);
                     Toast.makeText(getApplicationContext(), "Listening...", Toast.LENGTH_SHORT).show();
                 } else {
@@ -305,74 +312,89 @@ public class Notepad extends AppCompatActivity {
         imagesketch.setOnClickListener(v -> {
             // Check if there is an image loaded to the ImageView
             if (imagesketch.getDrawable() != null) {
-                Toast.makeText(getApplicationContext(),"inside imagesketch",Toast.LENGTH_SHORT).show();
-                /*
-                // Get the bitmap from the ImageView
-                BitmapDrawable drawable = (BitmapDrawable) imagesketch.getDrawable();
-                Bitmap existingBitmap = drawable.getBitmap();
-
-                // Load the bitmap onto the drawing view and switch to drawing mode
-                if (existingBitmap != null) {
-                    drawingView.setDrawingBitmap(existingBitmap);
-                    //drawingView.invalidate();
-                   // drawingView.setDrawingData(drawingData);
-                    toggleMode(); // Call the toggleMode method to switch views
-                }*/
-
-                if (drawingData != null && drawingData.length > 0) {
-                    // Use a ViewTreeObserver to wait until the view is laid out
-                    // and its dimensions are available before loading the bitmap.
-                    drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                        @Override
-                        public void onGlobalLayout() {
-                            // Ensure the view has valid dimensions before loading the data
-                            if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
-                                drawingView.setDrawingData(drawingData);
-                                Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
-
-                                // Remove the listener to avoid repeated calls
-                                drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                            }
-                        }
-                    });
-                }
+                drawOnDrawingView();
                 toggleMode();
             }
         });
+        red_pen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.RED);
+            }
+        });
+    }
+    private void drawOnDrawingView(){
+        if (drawingData != null && drawingData.length > 0) {
+            // Use a ViewTreeObserver to wait until the view is laid out
+            // and its dimensions are available before loading the bitmap.
+            drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    // Ensure the view has valid dimensions before loading the data
+                    if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
+                        drawingView.setDrawingData(drawingData);
+                        Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
+
+                        // Remove the listener to avoid repeated calls
+                        drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    }
+                }
+            });
+        }
     }
     private void toggleMode() {
         isDrawingMode = !isDrawingMode;
         if (isDrawingMode) {
+            titleText.setVisibility(View.GONE);
+            isDirty = true;
+            red_pen.setVisibility(View.VISIBLE);
+            black_pen.setVisibility(View.VISIBLE);
+            voiceicon.setVisibility(View.GONE);
+            clearDrawingButton.setVisibility(View.VISIBLE);
+            toolbar.setVisibility(View.GONE);
             resultText.setVisibility(View.GONE);
             imagesketch.setVisibility(View.GONE); // Hide the ImageView when drawing
-
             drawingView.setVisibility(View.VISIBLE);
             toggleModeDrawSave.setVisibility(View.VISIBLE);
-            toggleModeButton.setText("Text");
+
         } else {
+            titleText.setVisibility(View.VISIBLE);
+            isDirty = false;
+            voiceicon.setVisibility(View.VISIBLE);
+            red_pen.setVisibility(View.GONE);
+            black_pen.setVisibility(View.GONE);
+            toolbar.setVisibility(View.VISIBLE);
+            clearDrawingButton.setVisibility(View.GONE);
             resultText.setVisibility(View.VISIBLE);
             if (imagesketch.getDrawable() != null) { // Only show imagesketch if it has an image
                 imagesketch.setVisibility(View.VISIBLE);
             }
             drawingView.setVisibility(View.GONE);
             toggleModeDrawSave.setVisibility(View.GONE);
-            toggleModeButton.setText("Draw");
         }
     }
 
     // UPDATED: Override onBackPressed to check for unsaved changes
     @Override
     public void onBackPressed() {
-        if (isNoteModified) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Save Note?")
-                    .setMessage("You have unsaved changes. Do you want to save this note?")
-                    .setPositiveButton("Save", (dialog, which) -> saveNote())
-                    .setNegativeButton("Discard", (dialog, which) -> supportFinishAfterTransition())
-                    .setNeutralButton("Cancel", (dialog, which) -> {})
-                    .show();
-        } else {
-            supportFinishAfterTransition();
+        if(isDirty){
+            isDirty = !isDirty;
+            saveNote();
+            toggleMode();
+        }
+        else {
+            if (isNoteModified) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Save Note?")
+                        .setMessage("You have unsaved changes. Do you want to save this note?")
+                        .setPositiveButton("Save", (dialog, which) -> saveNote())
+                        .setNegativeButton("Discard", (dialog, which) -> supportFinishAfterTransition())
+                        .setNeutralButton("Cancel", (dialog, which) -> {
+                        })
+                        .show();
+            } else {
+                supportFinishAfterTransition();
+            }
         }
     }
 
@@ -381,7 +403,12 @@ public class Notepad extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_save) {
+        if(id == R.id.action_draw){
+            drawOnDrawingView();
+            toggleMode();
+            return true;
+        }
+        else if (id == R.id.action_save) {
             saveNote();
             return true;
         } else if (id == R.id.action_color) {
@@ -449,9 +476,9 @@ public class Notepad extends AppCompatActivity {
     private void saveNote() {
         String title = titleText.getText().toString().trim();
         String content = resultText.getText().toString().trim();
-        byte[] drawingDataToSave = drawingView.getDrawingData();
+        byte[] drawingDataToSave = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
 
-        if (title.isEmpty() && content.isEmpty() && drawingDataToSave == null) {
+        if (title.isEmpty() && content.isEmpty() && (drawingDataToSave == null || drawingDataToSave.length == 0)) {
             Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
             isNoteModified = false;
             supportFinishAfterTransition();
@@ -468,32 +495,25 @@ public class Notepad extends AppCompatActivity {
 
         Executors.newSingleThreadExecutor().execute(() -> {
             if (noteId != -1) {
-                // NEW: Pass the pinned status and order to the Note object
                 Note existingNote = new Note(noteId, title, content, noteDate, drawingDataToSave, finalColorToSave, noteOrder, isPinned);
                 noteRepository.updateNote(existingNote);
                 runOnUiThread(() -> Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show());
             } else {
-                // NEW: Pass the pinned status to the new Note object. The order will be set by the repository.
                 Note newNote = new Note(title, content, noteDate, drawingDataToSave, finalColorToSave, 0, isPinned);
                 noteRepository.addNote(newNote);
                 runOnUiThread(() -> Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show());
             }
         });
+        this.drawingData = drawingDataToSave;
 
-// Check if the drawing data is not null or empty
         if (drawingDataToSave != null && drawingDataToSave.length > 0) {
-            // Convert the byte array back into a Bitmap
             Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
-            Toast.makeText(getApplicationContext(),"saving image",Toast.LENGTH_SHORT).show();
-            // Check if the bitmap was successfully created
             if (savedBitmap != null) {
-                // Assign the bitmap to your ImageView and make it visible
                 imagesketch.setImageBitmap(savedBitmap);
                 imagesketch.setVisibility(View.VISIBLE);
-                Toast.makeText(getApplicationContext(),"image assigned",Toast.LENGTH_SHORT).show();
             }
         } else {
-            // If there is no drawing data, hide the ImageView
+            imagesketch.setImageDrawable(null);
             imagesketch.setVisibility(View.GONE);
         }
 
@@ -593,8 +613,10 @@ public class Notepad extends AppCompatActivity {
         mainContentLayout = findViewById(R.id.main_content_layout);
         hintTextView = findViewById(R.id.hintTextView);
         toggleModeDrawSave =  findViewById(R.id.toggleModeDrawSave);
+        red_pen = findViewById(R.id.red_pen);
         toggleModeDrawSave.setVisibility(View.GONE);
         imagesketch = findViewById(R.id.imagesketch);
+        black_pen = findViewById(R.id.black_pen);
     }
     @Override
     protected void onDestroy() {
