@@ -40,32 +40,7 @@
             android:layout_height="wrap_content"
             android:padding="8dp">
 
-            <!-- Undo/Redo Buttons -->
-            <ImageButton
-                android:id="@+id/button_undo"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_undo"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                />
 
-            <ImageButton
-                android:id="@+id/button_redo"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="redo_button_description"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_redo"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toEndOf="@id/button_undo"
-                app:layout_constraintTop_toTopOf="parent"
-                />
 
             <!-- Pen/Brush size options -->
             <LinearLayout
@@ -75,9 +50,16 @@
                 android:layout_marginStart="16dp"
                 android:orientation="horizontal"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toEndOf="@id/button_redo"
                 app:layout_constraintTop_toTopOf="parent">
-
+                <ImageButton
+                    android:id="@+id/pen_medium"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/button_background_rounded"
+                    android:contentDescription="medium_pen_button_description"
+                    android:src="@drawable/ic_eraser"
+                    />
                 <ImageButton
                     android:id="@+id/pen_small"
                     android:layout_width="40dp"
@@ -88,15 +70,7 @@
                     android:src="@drawable/ic_small_pen"
                     />
 
-                <ImageButton
-                    android:id="@+id/pen_medium"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_margin="4dp"
-                    android:background="@drawable/button_background_rounded"
-                    android:contentDescription="medium_pen_button_description"
-                    android:src="@drawable/ic_pin_24"
-                    />
+
 
                 <ImageButton
                     android:id="@+id/pen_large"
@@ -107,7 +81,24 @@
                     android:contentDescription="large_pen_button_description"
                     android:src="@drawable/ic_large_pen"
                     />
-
+                <ImageButton
+                    android:id="@+id/sprayPaintBtn"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/button_background_rounded"
+                    android:contentDescription="spray_paint_button_description"
+                    android:src="@drawable/ic_spray"
+                    />
+                <ImageButton
+                    android:id="@+id/rectangleBtn"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/button_background_rounded"
+                    android:contentDescription="spray_paint_button_description"
+                    android:src="@drawable/ic_spray"
+                    />
             </LinearLayout>
 
             <!-- Color options -->

@@ -2,6 +2,7 @@ package com.example.keyboardai;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,12 +27,13 @@ import java.util.Locale;
 public class DrawingActivity extends AppCompatActivity {
     private RelativeLayout saveDiscardDialog;
     private DrawingView drawingView;
-    private ImageButton blackBtn, redBtn, blueBtn, smallPen, mediumPen, largePen;
+    private ImageButton blackBtn, redBtn, blueBtn, smallPen, mediumPen, largePen,sprayPaintBtn,rectangleBtn;
     private TextView button_save,dialog_discard_btn,dialog_cancel_btn,dialog_save_btn;
+
     private SeekBar strokeWidthSeekBar;
     private NoteRepository noteRepository;
     private long currentNoteId = -1;
-    private boolean isDirty = false; // Flag to track unsaved changes
+    private boolean isDirty = false,isSpray=false,isRectangle = false; // Flag to track unsaved changes
 
 
     @Override
@@ -76,11 +78,14 @@ public class DrawingActivity extends AppCompatActivity {
         drawingView = findViewById(R.id.drawing_view);
         button_save = findViewById(R.id.button_save);
         saveDiscardDialog= findViewById(R.id.save_discard_dialog);
+        sprayPaintBtn = findViewById(R.id.sprayPaintBtn);
         strokeWidthSeekBar = findViewById(R.id.stroke_width_seek_bar);
         noteRepository = new NoteRepository(this);
         dialog_discard_btn = findViewById(R.id.dialog_discard_btn);
         dialog_cancel_btn = findViewById(R.id.dialog_cancel_btn);
         dialog_save_btn = findViewById(R.id.dialog_save_btn);
+        rectangleBtn = findViewById(R.id.rectangleBtn); // Initialize the new rectangle button
+
         // Add a listener to the drawing view to detect changes
         drawingView.setOnDrawListener(new DrawingView.OnDrawListener() {
 
@@ -89,6 +94,7 @@ public class DrawingActivity extends AppCompatActivity {
                 isDirty = true;
             }
         });
+
     }
 
     private void saveOrUpdateDrawing() {
@@ -142,8 +148,22 @@ public class DrawingActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());
     }
-
+    private void resetToolButtons() {
+        sprayPaintBtn.getBackground().clearColorFilter();
+        rectangleBtn.getBackground().clearColorFilter();
+        //eraserBtn.getBackground().clearColorFilter();
+    }
     public void listeners(){
+        rectangleBtn.setOnClickListener(v -> {
+            isRectangle = !isRectangle;
+            resetToolButtons(); // Reset all buttons first
+            if (isRectangle) {
+                rectangleBtn.getBackground().setColorFilter(Color.parseColor("#CCCCCC"), PorterDuff.Mode.SRC_ATOP);
+                drawingView.setRectangleMode(true);
+            } else {
+                drawingView.setRectangleMode(false);
+            }
+        });
         dialog_discard_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -167,6 +187,23 @@ public class DrawingActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 saveOrUpdateDrawing();
+            }
+        });
+        sprayPaintBtn.setOnClickListener(v -> {
+
+            isSpray = !isSpray;
+            if(isSpray){
+                drawingView.setStrokeWidth(20f); // Default spray paint size
+                drawingView.setErasing(false);
+                sprayPaintBtn.getBackground().setColorFilter(Color.parseColor("#CCCCCC"), PorterDuff.Mode.SRC_ATOP);
+
+                drawingView.setSprayPaint(true); // Turn on spray paint mode
+            }
+            else{
+                sprayPaintBtn.getBackground().clearColorFilter();
+                drawingView.setStrokeWidth(20f); // Default spray paint size
+                drawingView.setErasing(false);
+                drawingView.setSprayPaint(false); // Turn on spray paint mode
             }
         });
         strokeWidthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {

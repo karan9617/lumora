@@ -131,7 +131,6 @@ public class Notepad extends AppCompatActivity {
                 // Assign the bitmap to your ImageView and make it visible
                 imagesketch.setImageBitmap(savedBitmap);
                 imagesketch.setVisibility(View.VISIBLE);
-                Toast.makeText(getApplicationContext(),"image assigned",Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -354,8 +353,6 @@ public class Notepad extends AppCompatActivity {
                     // Ensure the view has valid dimensions before loading the data
                     if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
                         drawingView.setDrawingData(drawingData);
-                        Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
-
                         // Remove the listener to avoid repeated calls
                         drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                     }

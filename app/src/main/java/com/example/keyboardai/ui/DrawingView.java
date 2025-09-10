@@ -9,15 +9,15 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 
 import androidx.annotation.Nullable;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Random;
 
 public class DrawingView extends View {
 
@@ -30,8 +30,16 @@ public class DrawingView extends View {
     private float mX, mY;
     private OnDrawListener mListener;
     private boolean isErasing = false;
+    private boolean isSprayPaint = false;
+    private boolean isRectangleMode = false; // New variable for rectangle mode
     private float defaultStrokeWidth = 10;
     private int currentColor = Color.BLACK;
+
+    private Random random = new Random();
+
+    // Variables for drawing shapes
+    private float startX, startY, endX, endY;
+    private Rect currentRect;
 
     public DrawingView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -98,14 +106,13 @@ public class DrawingView extends View {
             canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
         }
 
-        // Draw the live path with appropriate visual feedback
-        if (!mPath.isEmpty()) {
+        // Draw the live path if it's not a shape or spray paint
+        if (!isSprayPaint && !isRectangleMode && !mPath.isEmpty()) {
             if (isErasing) {
-                // Use a temporary paint for visual feedback while erasing
                 Paint eraserVisualPaint = new Paint();
                 eraserVisualPaint.setAntiAlias(true);
                 eraserVisualPaint.setDither(true);
-                eraserVisualPaint.setColor(Color.argb(100, 255, 255, 255)); // Semi-transparent white
+                eraserVisualPaint.setColor(Color.argb(100, 255, 255, 255));
                 eraserVisualPaint.setStyle(Paint.Style.STROKE);
                 eraserVisualPaint.setStrokeJoin(Paint.Join.ROUND);
                 eraserVisualPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -115,29 +122,67 @@ public class DrawingView extends View {
                 canvas.drawPath(mPath, mPaint);
             }
         }
+
+        // Draw the live rectangle if in rectangle mode
+        if (isRectangleMode && currentRect != null) {
+            canvas.drawRect(currentRect, mPaint);
+        }
     }
 
     private void touch_start(float x, float y) {
-        mPath.reset();
-        mPath.moveTo(x, y);
+        if (isRectangleMode) {
+            startX = x;
+            startY = y;
+            currentRect = new Rect();
+        } else if (!isSprayPaint) {
+            mPath.reset();
+            mPath.moveTo(x, y);
+        }
         mX = x;
         mY = y;
     }
 
     private void touch_move(float x, float y) {
-        float dx = Math.abs(x - mX);
-        float dy = Math.abs(y - mY);
-        if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
-            mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
-            mX = x;
-            mY = y;
+        if (isRectangleMode) {
+            endX = x;
+            endY = y;
+            // Update the live rectangle
+            currentRect.set((int) Math.min(startX, endX), (int) Math.min(startY, endY), (int) Math.max(startX, endX), (int) Math.max(startY, endY));
+        } else if (isSprayPaint) {
+            mPaint.setStyle(Paint.Style.FILL);
+            int sprayDensity = 5;
+            float sprayRadius = defaultStrokeWidth * 1.5f;
+            for (int i = 0; i < sprayDensity; i++) {
+                double angle = random.nextDouble() * 2 * Math.PI;
+                double distance = random.nextDouble() * sprayRadius;
+                float dx = (float) (distance * Math.cos(angle));
+                float dy = (float) (distance * Math.sin(angle));
+                mCanvas.drawCircle(x + dx, y + dy, defaultStrokeWidth / 4, mPaint);
+            }
+        } else {
+            float dx = Math.abs(x - mX);
+            float dy = Math.abs(y - mY);
+            if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
+                mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
+                mX = x;
+                mY = y;
+            }
         }
     }
 
     private void touch_up() {
-        mPath.lineTo(mX, mY);
-        mCanvas.drawPath(mPath, mPaint);
-        mPath.reset();
+        if (isRectangleMode) {
+            // Draw the final rectangle onto the canvas bitmap
+            if (currentRect != null) {
+                mCanvas.drawRect(currentRect, mPaint);
+                currentRect = null; // Clear the live rectangle
+            }
+        } else if (!isSprayPaint) {
+            mPath.lineTo(mX, mY);
+            mCanvas.drawPath(mPath, mPaint);
+            mPath.reset();
+        }
+
         if (mListener != null) {
             mListener.onDrawFinished();
         }
@@ -230,13 +275,50 @@ public class DrawingView extends View {
 
     public void setErasing(boolean erasing) {
         isErasing = erasing;
+        isSprayPaint = false;
+        isRectangleMode = false;
         if (isErasing) {
             mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
             mPaint.setStrokeWidth(defaultStrokeWidth + 10);
         } else {
             mPaint.setXfermode(null);
+            mPaint.setStyle(Paint.Style.STROKE);
             mPaint.setStrokeWidth(defaultStrokeWidth);
             mPaint.setColor(currentColor);
+        }
+    }
+
+    /**
+     * Sets the drawing mode to spray paint.
+     */
+    public void setSprayPaint(boolean sprayPaint) {
+        isSprayPaint = sprayPaint;
+        isErasing = false;
+        isRectangleMode = false; // Turn off rectangle mode
+        if (isSprayPaint) {
+            mPaint.setStyle(Paint.Style.FILL);
+            mPaint.setXfermode(null);
+        } else {
+            mPaint.setStyle(Paint.Style.STROKE);
+            mPaint.setXfermode(null);
+        }
+    }
+
+    /**
+     * Sets the drawing mode to rectangle.
+     */
+    public void setRectangleMode(boolean rectangleMode) {
+        this.isRectangleMode = rectangleMode;
+        isSprayPaint = false; // Turn off spray paint
+        isErasing = false; // Turn off erasing
+        if (isRectangleMode) {
+            // Set the paint style for drawing the rectangle outline
+            mPaint.setStyle(Paint.Style.STROKE);
+            mPaint.setXfermode(null);
+        } else {
+            // Restore default settings if needed
+            mPaint.setStyle(Paint.Style.STROKE);
+            mPaint.setXfermode(null);
         }
     }
 }
