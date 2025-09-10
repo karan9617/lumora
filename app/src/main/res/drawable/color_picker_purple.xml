@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- State when the color is selected -->
+    <item android:state_selected="true">
+        <shape android:shape="oval">
+            <solid android:color="#673AB7" />
+            <stroke android:width="4dp" android:color="#B0B0B0" />
+            <size android:width="32dp" android:height="32dp" />
+        </shape>
+    </item>
+    <!-- Default state -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#673AB7" />
+            <size android:width="32dp" android:height="32dp" />
+        </shape>
+    </item>
+</selector>

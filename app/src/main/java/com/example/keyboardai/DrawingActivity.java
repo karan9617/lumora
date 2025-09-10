@@ -27,7 +27,9 @@ import java.util.Locale;
 public class DrawingActivity extends AppCompatActivity {
     private RelativeLayout saveDiscardDialog;
     private DrawingView drawingView;
-    private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen,sprayPaintBtn,rectangleBtn;
+    private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen,sprayPaintBtn,rectangleBtn,
+            color_blue, color_green, color_yellow,color_orange ,color_purple,color_teal, color_pink, color_maroon,color_color1
+            ;
     private TextView button_save,dialog_discard_btn,dialog_cancel_btn,dialog_save_btn;
 
     private SeekBar strokeWidthSeekBar;
@@ -86,6 +88,15 @@ public class DrawingActivity extends AppCompatActivity {
         dialog_save_btn = findViewById(R.id.dialog_save_btn);
         rectangleBtn = findViewById(R.id.rectangleBtn); // Initialize the new rectangle button
 
+        color_blue = findViewById(R.id.color_blue);
+        color_green = findViewById(R.id.color_green);
+        color_teal = findViewById(R.id.color_teal);
+        color_orange = findViewById(R.id.color_orange);
+        color_maroon = findViewById(R.id.color_maroon);
+        color_color1 = findViewById(R.id.color_color1);
+        color_yellow = findViewById(R.id.color_yellow);
+        color_pink = findViewById(R.id.color_pink);
+        color_purple = findViewById(R.id.color_purple);
         // Add a listener to the drawing view to detect changes
         drawingView.setOnDrawListener(new DrawingView.OnDrawListener() {
 
@@ -264,6 +275,65 @@ public class DrawingActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 drawingView.setStrokeWidth(30f); // 30dp
+            }
+        });
+
+        setColorListener();
+    }
+    public void setColorListener(){
+        color_blue.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#B0B0B0"));
+            }
+        });
+        color_orange.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#FF9800"));
+            }
+        });
+        color_yellow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#FFEB3B"));
+            }
+        });
+        color_color1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#1AEA97"));
+            }
+        });
+        color_green.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#B0B0B0"));
+
+            }
+        });
+        color_teal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#00BCD4"));
+            }
+        });
+        color_pink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#DC2D87"));
+            }
+        });
+        color_maroon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#8A3535"));
+            }
+        });
+        color_purple.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setColor(Color.parseColor("#673AB7"));
             }
         });
     }
