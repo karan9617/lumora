@@ -52,7 +52,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
                 <ImageButton
-                    android:id="@+id/pen_medium"
+                    android:id="@+id/eraser"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_margin="4dp"
@@ -95,9 +95,9 @@
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_margin="4dp"
-                    android:background="@drawable/button_background_rounded"
+                    android:background="@drawable/ic_rectangle_vector"
                     android:contentDescription="spray_paint_button_description"
-                    android:src="@drawable/ic_spray"
+                    android:src="@drawable/ic_rectangle_vector"
                     />
             </LinearLayout>
 

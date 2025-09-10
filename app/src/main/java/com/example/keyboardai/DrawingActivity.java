@@ -27,7 +27,7 @@ import java.util.Locale;
 public class DrawingActivity extends AppCompatActivity {
     private RelativeLayout saveDiscardDialog;
     private DrawingView drawingView;
-    private ImageButton blackBtn, redBtn, blueBtn, smallPen, mediumPen, largePen,sprayPaintBtn,rectangleBtn;
+    private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen,sprayPaintBtn,rectangleBtn;
     private TextView button_save,dialog_discard_btn,dialog_cancel_btn,dialog_save_btn;
 
     private SeekBar strokeWidthSeekBar;
@@ -73,7 +73,7 @@ public class DrawingActivity extends AppCompatActivity {
         redBtn = findViewById(R.id.color_red);
         blueBtn = findViewById(R.id.color_blue);
         smallPen = findViewById(R.id.pen_small);
-        mediumPen = findViewById(R.id.pen_medium);
+        eraser = findViewById(R.id.eraser);
         largePen = findViewById(R.id.pen_large);
         drawingView = findViewById(R.id.drawing_view);
         button_save = findViewById(R.id.button_save);
@@ -187,6 +187,7 @@ public class DrawingActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 saveOrUpdateDrawing();
+                finish();
             }
         });
         sprayPaintBtn.setOnClickListener(v -> {
@@ -252,10 +253,10 @@ public class DrawingActivity extends AppCompatActivity {
             }
         });
 
-        mediumPen.setOnClickListener(new View.OnClickListener() {
+        eraser.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                drawingView.setStrokeWidth(20f); // 20dp
+                drawingView.setErasing(true);
             }
         });
 
