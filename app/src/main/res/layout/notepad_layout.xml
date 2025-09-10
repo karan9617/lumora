@@ -106,13 +106,6 @@
         android:layout_height="match_parent"
         android:background="@android:color/transparent"
         android:visibility="gone" />
-    <ProgressBar
-        android:id="@+id/listeningProgress"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone" />
 
     <LinearLayout
         android:id="@+id/button_bar"
@@ -137,18 +130,33 @@
             android:padding="17px"
             android:layout_marginEnd="8dp"
             android:text="Erase" />
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_voice_icon"
-            android:id="@+id/voiceicon" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_voice_icon"
+                android:id="@+id/voiceicon" />
+
+            <ProgressBar
+                android:id="@+id/listeningProgress"
+
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:indeterminateTint="@color/white" />
+        </FrameLayout>
 
         <ImageButton
             android:id="@+id/red_pen"
             android:visibility="gone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-
             android:background="@drawable/color_picker_red"
             android:contentDescription="red_color_button_description"
             android:src="@drawable/ic_large_pen"
@@ -175,5 +183,4 @@
             android:visibility="gone"
             android:text="Save" />
     </LinearLayout>
-
 </RelativeLayout>

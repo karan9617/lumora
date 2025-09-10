@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -39,6 +40,7 @@ import androidx.core.view.ViewCompat;
 
 import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.data.NoteRepository;
+import com.example.keyboardai.processor.WordProcessor;
 import com.example.keyboardai.ui.DrawingView;
 import com.google.android.material.appbar.MaterialToolbar;
 
@@ -251,7 +253,18 @@ public class Notepad extends AppCompatActivity {
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (matches != null && matches.size() > 0) {
                     String spokenText = matches.get(0);
-                    if (spokenText.equalsIgnoreCase("done")) {
+                    WordProcessor wordProcessor = new WordProcessor();
+                    wordProcessor.processWord(spokenText,resultBuilder);
+
+                    if (spokenText.equalsIgnoreCase("done") || spokenText.equalsIgnoreCase("stop")) {
+                        isListening = false;
+                        hintTextView.setVisibility(View.INVISIBLE);
+                        speechRecognizer.stopListening();
+                        listeningProgress.setVisibility(ProgressBar.GONE);
+                        return;
+                    }
+                    else if(spokenText.contains("save")) {
+                        saveNote();
                         isListening = false;
                         hintTextView.setVisibility(View.INVISIBLE);
                         speechRecognizer.stopListening();
@@ -259,7 +272,7 @@ public class Notepad extends AppCompatActivity {
                         return;
                     }
 
-                    resultBuilder.append(spokenText).append(" ");
+                    //resultBuilder.append(spokenText).append(" ");
                     resultText.setText(resultBuilder.toString());
                     isNoteModified = true;
                     if (isListening) {
@@ -288,6 +301,13 @@ public class Notepad extends AppCompatActivity {
         voiceicon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                MediaPlayer mp = MediaPlayer.create(Notepad.this, R.raw.googleassistant);
+                if (mp != null) {
+                    mp.start();
+                    mp.setOnCompletionListener(mediaPlayer -> {
+                        mediaPlayer.release();
+                    });
+                }
                 if (!isListening) {
                     isListening = true;
                     hintTextView.setVisibility(View.VISIBLE);
@@ -295,6 +315,7 @@ public class Notepad extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "Listening...", Toast.LENGTH_SHORT).show();
                 } else {
                     isListening = false;
+                    hintTextView.setVisibility(View.INVISIBLE);
                     speechRecognizer.stopListening();
                     listeningProgress.setVisibility(ProgressBar.GONE);
                     Toast.makeText(getApplicationContext(), "Stopped listening", Toast.LENGTH_SHORT).show();
