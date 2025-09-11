@@ -19,6 +19,7 @@ import com.example.keyboardai.Models.Label;
 import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.NotesListActivity;
 import com.example.keyboardai.R;
+import com.example.keyboardai.data.FileUtils;
 import com.example.keyboardai.data.NoteRepository;
 
 import androidx.annotation.NonNull;
@@ -77,7 +78,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         holder.noteDate.setText(note.getDate());
 
         // Check if the note has a drawing and set its visibility
-        byte[] drawingData = note.getDrawingData();
+        byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
         if (drawingData != null && drawingData.length > 0) {
             try {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);

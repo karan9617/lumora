@@ -4,19 +4,26 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import com.example.keyboardai.Models.Label;
 import com.example.keyboardai.Models.Note;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NoteRepository {
 
     private final NotesDbHelper dbHelper;
+    private final Context context;
 
     public NoteRepository(Context context) {
+        this.context = context;
         dbHelper = new NotesDbHelper(context);
     }
 
@@ -28,7 +35,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
         values.put(NotesDbHelper.COLUMN_DATE, note.getDate());
         values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
-        values.put(NotesDbHelper.COLUMN_DRAWING_DATA, note.getDrawingData());
+        values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
         values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
         //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
@@ -58,7 +65,7 @@ public class NoteRepository {
                 note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
                 note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
                 note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
-                note.setDrawingData(cursor.getBlob(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DRAWING_DATA)));
+                note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
              //   note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
@@ -91,7 +98,7 @@ public class NoteRepository {
                 note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
                 note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
                 note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
-                note.setDrawingData(cursor.getBlob(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DRAWING_DATA)));
+                note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
                 // The font properties are commented out, assuming they are not in the database yet.
@@ -122,7 +129,7 @@ public class NoteRepository {
             note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
             note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
             note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
-            note.setDrawingData(cursor.getBlob(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DRAWING_DATA)));
+            note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
             note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
             note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
           //  note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
@@ -140,7 +147,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_TITLE, note.getTitle());
         values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
         values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
-        values.put(NotesDbHelper.COLUMN_DRAWING_DATA, note.getDrawingData());
+        values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
       //  values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
       //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
       //  values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
@@ -256,5 +263,61 @@ public class NoteRepository {
         cursor.close();
         db.close();
         return labels;
+    }
+
+    /**
+     * Saves a bitmap to the app's internal storage and returns the file path.
+     * @param bitmap The bitmap to save.
+     * @param filename The desired filename (e.g., "my_image.png").
+     * @return The absolute path to the saved image file, or null if saving fails.
+     */
+    public String saveImageToInternalStorage(Bitmap bitmap, String filename) {
+        try {
+            File directory = context.getDir("images", Context.MODE_PRIVATE);
+            File imageFile = new File(directory, filename);
+            FileOutputStream fos = new FileOutputStream(imageFile);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            fos.close();
+            return imageFile.getAbsolutePath();
+        } catch (IOException e) {
+            Log.e("NoteRepository", "Error saving image", e);
+            return null;
+        }
+    }
+    public static boolean saveBytesToFile(byte[] data, String filePath) {
+        if (data == null || data.length == 0 || filePath == null || filePath.isEmpty()) {
+            return false;
+        }
+
+        File file = new File(filePath);
+
+        // Ensure the parent directories exist
+        File parentDir = file.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(data);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    /**
+     * Loads a bitmap from a file path in the app's internal storage.
+     * @param imagePath The absolute path to the image file.
+     * @return The loaded Bitmap, or null if loading fails.
+     */
+    public Bitmap loadImageFromInternalStorage(String imagePath) {
+        if (imagePath == null) {
+            return null;
+        }
+        File imageFile = new File(imagePath);
+        if (imageFile.exists()) {
+            return BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+        }
+        return null;
     }
 }

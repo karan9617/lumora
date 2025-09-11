@@ -39,11 +39,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
 
 import com.example.keyboardai.Models.Note;
+import com.example.keyboardai.data.FileUtils;
 import com.example.keyboardai.data.NoteRepository;
 import com.example.keyboardai.processor.WordProcessor;
 import com.example.keyboardai.ui.DrawingView;
 import com.google.android.material.appbar.MaterialToolbar;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -81,6 +83,7 @@ public class Notepad extends AppCompatActivity {
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
+    private String imagePath;
     private boolean isDrawingMode = false;
     private RelativeLayout mainContentLayout;
     private int selectedColor = Color.WHITE;
@@ -117,7 +120,8 @@ public class Notepad extends AppCompatActivity {
         String noteContent = getIntent().getStringExtra("note_content");
         noteDate = getIntent().getStringExtra("note_date");
         selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
-        drawingData = DrawingActivity.DrawingDataManager.getDrawingData();
+        imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
+        drawingData = FileUtils.loadFileFromPath(getIntent().getStringExtra("note_image_path"));
         DrawingActivity.DrawingDataManager.clearDrawingData();
         // NEW: Retrieve the pinned status from the intent
         isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
@@ -126,7 +130,7 @@ public class Notepad extends AppCompatActivity {
 
         // setting the imagesketch from the database
         if(drawingData != null && drawingData.length > 0){
-            Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+            Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
             Toast.makeText(getApplicationContext(),"rendering image",Toast.LENGTH_SHORT).show();
             // Check if the bitmap was successfully created
             if (savedBitmap != null) {
@@ -367,7 +371,7 @@ public class Notepad extends AppCompatActivity {
         });
     }
     private void drawOnDrawingView(){
-        if (drawingData != null && drawingData.length > 0) {
+        if (imagePath != null && imagePath.length() > 0) {
             // Use a ViewTreeObserver to wait until the view is laid out
             // and its dimensions are available before loading the bitmap.
             drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -517,18 +521,27 @@ public class Notepad extends AppCompatActivity {
         builder.show();
     }
 
-    private void saveNote() {
+    public void saveNote() {
         String title = titleText.getText().toString().trim();
         String content = resultText.getText().toString().trim();
         byte[] drawingDataToSave = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
-
-        if (title.isEmpty() && content.isEmpty() && (drawingDataToSave == null || drawingDataToSave.length == 0)) {
+        byte[] drawingData = drawingView.getDrawingData();
+        if (title.isEmpty() && content.isEmpty() && (imagePath == null || imagePath.isEmpty())) {
             Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
             isNoteModified = false;
             supportFinishAfterTransition();
             return;
         }
+        String newimagePath = "";
+        if(drawingData != null && drawingData.length > 0){
+            Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+            if(drawingBitmap != null){
+                String filename = "drawing_" + System.currentTimeMillis() + ".png";
 
+                newimagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+
+            }
+        }
         int colorToSave = Color.WHITE;
         Drawable background = mainContentLayout.getBackground();
         if (background instanceof ColorDrawable) {
@@ -536,22 +549,33 @@ public class Notepad extends AppCompatActivity {
         }
 
         final int finalColorToSave = colorToSave;
-
+        final String imagepathfinal = newimagePath;
         Executors.newSingleThreadExecutor().execute(() -> {
             if (noteId != -1) {
-                Note existingNote = new Note(noteId, title, content, noteDate, drawingDataToSave, finalColorToSave, noteOrder, isPinned);
+                // Update existing note with the new imagePath
+                Note existingNote = new Note(noteId, title, content, getCurrentDate(), finalColorToSave, noteOrder, isPinned, imagepathfinal);
                 noteRepository.updateNote(existingNote);
-                runOnUiThread(() -> Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show();
+                    isNoteModified = false;
+                    supportFinishAfterTransition();
+                });
             } else {
-                Note newNote = new Note(title, content, noteDate, drawingDataToSave, finalColorToSave, 0, isPinned);
+                // Create a new note with the new imagePath
+                Note newNote = new Note(title, content, getCurrentDate(), finalColorToSave, 0, isPinned, imagepathfinal);
                 noteRepository.addNote(newNote);
-                runOnUiThread(() -> Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show();
+                    isNoteModified = false;
+                    supportFinishAfterTransition();
+                });
             }
         });
         this.drawingData = drawingDataToSave;
 
-        if (drawingDataToSave != null && drawingDataToSave.length > 0) {
+        if (drawingData != null && drawingData.length > 0) {
             Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
+            noteRepository.saveBytesToFile(drawingDataToSave,imagePath);
             if (savedBitmap != null) {
                 imagesketch.setImageBitmap(savedBitmap);
                 imagesketch.setVisibility(View.VISIBLE);
@@ -564,7 +588,10 @@ public class Notepad extends AppCompatActivity {
         isNoteModified = false;
         supportFinishAfterTransition();
     }
-
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        return sdf.format(new Date());
+    }
     /**
      * Replaces the deprecated AsyncTask with a modern Thread-based approach.
      * Generates text suggestions in the background using the Gemini API.

@@ -3,6 +3,7 @@ package com.example.keyboardai;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
@@ -75,24 +76,23 @@ public class DrawingActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent.hasExtra("note_id")) {
             currentNoteId = intent.getLongExtra("note_id", -1);
-            final byte[] drawingData = DrawingDataManager.getDrawingData(); // GET DATA FROM OUR MANAGER
-            if (drawingData != null && drawingData.length > 0) {
-                // Use a ViewTreeObserver to wait until the view is laid out
-                // and its dimensions are available before loading the bitmap.
-                drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        // Ensure the view has valid dimensions before loading the data
-                        if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
-                            drawingView.setDrawingData(drawingData);
-                            Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
-                            // Clear the data from the manager once it's used
-                            DrawingDataManager.clearDrawingData();
-                            // Remove the listener to avoid repeated calls
-                            drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        }
+            if (currentNoteId != -1) {
+                Note existingNote = noteRepository.getNoteById(currentNoteId);
+                if (existingNote != null && existingNote.getImagePath() != null) {
+                    final Bitmap loadedBitmap = noteRepository.loadImageFromInternalStorage(existingNote.getImagePath());
+                    if (loadedBitmap != null) {
+                        drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                            @Override
+                            public void onGlobalLayout() {
+                                if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
+                                    drawingView.setBackgroundImage(loadedBitmap);
+                                    Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
+                                    drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                                }
+                            }
+                        });
                     }
-                });
+                }
             }
         }
     }
@@ -137,35 +137,51 @@ public class DrawingActivity extends AppCompatActivity {
     }
 
     private void saveOrUpdateDrawing() {
+        // Get the drawing data as a byte array
         byte[] drawingData = drawingView.getDrawingData();
 
         if (drawingData != null && drawingData.length > 0) {
-            if (currentNoteId != -1) {
-                // We are updating an existing note
-                Note existingNote = new Note();
-                existingNote.setId(currentNoteId);
-                existingNote.setColor(Color.WHITE);
-                existingNote.setDrawingData(drawingData);
-                noteRepository.updateNote(existingNote);
-                Toast.makeText(this, "Drawing updated successfully!", Toast.LENGTH_SHORT).show();
-            } else {
-                // We are saving a new note
-                Note drawingNote = new Note();
-                drawingNote.setTitle("My Drawing");
-                drawingNote.setColor(Color.WHITE);
-                drawingNote.setDrawingData(drawingData);
-                drawingNote.setDate(getCurrentDate());
-                drawingNote.setPinned(false);
-                long newRowId = noteRepository.addNote(drawingNote);
-                if (newRowId != -1) {
-                    Toast.makeText(this, "Drawing saved successfully!", Toast.LENGTH_SHORT).show();
-                    Log.d("DrawingActivity", "Saved note with ID: " + newRowId);
+            // Convert the byte array to a Bitmap
+            Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+            if (drawingBitmap != null) {
+                // Generate a unique file name using a timestamp
+                String filename = "drawing_" + System.currentTimeMillis() + ".png";
+                // Save the bitmap to internal storage and get the file path
+                String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+
+                if (imagePath != null) {
+                    if (currentNoteId != -1) {
+                        // We are updating an existing note
+                        Note existingNote = noteRepository.getNoteById(currentNoteId);
+                        if (existingNote != null) {
+                            existingNote.setImagePath(imagePath);
+                            noteRepository.updateNote(existingNote);
+                            Toast.makeText(this, "Drawing updated successfully!", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        // We are saving a new note
+                        Note drawingNote = new Note();
+                        drawingNote.setTitle("My Drawing");
+                        drawingNote.setColor(Color.WHITE); // Default color
+                        drawingNote.setDate(getCurrentDate());
+                        drawingNote.setPinned(false);
+                        drawingNote.setImagePath(imagePath);
+                        long newRowId = noteRepository.addNote(drawingNote);
+                        if (newRowId != -1) {
+                            Toast.makeText(this, "Drawing saved successfully!", Toast.LENGTH_SHORT).show();
+                            Log.d("DrawingActivity", "Saved note with ID: " + newRowId);
+                        } else {
+                            Toast.makeText(this, "Failed to save drawing.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    isDirty = false; // Reset the dirty flag after saving
+                    finish(); // Close the activity after saving
                 } else {
-                    Toast.makeText(this, "Failed to save drawing.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Failed to save image file.", Toast.LENGTH_SHORT).show();
                 }
+            } else {
+                Toast.makeText(this, "Failed to convert drawing to image.", Toast.LENGTH_SHORT).show();
             }
-            isDirty = false; // Reset the dirty flag after saving
-            finish(); // Close the activity after saving
         } else {
             Toast.makeText(this, "No drawing to save.", Toast.LENGTH_SHORT).show();
         }

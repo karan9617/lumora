@@ -1,10 +1,6 @@
 package com.example.keyboardai.Models;
 
 import java.io.Serializable;
-
-// Note: The previous conversation assumed Room, but your database is SQLite.
-// This model is compatible with both as a simple POJO (Plain Old Java Object),
-// but Room annotations have been removed as they are not needed for your SQLite implementation.
 public class Note implements Serializable {
 
     // Unique identifier for the note in the database
@@ -12,45 +8,47 @@ public class Note implements Serializable {
     private String title;
     private String content;
     private String date;
-    private byte[] drawingData;
     private int color;
     // NEW FIELD: To store the display order of the note
     private int order;
     // NEW FIELD: To determine if the note is pinned
     private boolean isPinned;
+    // NEW FIELD: To store the file path of the saved image
+    private String imagePath;
 
     public Note(){}
 
     // Full constructor for loading notes from the database
-    public Note(long id, String title, String content, String date, byte[] drawingData, int color, int order, boolean isPinned) {
+    public Note(long id, String title, String content, String date, int color, int order, boolean isPinned, String imagePath) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.date = date;
-        this.drawingData = drawingData;
         this.color = color;
         this.order = order;
         this.isPinned = isPinned;
+        this.imagePath = imagePath;
     }
 
     // Constructor for creating a new note before insertion
-    public Note(String title, String content, String date, byte[] drawingData, int color, boolean isPinned) {
+    public Note(String title, String content, String date, int color, boolean isPinned, String imagePath) {
         this.title = title;
         this.content = content;
         this.date = date;
-        this.drawingData = drawingData;
         this.color = color;
         this.isPinned = isPinned;
+        this.imagePath = imagePath;
     }
-    public Note(String title, String content, String date, byte[] drawingData, int color, int order, boolean isPinned) {
+    public Note(String title, String content, String date, int color, int order, boolean isPinned, String imagePath) {
         this.title = title;
         this.content = content;
         this.date = date;
-        this.drawingData = drawingData;
         this.color = color;
         this.order = order;
         this.isPinned = isPinned;
+        this.imagePath = imagePath;
     }
+
     // --- Getters and Setters ---
 
     public long getId() {
@@ -85,13 +83,6 @@ public class Note implements Serializable {
         this.date = date;
     }
 
-    public byte[] getDrawingData() {
-        return drawingData;
-    }
-
-    public void setDrawingData(byte[] drawingData) {
-        this.drawingData = drawingData;
-    }
 
     public int getColor() {
         return color;
@@ -117,5 +108,14 @@ public class Note implements Serializable {
 
     public void setPinned(boolean pinned) {
         isPinned = pinned;
+    }
+
+    // NEW: Getter and setter for the 'imagePath' field
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 }

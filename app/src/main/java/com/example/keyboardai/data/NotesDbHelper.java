@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class NotesDbHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "notes.db";
-    private static final int DATABASE_VERSION = 3; // bump this whenever schema changes
+    private static final int DATABASE_VERSION = 4; // Bump this to trigger onUpgrade()
 
     public static final String TABLE_NOTES = "notes";
     public static final String COLUMN_ID = "id";
@@ -15,7 +15,7 @@ public class NotesDbHelper extends SQLiteOpenHelper {
     public static final String COLUMN_CONTENT = "content";
     public static final String COLUMN_DATE = "date";
     public static final String COLUMN_COLOR = "color";
-    public static final String COLUMN_DRAWING_DATA = "drawing_data";
+    public static final String COLUMN_IMAGE_PATH = "image_path"; // New column to store the file path
     public static final String COLUMN_ORDER = "note_order";
     public static final String COLUMN_PINNED = "pinned";
     public static final String COLUMN_FONT_FAMILY = "font_family";
@@ -39,7 +39,7 @@ public class NotesDbHelper extends SQLiteOpenHelper {
             + COLUMN_CONTENT + " TEXT,"
             + COLUMN_DATE + " TEXT,"
             + COLUMN_COLOR + " INTEGER,"
-            + COLUMN_DRAWING_DATA + " BLOB,"
+            + COLUMN_IMAGE_PATH + " TEXT," // Use TEXT for file path
             + COLUMN_ORDER + " INTEGER DEFAULT 0,"
             + COLUMN_PINNED + " INTEGER DEFAULT 0,"
             + COLUMN_FONT_FAMILY + " TEXT DEFAULT 'sans-serif',"
@@ -79,9 +79,20 @@ public class NotesDbHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + TABLE_NOTES + " ADD COLUMN " + COLUMN_FONT_FAMILY + " TEXT DEFAULT 'sans-serif';");
             db.execSQL("ALTER TABLE " + TABLE_NOTES + " ADD COLUMN " + COLUMN_FONT_SIZE + " REAL DEFAULT 16;");
             db.execSQL("ALTER TABLE " + TABLE_NOTES + " ADD COLUMN " + COLUMN_FONT_COLOR + " TEXT DEFAULT '#000000';");
-
             db.execSQL(CREATE_TABLE_LABELS);
             db.execSQL(CREATE_TABLE_NOTE_LABELS);
+        }
+        if (oldVersion < 4) {
+            // Add the new image_path column and drop the old drawing_data column
+            db.execSQL("ALTER TABLE " + TABLE_NOTES + " ADD COLUMN " + COLUMN_IMAGE_PATH + " TEXT;");
+            db.execSQL("CREATE TABLE temp_notes AS SELECT " +
+                    COLUMN_ID + ", " + COLUMN_TITLE + ", " + COLUMN_CONTENT + ", " +
+                    COLUMN_DATE + ", " + COLUMN_COLOR + ", " + COLUMN_IMAGE_PATH + ", " +
+                    COLUMN_ORDER + ", " + COLUMN_PINNED + ", " + COLUMN_FONT_FAMILY + ", " +
+                    COLUMN_FONT_SIZE + ", " + COLUMN_FONT_COLOR +
+                    " FROM " + TABLE_NOTES + ";");
+            db.execSQL("DROP TABLE " + TABLE_NOTES + ";");
+            db.execSQL("ALTER TABLE temp_notes RENAME TO " + TABLE_NOTES + ";");
         }
     }
 }

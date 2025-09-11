@@ -19,6 +19,7 @@ import com.example.keyboardai.Models.Label;
 import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.NotesListActivity;
 import com.example.keyboardai.R;
+import com.example.keyboardai.data.FileUtils;
 import com.example.keyboardai.data.NoteRepository;
 
 import androidx.annotation.NonNull;
@@ -27,6 +28,7 @@ import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
@@ -76,7 +78,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         holder.noteDate.setText(note.getDate());
 
         // Conditionally show/hide drawing and text content views
-        byte[] drawingData = note.getDrawingData();
+        byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
+
         if (drawingData != null && drawingData.length > 0) {
             try {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);

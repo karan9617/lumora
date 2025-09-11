@@ -243,7 +243,7 @@ public class NotesListActivity extends AppCompatActivity {
                 Intent intent;
                 if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
-                } else if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
+                } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
                 } else {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
@@ -253,10 +253,9 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_content", note.getContent());
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
+                intent.putExtra("note_image_path",note.getImagePath());
                 //intent.putExtra("drawing_data", note.getDrawingData());
-                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
-                    DrawingActivity.DrawingDataManager.setDrawingData(note.getDrawingData());
-                }
+
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
@@ -327,7 +326,7 @@ public class NotesListActivity extends AppCompatActivity {
                 Intent intent;
                 if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
-                } else if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
+                } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
                 } else {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
@@ -337,10 +336,9 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_content", note.getContent());
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
+                intent.putExtra("note_image_path",note.getImagePath());
                 //intent.putExtra("drawing_data", note.getDrawingData());
-                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
-                    DrawingActivity.DrawingDataManager.setDrawingData(note.getDrawingData());
-                }
+
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
