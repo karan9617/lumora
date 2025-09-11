@@ -136,40 +136,40 @@
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
 
-            <TextView
-                android:id="@+id/option_images"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:text="Images"
-                android:background="@drawable/rounded_background"
-                android:padding="12dp"
-                android:elevation="4dp"
-                android:textColor="@android:color/white"
-                android:textSize="16sp" />
+            <!--  <TextView
+                  android:id="@+id/option_images"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_marginBottom="16dp"
+                  android:text="Images"
+                  android:background="@drawable/rounded_background"
+                  android:padding="12dp"
+                  android:elevation="4dp"
+                  android:textColor="@android:color/white"
+                  android:textSize="16sp" />-->
 
-            <TextView
-                android:id="@+id/option_drawings"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:text="Draw"
-                android:background="@drawable/rounded_background"
-                android:padding="12dp"
-                android:elevation="4dp"
-                android:textColor="@android:color/white"
-                android:textSize="16sp" />
-            <TextView
-                android:id="@+id/option_excel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:text="Excel"
-                android:background="@drawable/rounded_background"
-                android:padding="12dp"
-                android:elevation="4dp"
-                android:textColor="@android:color/white"
-                android:textSize="16sp" />
+              <TextView
+                  android:id="@+id/option_drawings"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_marginBottom="16dp"
+                  android:text="Draw"
+                  android:background="@drawable/rounded_background"
+                  android:padding="12dp"
+                  android:elevation="4dp"
+                  android:textColor="@android:color/white"
+                  android:textSize="16sp" />
+              <!--<TextView
+                  android:id="@+id/option_excel"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:layout_marginBottom="16dp"
+                  android:text="Excel"
+                  android:background="@drawable/rounded_background"
+                  android:padding="12dp"
+                  android:elevation="4dp"
+                  android:textColor="@android:color/white"
+                  android:textSize="16sp" />-->
         </LinearLayout>
 
         <!-- Floating Add Note Button -->

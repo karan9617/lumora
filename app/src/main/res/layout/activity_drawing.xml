@@ -59,6 +59,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="medium_pen_button_description"
                     android:src="@drawable/ic_eraser"
+                    android:soundEffectsEnabled="true"
                     />
                 <ImageButton
                     android:id="@+id/pen_small"
@@ -68,6 +69,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="small_pen_button_description"
                     android:src="@drawable/ic_small_pen"
+                    android:soundEffectsEnabled="true"
                     />
 
 
@@ -80,6 +82,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="large_pen_button_description"
                     android:src="@drawable/ic_large_pen"
+                    android:soundEffectsEnabled="true"
                     />
                 <ImageButton
                     android:id="@+id/sprayPaintBtn"
@@ -89,6 +92,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="spray_paint_button_description"
                     android:src="@drawable/ic_spray"
+                    android:soundEffectsEnabled="true"
                     />
                 <ImageButton
                     android:id="@+id/rectangleBtn"
@@ -98,7 +102,17 @@
                     android:background="@drawable/ic_rectangle_vector"
                     android:contentDescription="spray_paint_button_description"
                     android:src="@drawable/ic_rectangle_vector"
+                    android:soundEffectsEnabled="true"
                     />
+                <!-- New button for uploading an image -->
+                <ImageButton
+                    android:id="@+id/uploadImageBtn"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/button_background_rounded"
+                    android:contentDescription="upload_image_button_description"
+                    android:src="@drawable/baseline_attach_file_24" />
             </LinearLayout>
 
             <!-- Color options -->
@@ -163,15 +177,14 @@
     <!-- New Sliding Color Picker Layout -->
     <androidx.cardview.widget.CardView
         android:id="@+id/color_slider_card"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:cardBackgroundColor="@android:color/white"
+        app:cardBackgroundColor="#E6DBDB"
         tools:ignore="RtlHardcoded">
 
         <HorizontalScrollView
@@ -179,6 +192,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="none"
+            android:layout_marginRight="20dp"
             android:padding="8dp">
 
             <LinearLayout
@@ -194,6 +208,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_grey"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="white_color_button_description" />
 
                 <ImageButton
@@ -202,6 +217,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_black"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="black_color_button_description" />
 
                 <ImageButton
@@ -210,6 +226,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_red"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="red_color_button_description" />
 
                 <ImageButton
@@ -218,6 +235,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_blue"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="blue_color_button_description" />
 
                 <ImageButton
@@ -226,6 +244,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_green"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="green_color_button_description" />
 
                 <ImageButton
@@ -234,6 +253,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_yellow"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="yellow_color_button_description" />
 
                 <ImageButton
@@ -242,6 +262,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_purple"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="purple_color_button_description" />
 
                 <ImageButton
@@ -250,6 +271,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_orange"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="orange_color_button_description" />
 
                 <ImageButton
@@ -258,6 +280,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_pink"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="pink_color_button_description" />
 
                 <ImageButton
@@ -266,6 +289,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_teal"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="teal_color_button_description" />
                 <ImageButton
                     android:id="@+id/color_maroon"
@@ -273,6 +297,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_maroon"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="teal_color_button_description" />
                 <ImageButton
                     android:id="@+id/color_color1"
@@ -280,6 +305,7 @@
                     android:layout_height="32dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/color_picker_color_one"
+                    android:soundEffectsEnabled="true"
                     android:contentDescription="teal_color_button_description" />
 
             </LinearLayout>

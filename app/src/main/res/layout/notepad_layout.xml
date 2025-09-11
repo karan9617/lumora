@@ -12,7 +12,9 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="#E1201D25"
-        android:theme="@style/Theme.AppCompat.Light.Dialog"
+        app:subtitleTextColor="@android:color/white"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+
         app:menu="@menu/notepad_menu" />
 
     <EditText
@@ -22,7 +24,7 @@
         android:layout_below="@id/toolbar"
         android:background="@android:color/transparent"
         android:hint="Title"
-        android:textColor="@color/black"
+        android:textColor="#706E6E"
         android:inputType="textCapSentences"
         android:paddingStart="16dp"
         android:paddingTop="16dp"
@@ -65,6 +67,7 @@
                         android:background="@drawable/note_background"
                         android:gravity="start|top"
                         android:padding="16dp"
+                        android:soundEffectsEnabled="true"
                         android:scrollbars="vertical"
                         android:hint="text notes..."
                         android:textColor="@color/black"
@@ -80,6 +83,7 @@
                         android:id="@+id/imagesketch"
                         android:layout_width="match_parent"
                         android:layout_height="300dp"
+                        android:soundEffectsEnabled="true"
                         android:visibility="invisible" />
 
                     <ImageButton
@@ -90,7 +94,7 @@
                         android:layout_marginTop="8dp"
                         android:layout_marginEnd="8dp"
                         android:background="@drawable/ic_close"
-
+                        android:soundEffectsEnabled="true"
                         android:backgroundTint="@color/white"
                         android:visibility="invisible"
                         android:src="@drawable/ic_close"
@@ -109,13 +113,15 @@
 
     <LinearLayout
         android:id="@+id/button_bar"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:background="@drawable/rounded_background"
         android:layout_marginLeft="10px"
+        android:layout_centerHorizontal="true"
         android:layout_marginRight="10px"
-        android:layout_marginBottom="5px"
+        android:layout_marginBottom="8px"
+        android:soundEffectsEnabled="true"
         android:gravity="center"
         android:orientation="horizontal"
         android:padding="8dp">
@@ -140,13 +146,14 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_voice_icon"
+                android:soundEffectsEnabled="true"
                 android:id="@+id/voiceicon" />
 
             <ProgressBar
                 android:id="@+id/listeningProgress"
 
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="center"
                 android:visibility="gone"
                 android:indeterminateTint="@color/white" />
@@ -160,6 +167,7 @@
             android:background="@drawable/color_picker_red"
             android:contentDescription="red_color_button_description"
             android:src="@drawable/ic_large_pen"
+            android:soundEffectsEnabled="true"
             android:padding="17px"
             android:layout_marginEnd="8dp"
             android:text="pen" />
@@ -170,6 +178,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/color_picker_black"
             android:contentDescription="red_color_button_description"
+            android:soundEffectsEnabled="true"
             android:src="@drawable/ic_large_pen"
             android:padding="17px"
             android:layout_marginEnd="8dp"
@@ -180,6 +189,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:soundEffectsEnabled="true"
             android:visibility="gone"
             android:text="Save" />
     </LinearLayout>

@@ -43,7 +43,7 @@ public class NotesListActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
     //  RelativeLayout mainLayout;
     private NotesAdapter notesAdapter;
-    TextView option_excel;
+    //TextView option_excel;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
     private NoteRepository noteRepository;
@@ -76,7 +76,7 @@ public class NotesListActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        option_excel = findViewById(R.id.option_excel);
+        //option_excel = findViewById(R.id.option_excel);
         searchView = findViewById(R.id.search_view);
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
@@ -87,7 +87,7 @@ public class NotesListActivity extends AppCompatActivity {
 
 
         optionsLayout = findViewById(R.id.options_layout);
-        TextView optionImage = findViewById(R.id.option_images);
+        //TextView optionImage = findViewById(R.id.option_images);
         TextView optionText = findViewById(R.id.option_text);
         TextView optionDrawing = findViewById(R.id.option_drawings);
 
@@ -150,18 +150,18 @@ public class NotesListActivity extends AppCompatActivity {
                 showOptions();
             }
         });
-        option_excel.setOnClickListener(new View.OnClickListener() {
+       /*  option_excel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(NotesListActivity.this, ExcelSheetActivity.class);
                 startActivity(i);
             }
         });
-        optionImage.setOnClickListener(v -> {
+       optionImage.setOnClickListener(v -> {
             Toast.makeText(this, "Opening Image Note", Toast.LENGTH_SHORT).show();
             // TODO: Start the activity for adding an image note here
             hideOptions();
-        });
+        });*/
 
         optionText.setOnClickListener(v -> {
             Toast.makeText(this, "Opening Text Note", Toast.LENGTH_SHORT).show();
@@ -253,7 +253,10 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_content", note.getContent());
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
-                intent.putExtra("drawing_data", note.getDrawingData());
+                //intent.putExtra("drawing_data", note.getDrawingData());
+                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
+                    DrawingActivity.DrawingDataManager.setDrawingData(note.getDrawingData());
+                }
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
@@ -322,7 +325,9 @@ public class NotesListActivity extends AppCompatActivity {
                     return;
                 }
                 Intent intent;
-                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
+                if (note.getContent() != null && !note.getContent().isEmpty()) {
+                    intent = new Intent(NotesListActivity.this, Notepad.class);
+                } else if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
                 } else {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
@@ -332,7 +337,10 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_content", note.getContent());
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
-                intent.putExtra("drawing_data", note.getDrawingData());
+                //intent.putExtra("drawing_data", note.getDrawingData());
+                if (note.getDrawingData() != null && note.getDrawingData().length > 0) {
+                    DrawingActivity.DrawingDataManager.setDrawingData(note.getDrawingData());
+                }
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);

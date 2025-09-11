@@ -47,6 +47,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -66,7 +67,7 @@ public class Notepad extends AppCompatActivity {
     private static final String TAG = "NotepadActivity";
 
     private SpeechRecognizer speechRecognizer;
-    private StringBuilder resultBuilder = new StringBuilder();
+    private StringBuilder resultBuilder = new StringBuilder(),titleBuilder = new StringBuilder();;
     private boolean isListening = false;
     private ProgressBar listeningProgress;
     private EditText resultText;
@@ -116,7 +117,8 @@ public class Notepad extends AppCompatActivity {
         String noteContent = getIntent().getStringExtra("note_content");
         noteDate = getIntent().getStringExtra("note_date");
         selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
-        drawingData = getIntent().getByteArrayExtra("drawing_data");
+        drawingData = DrawingActivity.DrawingDataManager.getDrawingData();
+        DrawingActivity.DrawingDataManager.clearDrawingData();
         // NEW: Retrieve the pinned status from the intent
         isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
         // NEW: Retrieve the note's order from the intent
@@ -139,6 +141,7 @@ public class Notepad extends AppCompatActivity {
             titleText.setText(noteTitle);
             resultText.setText(noteContent);
             resultBuilder.append(noteContent);
+            titleBuilder.append(noteTitle);
         } else {
             noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
             titleText.setHint("Untitled");
@@ -161,6 +164,7 @@ public class Notepad extends AppCompatActivity {
 
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
+
         toolbar.setOnMenuItemClickListener(this::onOptionsItemSelected);
 
         // NEW: Call the method to set the correct pin icon when the activity is created.
@@ -252,27 +256,34 @@ public class Notepad extends AppCompatActivity {
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (matches != null && matches.size() > 0) {
                     String spokenText = matches.get(0);
-                    WordProcessor wordProcessor = new WordProcessor();
-                    wordProcessor.processWord(spokenText,resultBuilder);
+                    if (titleText.hasFocus()) {
+                        titleBuilder.append(spokenText).append(" ");
+                        titleText.setText(titleBuilder.toString());
+                    } else {
+                        WordProcessor wordProcessor = new WordProcessor();
+                        wordProcessor.processWord(spokenText,resultBuilder);
 
-                    if (spokenText.equalsIgnoreCase("done") || spokenText.equalsIgnoreCase("stop")) {
-                        isListening = false;
-                        hintTextView.setVisibility(View.INVISIBLE);
-                        speechRecognizer.stopListening();
-                        listeningProgress.setVisibility(ProgressBar.GONE);
-                        return;
+                        if (spokenText.equalsIgnoreCase("done") || spokenText.equalsIgnoreCase("stop")) {
+                            isListening = false;
+                            hintTextView.setVisibility(View.INVISIBLE);
+                            speechRecognizer.stopListening();
+                            listeningProgress.setVisibility(ProgressBar.GONE);
+                            return;
+                        }
+                        else if(spokenText.contains("save")) {
+                            saveNote();
+                            isListening = false;
+                            hintTextView.setVisibility(View.INVISIBLE);
+                            speechRecognizer.stopListening();
+                            listeningProgress.setVisibility(ProgressBar.GONE);
+                            return;
+                        }
                     }
-                    else if(spokenText.contains("save")) {
-                        saveNote();
-                        isListening = false;
-                        hintTextView.setVisibility(View.INVISIBLE);
-                        speechRecognizer.stopListening();
-                        listeningProgress.setVisibility(ProgressBar.GONE);
-                        return;
-                    }
+
+
 
                     //resultBuilder.append(spokenText).append(" ");
-                    resultText.setText(resultBuilder.toString());
+                    //resultText.append(spokenText);
                     isNoteModified = true;
                     if (isListening) {
                         speechRecognizer.startListening(recognizerIntent);
@@ -282,9 +293,21 @@ public class Notepad extends AppCompatActivity {
             @Override
             public void onPartialResults(Bundle partialResults) {
                 ArrayList<String> partial = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                if (partial != null && partial.size() > 0) {
+                if (titleText.hasFocus()) {
+                    titleText.setText(titleBuilder.toString() + partial.get(0));
+                } else {
                     resultText.setText(resultBuilder.toString() + partial.get(0));
                 }
+                /*
+                String joinedText = "";
+
+                if (partial != null) {
+                    joinedText = String.join(" ", partial);
+                }
+
+                if (partial != null && partial.size() > 0) {
+                    resultText.setText(resultBuilder.toString() + joinedText);
+                }*/
             }
             @Override public void onEvent(int eventType, Bundle params) {}
         });
@@ -397,7 +420,9 @@ public class Notepad extends AppCompatActivity {
     public void onBackPressed() {
         if(isDirty){
             isDirty = !isDirty;
-            saveNote();
+            if(drawingData != null && drawingData.length > 0) {
+                saveNote();
+            }
             toggleMode();
         }
         else {
@@ -421,6 +446,7 @@ public class Notepad extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+
         if(id == R.id.action_draw){
             drawOnDrawingView();
             toggleMode();

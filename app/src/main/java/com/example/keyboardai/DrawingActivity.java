@@ -1,9 +1,13 @@
 package com.example.keyboardai;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -13,6 +17,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.keyboardai.Models.Note;
@@ -20,22 +25,43 @@ import com.example.keyboardai.R;
 import com.example.keyboardai.data.NoteRepository;
 import com.example.keyboardai.ui.DrawingView;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 public class DrawingActivity extends AppCompatActivity {
     private RelativeLayout saveDiscardDialog;
+    private static final int PICK_IMAGE_REQUEST = 1;
     private DrawingView drawingView;
-    private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen,sprayPaintBtn,rectangleBtn,
-            color_blue, color_green, color_yellow,color_orange ,color_purple,color_teal, color_pink, color_maroon,color_color1
-            ;
-    private TextView button_save,dialog_discard_btn,dialog_cancel_btn,dialog_save_btn;
+
+    private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen, sprayPaintBtn, rectangleBtn,
+            color_blue, color_green, color_yellow, color_orange, color_purple, color_teal, color_pink, color_maroon, color_color1,
+            uploadImageBtn,color_grey;
+    private TextView button_save, dialog_discard_btn, dialog_cancel_btn, dialog_save_btn;
 
     private SeekBar strokeWidthSeekBar;
     private NoteRepository noteRepository;
     private long currentNoteId = -1;
-    private boolean isDirty = false,isSpray=false,isRectangle = false; // Flag to track unsaved changes
+    private boolean isDirty = false, isSpray = false, isRectangle = false,isErasing = false; // Flag to track unsaved changes
+
+
+    // This static class will temporarily hold the drawing data to bypass the Intent size limit
+    public static class DrawingDataManager {
+        private static byte[] drawingData;
+
+        public static void setDrawingData(byte[] data) {
+            drawingData = data;
+        }
+
+        public static byte[] getDrawingData() {
+            return drawingData;
+        }
+
+        public static void clearDrawingData() {
+            drawingData = null;
+        }
+    }
 
 
     @Override
@@ -49,7 +75,7 @@ public class DrawingActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent.hasExtra("note_id")) {
             currentNoteId = intent.getLongExtra("note_id", -1);
-            final byte[] drawingData = intent.getByteArrayExtra("drawing_data");
+            final byte[] drawingData = DrawingDataManager.getDrawingData(); // GET DATA FROM OUR MANAGER
             if (drawingData != null && drawingData.length > 0) {
                 // Use a ViewTreeObserver to wait until the view is laid out
                 // and its dimensions are available before loading the bitmap.
@@ -60,7 +86,8 @@ public class DrawingActivity extends AppCompatActivity {
                         if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
                             drawingView.setDrawingData(drawingData);
                             Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
-
+                            // Clear the data from the manager once it's used
+                            DrawingDataManager.clearDrawingData();
                             // Remove the listener to avoid repeated calls
                             drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                         }
@@ -70,7 +97,7 @@ public class DrawingActivity extends AppCompatActivity {
         }
     }
 
-    public void init(){
+    public void init() {
         blackBtn = findViewById(R.id.color_black);
         redBtn = findViewById(R.id.color_red);
         blueBtn = findViewById(R.id.color_blue);
@@ -79,7 +106,7 @@ public class DrawingActivity extends AppCompatActivity {
         largePen = findViewById(R.id.pen_large);
         drawingView = findViewById(R.id.drawing_view);
         button_save = findViewById(R.id.button_save);
-        saveDiscardDialog= findViewById(R.id.save_discard_dialog);
+        saveDiscardDialog = findViewById(R.id.save_discard_dialog);
         sprayPaintBtn = findViewById(R.id.sprayPaintBtn);
         strokeWidthSeekBar = findViewById(R.id.stroke_width_seek_bar);
         noteRepository = new NoteRepository(this);
@@ -87,13 +114,14 @@ public class DrawingActivity extends AppCompatActivity {
         dialog_cancel_btn = findViewById(R.id.dialog_cancel_btn);
         dialog_save_btn = findViewById(R.id.dialog_save_btn);
         rectangleBtn = findViewById(R.id.rectangleBtn); // Initialize the new rectangle button
-
+        uploadImageBtn = findViewById(R.id.uploadImageBtn);
         color_blue = findViewById(R.id.color_blue);
         color_green = findViewById(R.id.color_green);
         color_teal = findViewById(R.id.color_teal);
         color_orange = findViewById(R.id.color_orange);
         color_maroon = findViewById(R.id.color_maroon);
         color_color1 = findViewById(R.id.color_color1);
+        color_grey = findViewById(R.id.color_grey);
         color_yellow = findViewById(R.id.color_yellow);
         color_pink = findViewById(R.id.color_pink);
         color_purple = findViewById(R.id.color_purple);
@@ -142,6 +170,7 @@ public class DrawingActivity extends AppCompatActivity {
             Toast.makeText(this, "No drawing to save.", Toast.LENGTH_SHORT).show();
         }
     }
+
     @Override
     public void onBackPressed() {
         if (isDirty) {
@@ -152,6 +181,7 @@ public class DrawingActivity extends AppCompatActivity {
             super.onBackPressed();
         }
     }
+
     /**
      * Helper method to get the current date as a formatted string.
      */
@@ -159,12 +189,18 @@ public class DrawingActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());
     }
+
     private void resetToolButtons() {
         sprayPaintBtn.getBackground().clearColorFilter();
         rectangleBtn.getBackground().clearColorFilter();
-        //eraserBtn.getBackground().clearColorFilter();
     }
-    public void listeners(){
+
+    public void listeners() {
+        uploadImageBtn.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            startActivityForResult(intent, PICK_IMAGE_REQUEST);
+        });
+
         rectangleBtn.setOnClickListener(v -> {
             isRectangle = !isRectangle;
             resetToolButtons(); // Reset all buttons first
@@ -175,18 +211,21 @@ public class DrawingActivity extends AppCompatActivity {
                 drawingView.setRectangleMode(false);
             }
         });
+
         dialog_discard_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 finish();
             }
         });
+
         dialog_cancel_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 saveDiscardDialog.setVisibility(View.INVISIBLE);
             }
         });
+
         dialog_save_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -194,6 +233,7 @@ public class DrawingActivity extends AppCompatActivity {
                 finish();
             }
         });
+
         button_save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -201,23 +241,22 @@ public class DrawingActivity extends AppCompatActivity {
                 finish();
             }
         });
-        sprayPaintBtn.setOnClickListener(v -> {
 
+        sprayPaintBtn.setOnClickListener(v -> {
             isSpray = !isSpray;
-            if(isSpray){
+            if (isSpray) {
                 drawingView.setStrokeWidth(20f); // Default spray paint size
                 drawingView.setErasing(false);
                 sprayPaintBtn.getBackground().setColorFilter(Color.parseColor("#CCCCCC"), PorterDuff.Mode.SRC_ATOP);
-
                 drawingView.setSprayPaint(true); // Turn on spray paint mode
-            }
-            else{
+            } else {
                 sprayPaintBtn.getBackground().clearColorFilter();
                 drawingView.setStrokeWidth(20f); // Default spray paint size
                 drawingView.setErasing(false);
                 drawingView.setSprayPaint(false); // Turn on spray paint mode
             }
         });
+
         strokeWidthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -235,9 +274,11 @@ public class DrawingActivity extends AppCompatActivity {
                 // Optional: Code to execute when the user stops touching the slider
             }
         });
+
         blackBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.BLACK);
             }
         });
@@ -245,6 +286,7 @@ public class DrawingActivity extends AppCompatActivity {
         redBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.RED);
             }
         });
@@ -252,6 +294,7 @@ public class DrawingActivity extends AppCompatActivity {
         blueBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.BLUE);
             }
         });
@@ -260,6 +303,7 @@ public class DrawingActivity extends AppCompatActivity {
         smallPen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setStrokeWidth(10f); // 10dp
             }
         });
@@ -274,67 +318,109 @@ public class DrawingActivity extends AppCompatActivity {
         largePen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setStrokeWidth(30f); // 30dp
             }
         });
 
         setColorListener();
     }
-    public void setColorListener(){
+
+    public void setColorListener() {
         color_blue.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                drawingView.setColor(Color.parseColor("#B0B0B0"));
+                drawingView.setErasing(false);
+                drawingView.setColor(Color.parseColor("#FF0099CC"));
             }
         });
         color_orange.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.parseColor("#FF9800"));
             }
         });
         color_yellow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.parseColor("#FFEB3B"));
             }
         });
         color_color1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.parseColor("#1AEA97"));
             }
         });
         color_green.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                drawingView.setColor(Color.parseColor("#B0B0B0"));
+                drawingView.setErasing(false);
+                drawingView.setColor(Color.parseColor("#5BDC2D"));
 
             }
         });
         color_teal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.parseColor("#00BCD4"));
             }
         });
         color_pink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.parseColor("#DC2D87"));
             }
         });
         color_maroon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.parseColor("#8A3535"));
             }
         });
         color_purple.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawingView.setErasing(false);
                 drawingView.setColor(Color.parseColor("#673AB7"));
             }
         });
+        color_grey.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingView.setErasing(false);
+                drawingView.setColor(Color.parseColor("#AEB8AB"));
+            }
+        });
+    }
+
+    /**
+     * Handles the result of the Intent to pick an image from the gallery.
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Check if the request code and result are correct
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+            // Get the URI of the selected image
+            Uri imageUri = data.getData();
+            try {
+                // Get the bitmap from the URI
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                // Set the bitmap as the background in the DrawingView
+                drawingView.setBackgroundImage(bitmap);
+                Toast.makeText(this, "Image loaded successfully!", Toast.LENGTH_SHORT).show();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Failed to load image.", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

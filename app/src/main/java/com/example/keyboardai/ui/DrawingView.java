@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -40,6 +41,7 @@ public class DrawingView extends View {
     // Variables for drawing shapes
     private float startX, startY, endX, endY;
     private Rect currentRect;
+    private Bitmap backgroundImage;
 
     public DrawingView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -85,6 +87,9 @@ public class DrawingView extends View {
         if (w > 0 && h > 0) {
             mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             mCanvas = new Canvas(mBitmap);
+            if (backgroundImage != null) {
+                mCanvas.drawBitmap(backgroundImage, 0, 0, null);
+            }
         }
     }
 
@@ -105,6 +110,7 @@ public class DrawingView extends View {
         if (mBitmap != null) {
             canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
         }
+
 
         // Draw the live path if it's not a shape or spray paint
         if (!isSprayPaint && !isRectangleMode && !mPath.isEmpty()) {
@@ -230,6 +236,7 @@ public class DrawingView extends View {
     public void clearDrawing() {
         if (mBitmap != null) {
             mBitmap.eraseColor(Color.TRANSPARENT);
+            backgroundImage = null;
             invalidate();
         }
     }
@@ -287,7 +294,45 @@ public class DrawingView extends View {
             mPaint.setColor(currentColor);
         }
     }
+    public void setBackgroundImage(Bitmap image) {
+        this.backgroundImage = image;
 
+        // Make a new bitmap to combine the background image and existing drawing
+        Bitmap combinedBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas combinedCanvas = new Canvas(combinedBitmap);
+
+        // Calculate scaling and translation to fit the image without stretching
+        float imageWidth = image.getWidth();
+        float imageHeight = image.getHeight();
+        float viewWidth = getWidth();
+        float viewHeight = getHeight();
+
+        float scaleFactor = Math.min(viewWidth / imageWidth, viewHeight / imageHeight);
+
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleFactor, scaleFactor);
+
+        // Calculate centering offsets
+        float dx = (viewWidth - imageWidth * scaleFactor) / 2f;
+        float dy = (viewHeight - imageHeight * scaleFactor) / 2f;
+        matrix.postTranslate(dx, dy);
+
+        // First, draw the new background image
+        combinedCanvas.drawBitmap(image, matrix, null);
+
+        // Then, draw the existing drawing on top of it
+        if (mBitmap != null) {
+            combinedCanvas.drawBitmap(mBitmap, 0, 0, null);
+            // Recycle the old bitmap to free up memory
+            mBitmap.recycle();
+        }
+
+        // Set the new combined bitmap as the main drawing bitmap
+        mBitmap = combinedBitmap;
+        // The canvas also needs to be updated to point to the new bitmap
+        mCanvas = new Canvas(mBitmap);
+        invalidate();
+    }
     /**
      * Sets the drawing mode to spray paint.
      */

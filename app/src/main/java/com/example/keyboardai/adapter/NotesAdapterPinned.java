@@ -48,7 +48,11 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         void onNoteLongClick(Note note, View sharedView);
     }
 
-    public NotesAdapterPinned(Context context, List<Note> notes, OnNoteClickListener listener, OnNoteLongClickListener longClickListener, ItemTouchHelper itemTouchHelper) {
+    public NotesAdapterPinned(Context context,
+                              List<Note> notes,
+                              OnNoteClickListener listener,
+                              OnNoteLongClickListener longClickListener,
+                              ItemTouchHelper itemTouchHelper) {
         this.context = context;
         this.notes = notes;
         this.listener = listener;
@@ -69,16 +73,30 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         Note note = notes.get(position);
 
         holder.noteTitle.setText(note.getTitle());
-        holder.noteContent.setText(note.getContent());
+        //holder.noteContent.setText(note.getContent());
         holder.noteDate.setText(note.getDate());
 
         // Check if the note has a drawing and set its visibility
         byte[] drawingData = note.getDrawingData();
         if (drawingData != null && drawingData.length > 0) {
-            Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-            holder.noteDrawing.setImageBitmap(drawingBitmap);
-            holder.noteDrawing.setVisibility(View.VISIBLE);
+            try {
+                Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+                if (drawingBitmap != null) {
+                    holder.noteDrawing.setImageBitmap(drawingBitmap);
+                    holder.noteDrawing.setVisibility(View.VISIBLE);
+                    holder.noteContent.setVisibility(View.GONE);
+                } else {
+                    holder.noteDrawing.setVisibility(View.GONE);
+                    holder.noteContent.setVisibility(View.GONE);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                holder.noteDrawing.setVisibility(View.GONE);
+                holder.noteContent.setVisibility(View.GONE);
+            }
         } else {
+            holder.noteContent.setText(note.getContent());
+            holder.noteContent.setVisibility(View.VISIBLE);
             holder.noteDrawing.setVisibility(View.GONE);
         }
 
@@ -119,7 +137,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                 listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
-
+/*
         // Add the color animation on long press
         holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
@@ -207,7 +225,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                     holder.labelsContainer.addView(labelView);
                 }
             });
-        }).start();
+        }).start();*/
     }
 
     @Override
