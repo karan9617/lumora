@@ -32,6 +32,8 @@ public class MainActivity extends ComponentActivity {
 
         listener();
         noteRepository = new NoteRepository(this);
+        Intent intent = new Intent(MainActivity.this, OnboardingActivity.class);
+        startActivity(intent);
         /*
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean isFirstRun = settings.getBoolean(PREF_FIRST_RUN, true);
