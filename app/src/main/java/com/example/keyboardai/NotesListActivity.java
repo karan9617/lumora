@@ -20,6 +20,8 @@ import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.adapter.NotesAdapter;
 import com.example.keyboardai.adapter.NotesAdapterPinned;
 import com.example.keyboardai.data.NoteRepository;
+import com.example.keyboardai.operationactivity.Feedback;
+import com.example.keyboardai.operationactivity.PoliciesActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
@@ -100,7 +102,23 @@ public class NotesListActivity extends AppCompatActivity {
 
         // Handle navigation item clicks
         navigationView.setNavigationItemSelectedListener(item -> {
-            drawerLayout.closeDrawer(GravityCompat.START);
+            int id = item.getItemId();
+
+            if (id == R.id.nav_home) {
+                Intent homeIntent = new Intent(NotesListActivity.this, NotesListActivity.class);
+                startActivity(homeIntent);
+            }  else if (id == R.id.nav_instructions) {
+                Toast.makeText(this, "Instructions clicked", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_trash) {
+                Toast.makeText(this, "Trash clicked", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_policies) {
+                startActivity(new Intent(this, PoliciesActivity.class));
+            } else if (id == R.id.nav_feedback) {
+                startActivity(new Intent(this, Feedback.class));
+            }
+
+            // Close drawer after selection
+            drawerLayout.closeDrawers();
             return true;
         });
 
@@ -370,6 +388,7 @@ public class NotesListActivity extends AppCompatActivity {
                 return false;
             }
         });
+
     }
 
     private void hideOptions(final Animation animation) {

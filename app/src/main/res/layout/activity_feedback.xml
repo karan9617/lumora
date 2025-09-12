@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layout_gravity="center"
+    android:padding="16dp"
+    android:background="#281C2B">
+
+    <TextView
+        android:id="@+id/textViewTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Feedback Form"
+        android:fontFamily="sans-serif"
+        android:textSize="20sp"
+        android:textColor="#BCAFAF"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:paddingBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/editTextName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Your Name"
+        android:textColorHint="#333232"
+        android:fontFamily="sans-serif"
+        android:inputType="textPersonName"
+        android:padding="12dp"/>
+
+    <EditText
+        android:id="@+id/editTextEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Your Email"
+        android:textColorHint="#333232"
+        android:textColor="#B6B5B5"
+        android:inputType="textEmailAddress"
+        android:fontFamily="sans-serif"
+        android:padding="12dp"
+        android:layout_marginTop="8dp"/>
+
+    <EditText
+        android:id="@+id/editTextFeedback"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:gravity="top"
+        android:textColorHint="#333232"
+        android:hint="Please enter your feedback. We would love to help :)"
+        android:inputType="textMultiLine"
+        android:padding="12dp"
+        android:layout_marginTop="8dp"/>
+
+    <Button
+        android:id="@+id/buttonSubmit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Submit"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#2196F3"
+        android:textColor="@android:color/white"/>
+
+</LinearLayout>

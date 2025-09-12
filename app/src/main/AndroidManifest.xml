@@ -51,6 +51,21 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".operationactivity.Feedback"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".operationactivity.PoliciesActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".operationactivity.InstructionsActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
     </application>
 
 </manifest>
