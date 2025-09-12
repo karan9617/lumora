@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="#C5C5C5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="9dp"
+        android:background="@drawable/button_background_rounded"
+        >
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/textViewTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Instructions"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_gravity="center_horizontal"
+            android:paddingBottom="16dp"/>
+
+        <!-- Notes -->
+        <TextView
+            android:id="@+id/textViewNotesMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Notes AI provides various functionalities to make the notes making experience smoother for the users."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+        <TextView
+            android:id="@+id/textViewNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Taking Notes:\n- Create text notes easily.\n- Organize your thoughts efficiently."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Voice Notes -->
+        <TextView
+            android:id="@+id/textViewVoiceNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Voice Notes:\n- Record voice notes directly from the app.\n- Convenient for capturing ideas quickly."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Pin Notes -->
+        <TextView
+            android:id="@+id/textViewPinNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. Pin Notes:\n- Pin important notes at the top.\n- Quickly access high-priority notes."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Sort Notes -->
+        <TextView
+            android:id="@+id/textViewSortNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="4. Sort Notes:\n- Sort notes by date, title, or priority.\n- Keep your notes organized."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- AI Completion -->
+        <TextView
+            android:id="@+id/textViewAICompletion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="5. AI Completion:\n- Use AI to auto-complete your notes.\n- Generate ideas or summaries efficiently."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Drawing -->
+        <TextView
+            android:id="@+id/textViewDrawing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="6. Drawing:\n- Sketch and draw directly within your notes.\n- Add visual elements to your notes."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Sketching -->
+        <TextView
+            android:id="@+id/textViewSketching"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="7. Sketching:\n- Create more detailed sketches or diagrams.\n- Perfect for brainstorming or visual notes."
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
+
+    </LinearLayout>
+</ScrollView>

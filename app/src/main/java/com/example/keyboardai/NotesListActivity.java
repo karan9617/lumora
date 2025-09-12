@@ -21,7 +21,10 @@ import com.example.keyboardai.adapter.NotesAdapter;
 import com.example.keyboardai.adapter.NotesAdapterPinned;
 import com.example.keyboardai.data.NoteRepository;
 import com.example.keyboardai.operationactivity.Feedback;
+import com.example.keyboardai.operationactivity.InstructionsActivity;
 import com.example.keyboardai.operationactivity.PoliciesActivity;
+import com.example.keyboardai.operationactivity.TrashActivity;
+import com.example.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
@@ -48,19 +51,22 @@ public class NotesListActivity extends AppCompatActivity {
     //TextView option_excel;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
+    public static List<Note> trashList = new ArrayList<>();
+    ;
     Toolbar toolbar;
     private NoteRepository noteRepository;
     FloatingActionButton fabAddNote;
     private DrawerLayout drawerLayout;
     ItemTouchHelper itemTouchHelper,itemTouchHelperPinned;
     private SearchView searchView;
-    private List<Note> allNotes, pinnedNotes; // To hold the full, unfiltered list of notes
+    static public List<Note> allNotes, pinnedNotes; // To hold the full, unfiltered list of notes
 
     // Contextual Action Bar variables
     private ActionMode actionMode;
     private Note selectedNote;
 
     private LinearLayout optionsLayout;
+    NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +78,7 @@ public class NotesListActivity extends AppCompatActivity {
 
         // Initialize the repository
         noteRepository = new NoteRepository(this);
-
+        notesRepositoryTrash = new NotesRepositoryTrash(this);
         // Initialize the views
         drawerLayout = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
@@ -108,9 +114,10 @@ public class NotesListActivity extends AppCompatActivity {
                 Intent homeIntent = new Intent(NotesListActivity.this, NotesListActivity.class);
                 startActivity(homeIntent);
             }  else if (id == R.id.nav_instructions) {
+                startActivity(new Intent(this, InstructionsActivity.class));
                 Toast.makeText(this, "Instructions clicked", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_trash) {
-                Toast.makeText(this, "Trash clicked", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, TrashActivity.class));
             } else if (id == R.id.nav_policies) {
                 startActivity(new Intent(this, PoliciesActivity.class));
             } else if (id == R.id.nav_feedback) {
@@ -558,8 +565,10 @@ public class NotesListActivity extends AppCompatActivity {
                     final int position = notesList.indexOf(selectedNote);
                     if (position != -1) {
                         runOnUiThread(() -> {
-                            notesList.remove(position);
+                            Note removedNote = notesList.remove(position);
+                            notesRepositoryTrash.addNote(removedNote);
                             allNotes.remove(selectedNote); // Keep the main list in sync
+
                             notesAdapter.notifyItemRemoved(position);
                             Toast.makeText(NotesListActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
                             mode.finish();

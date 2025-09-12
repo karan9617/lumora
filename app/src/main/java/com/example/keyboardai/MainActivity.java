@@ -15,6 +15,7 @@ import android.widget.TextView;
 import androidx.activity.ComponentActivity;
 
 import com.example.keyboardai.data.NoteRepository;
+import com.example.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
 
 import java.util.ArrayList;
 
@@ -24,6 +25,7 @@ public class MainActivity extends ComponentActivity {
     private static final String PREFS_NAME = "MyPrefsFile";
     private static final String PREF_FIRST_RUN = "isFirstRun";
     NoteRepository noteRepository;
+    NotesRepositoryTrash notesRepositoryTrash;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,6 +34,7 @@ public class MainActivity extends ComponentActivity {
 
         listener();
         noteRepository = new NoteRepository(this);
+        notesRepositoryTrash = new NotesRepositoryTrash(this);
         Intent intent = new Intent(MainActivity.this, OnboardingActivity.class);
         startActivity(intent);
         /*
