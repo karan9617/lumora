@@ -39,8 +39,8 @@ public class DrawingActivity extends AppCompatActivity {
     private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen, sprayPaintBtn, rectangleBtn,
             color_blue, color_green, color_yellow, color_orange, color_purple, color_teal, color_pink, color_maroon, color_color1,
             uploadImageBtn,color_grey;
-    private TextView button_save, dialog_discard_btn, dialog_cancel_btn, dialog_save_btn;
-
+    private TextView dialog_discard_btn, dialog_cancel_btn, dialog_save_btn;
+    ImageButton button_save;
     private SeekBar strokeWidthSeekBar;
     private NoteRepository noteRepository;
     private long currentNoteId = -1;

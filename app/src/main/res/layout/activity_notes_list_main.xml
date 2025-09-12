@@ -6,8 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:background="#121212"
-    tools:openDrawer="start">
+    android:background="#121212">
+   <!--tools:openDrawer="left" -->
+
 
     <!-- This is the main content area of the screen -->
     <RelativeLayout
@@ -22,6 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="#1F1F1F"
+
             android:elevation="4dp"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
@@ -29,13 +31,13 @@
             <!-- The Search Bar -->
             <androidx.appcompat.widget.SearchView
                 android:id="@+id/search_view"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 app:queryHint="Search your notes"
                 app:queryBackground="@android:color/transparent"
                 android:textColorHint="@android:color/darker_gray"
                 android:textColor="@android:color/white"
-                android:gravity="right"
+               android:layout_gravity="right"
                 />
         </androidx.appcompat.widget.Toolbar>
 
@@ -121,9 +123,9 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="end"
-            android:layout_marginBottom="16dp"
+            android:layout_marginRight="20dp"
             android:visibility="gone">
-
+    <!--
             <TextView
                 android:id="@+id/option_text"
                 android:layout_width="wrap_content"
@@ -135,6 +137,32 @@
                 android:elevation="4dp"
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
+            -->
+            <LinearLayout
+                android:id="@+id/option_text_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="7dp"
+                android:background="@drawable/rounded_background"
+                android:padding="12dp"
+                android:elevation="4dp">
+                <TextView
+                    android:id="@+id/option_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Text"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="8dp"
+                    android:src="@drawable/ic_text_icon"
+                    app:tint="@android:color/white"
+                    android:contentDescription="Image note icon" />
+            </LinearLayout>
 
             <!--  <TextView
                   android:id="@+id/option_images"
@@ -146,7 +174,7 @@
                   android:padding="12dp"
                   android:elevation="4dp"
                   android:textColor="@android:color/white"
-                  android:textSize="16sp" />-->
+                  android:textSize="16sp" />
 
               <TextView
                   android:id="@+id/option_drawings"
@@ -159,6 +187,32 @@
                   android:elevation="4dp"
                   android:textColor="@android:color/white"
                   android:textSize="16sp" />
+-->
+            <LinearLayout
+                android:id="@+id/option_drawings_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="1dp"
+                android:background="@drawable/rounded_background"
+                android:padding="12dp"
+                android:elevation="4dp">
+                <TextView
+                    android:id="@+id/option_drawings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Draw"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="8dp"
+                    android:src="@drawable/baseline_brush_24"
+                    app:tint="@android:color/white"
+                    android:contentDescription="Draw note icon" />
+            </LinearLayout>
               <!--<TextView
                   android:id="@+id/option_excel"
                   android:layout_width="wrap_content"

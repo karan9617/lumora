@@ -46,6 +46,7 @@ public class NotesListActivity extends AppCompatActivity {
     //TextView option_excel;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
+    Toolbar toolbar;
     private NoteRepository noteRepository;
     FloatingActionButton fabAddNote;
     private DrawerLayout drawerLayout;
@@ -73,7 +74,7 @@ public class NotesListActivity extends AppCompatActivity {
         // Initialize the views
         drawerLayout = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         //option_excel = findViewById(R.id.option_excel);
@@ -116,8 +117,6 @@ public class NotesListActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String newText) {
                 return false;
             }
-
-
         });
 
         // Set up the FAB
@@ -150,7 +149,7 @@ public class NotesListActivity extends AppCompatActivity {
                 showOptions();
             }
         });
-       /*  option_excel.setOnClickListener(new View.OnClickListener() {
+       /* option_excel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(NotesListActivity.this, ExcelSheetActivity.class);
@@ -467,8 +466,12 @@ public class NotesListActivity extends AppCompatActivity {
             List<Note> filteredList = new ArrayList<>();
             String lowercaseQuery = query.toLowerCase();
             for (Note note : allNotes) {
-                if (note.getTitle().toLowerCase().contains(lowercaseQuery) ||
-                        note.getContent().toLowerCase().contains(lowercaseQuery)) {
+                // Check if the title is not null before converting to lowercase
+                boolean titleMatches = note.getTitle() != null && note.getTitle().toLowerCase().contains(lowercaseQuery);
+                // Check if the content is not null before converting to lowercase
+                boolean contentMatches = note.getContent() != null && note.getContent().toLowerCase().contains(lowercaseQuery);
+
+                if (titleMatches || contentMatches) {
                     filteredList.add(note);
                 }
             }
@@ -484,7 +487,13 @@ public class NotesListActivity extends AppCompatActivity {
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             MenuInflater inflater = mode.getMenuInflater();
             inflater.inflate(R.menu.menu_contextual_action_bar, menu);
-            mode.setTitle("Note Options");
+            // Hide the search bar and FAB when the CAB is active
+            searchView.setVisibility(View.GONE);
+            toolbar.setVisibility(View.GONE);
+            fabAddNote.setVisibility(View.GONE);
+
+            // Also hide the floating menu options if they are visible
+            optionsLayout.setVisibility(View.GONE);
             return true;
         }
 
@@ -547,6 +556,10 @@ public class NotesListActivity extends AppCompatActivity {
         public void onDestroyActionMode(ActionMode mode) {
             actionMode = null;
             selectedNote = null;
+            // Restore the visibility of the search bar and FAB when the CAB is dismissed
+            searchView.setVisibility(View.VISIBLE);
+            fabAddNote.setVisibility(View.VISIBLE);
+            toolbar.setVisibility(View.VISIBLE);
             // This is important to clear the visual selection border
             notesAdapter.clearSelection();
             notesAdapterPinned.clearSelection();
