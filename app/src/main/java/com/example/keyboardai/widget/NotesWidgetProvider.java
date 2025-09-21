@@ -47,7 +47,6 @@ public class NotesWidgetProvider extends AppWidgetProvider {
         // Check if a specific note has been selected for this widget.
         if (noteId != -1L) {
             // A specific note has been chosen, so we'll show its content.
-            views.setTextViewText(R.id.widget_title, "My Note");
             new UpdateNoteViewTask(context, appWidgetManager, views, appWidgetId).execute(noteId);
         } else {
             // No specific note is configured, so we show the full list.
@@ -55,7 +54,6 @@ public class NotesWidgetProvider extends AppWidgetProvider {
             views.setViewVisibility(R.id.widget_empty_view, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_single_drawing_layout, android.view.View.GONE);
-            views.setTextViewText(R.id.widget_title, "My Notes");
 
             // Set up the RemoteViewsService for the note list.
             Intent serviceIntent = new Intent(context, NotesWidgetService.class);
