@@ -161,7 +161,7 @@ public class DrawingActivity extends AppCompatActivity {
                     } else {
                         // We are saving a new note
                         Note drawingNote = new Note();
-                        drawingNote.setTitle("My Drawing");
+                        drawingNote.setTitle("Sketch");
                         drawingNote.setColor(Color.WHITE); // Default color
                         drawingNote.setDate(getCurrentDate());
                         drawingNote.setPinned(false);

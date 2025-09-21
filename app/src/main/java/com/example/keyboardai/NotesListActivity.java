@@ -51,6 +51,7 @@ public class NotesListActivity extends AppCompatActivity {
     //TextView option_excel;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
+    List<Note> allNotesFromDb, allPinnedNotesFromDb;
     public static List<Note> trashList = new ArrayList<>();
     ;
     Toolbar toolbar;
@@ -64,6 +65,7 @@ public class NotesListActivity extends AppCompatActivity {
     // Contextual Action Bar variables
     private ActionMode actionMode;
     private Note selectedNote;
+    TextView pinnednotesnotice;
 
     private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
@@ -81,6 +83,7 @@ public class NotesListActivity extends AppCompatActivity {
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         // Initialize the views
         drawerLayout = findViewById(R.id.drawer_layout);
+        pinnednotesnotice = findViewById(R.id.pinnednotesnotice);
         NavigationView navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -378,7 +381,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         }, null, itemTouchHelperPinned);
         notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
-
+        messageForNoPinnedNotes();
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -429,6 +432,7 @@ public class NotesListActivity extends AppCompatActivity {
         super.onResume();
 
         loadNotesFromDatabase();
+
     }
 
     // Override onDestroy to destroy CAB if it's active
@@ -466,8 +470,8 @@ public class NotesListActivity extends AppCompatActivity {
     }
     private void loadNotesFromDatabase() {
         new Thread(() -> {
-            List<Note> allNotesFromDb = noteRepository.getAllNotes();
-            List<Note> allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
+            allNotesFromDb = noteRepository.getAllNotes();
+            allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
             runOnUiThread(() -> {
                 allNotes.clear();
                 allNotes.addAll(allNotesFromDb);
@@ -480,8 +484,10 @@ public class NotesListActivity extends AppCompatActivity {
 
                 notesAdapter.notifyDataSetChanged();
                 notesAdapterPinned.notifyDataSetChanged();
+
             });
         }).start();
+        messageForNoPinnedNotes();
     }
 
     private void filterNotes(String query) {
@@ -506,7 +512,18 @@ public class NotesListActivity extends AppCompatActivity {
         }
         notesAdapter.notifyDataSetChanged();
     }
-
+    public void messageForNoPinnedNotes(){
+        new Thread(() -> {
+            runOnUiThread(() -> {
+                if(allPinnedNotesFromDb == null || (allPinnedNotesFromDb!= null && allPinnedNotesFromDb.size() == 0)){
+                    pinnednotesnotice.setVisibility(View.VISIBLE);
+                }
+                else{
+                    pinnednotesnotice.setVisibility(View.GONE);
+                }
+            });
+        });
+    }
     // Contextual Action Bar Callback
     private ActionMode.Callback actionModeCallback = new ActionMode.Callback() {
         @Override
@@ -551,6 +568,7 @@ public class NotesListActivity extends AppCompatActivity {
                 boolean isPinned = selectedNote.isPinned();
                 notesAdapter.onPinUnpinNote(selectedNote, !isPinned);
                 notesAdapterPinned.onPinUnpinNote(selectedNote,!isPinned);
+                messageForNoPinnedNotes();
                 mode.finish();
                 return true;
             } else if (id == R.id.action_color) {
@@ -575,6 +593,7 @@ public class NotesListActivity extends AppCompatActivity {
                         });
                     }
                 }).start();
+
                 return true;
             }
             return false;
