@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import com.example.keyboardai.DrawingActivity;
 import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.Notepad;
 import com.example.keyboardai.NotesListActivity;
@@ -39,6 +40,7 @@ public class NotesWidgetProvider extends AppWidgetProvider {
         // Create a pending intent to launch the main app activity (NotesListActivity).
         Intent appIntent = new Intent(context, NotesListActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, appIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         views.setOnClickPendingIntent(R.id.layout_widget_id, pendingIntent);
 
         // Get the note ID saved from the configuration activity.
@@ -110,6 +112,26 @@ public class NotesWidgetProvider extends AppWidgetProvider {
         @Override
         protected void onPostExecute(Note selectedNote) {
             if (selectedNote != null) {
+                Intent openIntent;
+                long noteId = selectedNote.getId();
+                views.setInt(R.id.layout_widget_id, "setBackgroundColor", selectedNote.getColor());
+
+
+                if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty() && "sketch".equalsIgnoreCase(selectedNote.getTitle()) == false) {
+                    // Note has a drawing, so we open the DrawingActivity.
+                    openIntent = new Intent(context, DrawingActivity.class);
+                    openIntent.putExtra("note_id", noteId);
+                } else {
+                    // Note is either text-based or the image is a generic sketch,
+                    // so we open the Notepad activity.
+                    openIntent = new Intent(context, Notepad.class);
+                    openIntent.putExtra("note_id", noteId);
+                }
+
+                // Create a pending intent and set it on the widget layout.
+                PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) noteId, openIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                views.setOnClickPendingIntent(R.id.layout_widget_id, pendingIntent);
+
                 // If the note has a drawing image path, prioritize showing the drawing.
                 if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {
                     File imageFile = new File(selectedNote.getImagePath());
@@ -120,7 +142,6 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                             views.setImageViewBitmap(R.id.image_drawing, bitmap);
                             // Set visibility for the drawing layout
                             views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.GONE);
-                            views.setViewVisibility(R.id.widget_header, View.GONE);
                             views.setViewVisibility(R.id.widget_single_drawing_layout, android.view.View.VISIBLE);
                             views.setViewVisibility(R.id.widget_notes_list, android.view.View.GONE);
                             views.setViewVisibility(R.id.widget_empty_view, android.view.View.GONE);
@@ -148,6 +169,7 @@ public class NotesWidgetProvider extends AppWidgetProvider {
         private void updateViewsForTextNote(Note note) {
             views.setTextViewText(R.id.widget_note_title, note.getTitle());
             views.setTextViewText(R.id.widget_note_content, note.getContent());
+            views.setInt(R.id.layout_widget_id, "setBackgroundColor", note.getColor());
 
             // Set visibility for the text content layout
             views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.VISIBLE);

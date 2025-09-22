@@ -116,18 +116,30 @@ public class Notepad extends AppCompatActivity {
         drawingView = findViewById(R.id.drawingView);
 
         noteId = getIntent().getLongExtra("note_id", -1);
+        Note currentNode = noteRepository.getNoteById(noteId);
+        /*
         String noteTitle = getIntent().getStringExtra("note_title");
         String noteContent = getIntent().getStringExtra("note_content");
         noteDate = getIntent().getStringExtra("note_date");
         selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
         imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
         drawingData = FileUtils.loadFileFromPath(getIntent().getStringExtra("note_image_path"));
+        */
+        String noteTitle = (currentNode == null )? "":currentNode.getTitle();
+        String noteContent = (currentNode == null )? "":currentNode.getContent();
+        noteDate = (currentNode == null )? "":currentNode.getDate();
+        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
+        imagePath = (currentNode == null )? "":currentNode.getImagePath();
+        drawingData = (currentNode == null )? null :FileUtils.loadFileFromPath(currentNode.getImagePath());
+
         DrawingActivity.DrawingDataManager.clearDrawingData();
+        /*
         // NEW: Retrieve the pinned status from the intent
         isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
         // NEW: Retrieve the note's order from the intent
-        noteOrder = getIntent().getIntExtra("note_order", -1);
-
+        noteOrder = getIntent().getIntExtra("note_order", -1);*/
+        isPinned = (currentNode == null )? false: currentNode.isPinned();
+        noteOrder = (currentNode == null )? -1:currentNode.getOrder();
         // setting the imagesketch from the database
         if(drawingData != null && drawingData.length > 0){
             Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
@@ -525,7 +537,7 @@ public class Notepad extends AppCompatActivity {
         String title = titleText.getText().toString().trim();
         String content = resultText.getText().toString().trim();
         byte[] drawingDataToSave = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
-        byte[] drawingData = drawingView.getDrawingData();
+        byte[] drawingData = (drawingView.getDrawingData() == null || drawingView.getDrawingData().length == 0) ? this.drawingData: drawingView.getDrawingData() ;
         if (title.isEmpty() && content.isEmpty() && (imagePath == null || imagePath.isEmpty())) {
             Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
             isNoteModified = false;
@@ -588,6 +600,91 @@ public class Notepad extends AppCompatActivity {
         isNoteModified = false;
         supportFinishAfterTransition();
     }
+    /*
+
+    public void saveNote() {
+        String title = titleText.getText().toString().trim();
+        String content = resultText.getText().toString().trim();
+
+        // This variable will hold the final image path for the database.
+        // It starts with the existing path.
+        String finalImagePath = this.imagePath;
+
+        // Check if the user was in drawing mode and if a drawing exists.
+        if (isDrawingMode) {
+            byte[] drawingDataFromView = drawingView.getDrawingData();
+            if (drawingDataFromView != null && drawingDataFromView.length > 0) {
+                // A new drawing was created, save it and update the path.
+                Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
+                if (drawingBitmap != null) {
+                    String filename = "drawing_" + System.currentTimeMillis() + ".png";
+                    finalImagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+                }
+            } else {
+                // The user was in drawing mode but cleared the drawing.
+                // We should delete the old image file if it exists.
+                if (this.imagePath != null && !this.imagePath.isEmpty()) {
+                    FileUtils.deleteFile(this.imagePath);
+                }
+                finalImagePath = ""; // Set the path to empty
+            }
+        }
+
+        if (title.isEmpty() && content.isEmpty() && (finalImagePath == null || finalImagePath.isEmpty())) {
+            Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
+            isNoteModified = false;
+            supportFinishAfterTransition();
+            return;
+        }
+
+        int colorToSave = Color.WHITE;
+        Drawable background = mainContentLayout.getBackground();
+        if (background instanceof ColorDrawable) {
+            colorToSave = ((ColorDrawable) background).getColor();
+        }
+
+        final int finalColorToSave = colorToSave;
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            Note noteToSave;
+            if (noteId != -1) {
+                // Update existing note with the new imagePath
+                noteToSave = new Note(noteId, title, content, getCurrentDate(), finalColorToSave, noteOrder, isPinned, finalImagePath);
+                noteRepository.updateNote(noteToSave);
+            } else {
+                // Create a new note with the new imagePath
+                noteToSave = new Note(title, content, getCurrentDate(), finalColorToSave, 0, isPinned, finalImagePath);
+                noteRepository.addNote(noteToSave);
+            }
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show();
+                isNoteModified = false;
+                supportFinishAfterTransition();
+            });
+        });
+
+        // Update the in-memory drawing data after the save operation
+        if (finalImagePath != null && !finalImagePath.isEmpty()) {
+            this.drawingData = FileUtils.loadFileFromPath(finalImagePath);
+        } else {
+            this.drawingData = null;
+        }
+
+        if (this.drawingData != null && this.drawingData.length > 0) {
+            Bitmap savedBitmap = BitmapFactory.decodeByteArray(this.drawingData, 0, this.drawingData.length);
+            if (savedBitmap != null) {
+                imagesketch.setImageBitmap(savedBitmap);
+                imagesketch.setVisibility(View.VISIBLE);
+            }
+        } else {
+            imagesketch.setImageDrawable(null);
+            imagesketch.setVisibility(View.GONE);
+        }
+
+        isNoteModified = false;
+        supportFinishAfterTransition();
+    }
+     */
     private String getCurrentDate() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());

@@ -18,11 +18,6 @@
         android:title="Delete"
         app:showAsAction="ifRoom" />
 
-    <item
-        android:id="@+id/action_color"
-        android:icon="@drawable/ic_palette"
-        android:title="Color"
-        app:showAsAction="ifRoom" />
 
 
 </menu>

@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:background="#121212"
+    android:background="#B4000000"
     tools:openDrawer="left">
    <!-- tools:openDrawer="left"-->
 

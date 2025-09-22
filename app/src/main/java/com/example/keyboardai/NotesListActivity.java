@@ -2,6 +2,7 @@ package com.example.keyboardai;
 
 import android.app.ActivityOptions;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -43,6 +44,7 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 public class NotesListActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
@@ -533,10 +535,12 @@ public class NotesListActivity extends AppCompatActivity {
             // Hide the search bar and FAB when the CAB is active
             searchView.setVisibility(View.GONE);
             toolbar.setVisibility(View.GONE);
-            fabAddNote.setVisibility(View.GONE);
+            drawerLayout.setBackgroundColor(Color.argb(43,135,73,251));
 
+            fabAddNote.setVisibility(View.GONE);
             // Also hide the floating menu options if they are visible
             optionsLayout.setVisibility(View.GONE);
+
             return true;
         }
 
@@ -571,29 +575,36 @@ public class NotesListActivity extends AppCompatActivity {
                 messageForNoPinnedNotes();
                 mode.finish();
                 return true;
-            } else if (id == R.id.action_color) {
-                // Handle color change action
-                Toast.makeText(NotesListActivity.this, "Change Color", Toast.LENGTH_SHORT).show();
-                mode.finish();
-                return true;
-            } else if (id == R.id.action_delete_note) {
+            }
+            else if (id == R.id.action_delete_note) {
                 // Handle delete action
-                new Thread(() -> {
+                Executors.newSingleThreadExecutor().execute(() -> {
                     noteRepository.deleteNote(selectedNote.getId());
-                    final int position = notesList.indexOf(selectedNote);
-                    if (position != -1) {
-                        runOnUiThread(() -> {
-                            Note removedNote = notesList.remove(position);
+                    runOnUiThread(() -> {
+                        // Find the note in both lists to ensure it is removed from the correct one.
+                        // This handles cases where the `selectedNote` object reference might be ambiguous.
+                        int pinnedPosition = pinnedNotes.indexOf(selectedNote);
+                        if (pinnedPosition != -1) {
+                            Note removedNote = pinnedNotes.remove(pinnedPosition);
                             notesRepositoryTrash.addNote(removedNote);
-                            allNotes.remove(selectedNote); // Keep the main list in sync
+                            notesAdapterPinned.notifyItemRemoved(pinnedPosition);
+                            messageForNoPinnedNotes();
+                        }
 
-                            notesAdapter.notifyItemRemoved(position);
-                            Toast.makeText(NotesListActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
-                            mode.finish();
-                        });
-                    }
-                }).start();
+                        int notesListPosition = notesList.indexOf(selectedNote);
+                        if (notesListPosition != -1) {
+                            Note removedNote = notesList.remove(notesListPosition);
+                            notesRepositoryTrash.addNote(removedNote);
+                            notesAdapter.notifyItemRemoved(notesListPosition);
+                        }
 
+                        // Also remove from the master list to keep it in sync for filtering
+                        allNotes.remove(selectedNote);
+
+                        Toast.makeText(NotesListActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
+                        mode.finish();
+                    });
+                });
                 return true;
             }
             return false;
@@ -607,6 +618,8 @@ public class NotesListActivity extends AppCompatActivity {
             searchView.setVisibility(View.VISIBLE);
             fabAddNote.setVisibility(View.VISIBLE);
             toolbar.setVisibility(View.VISIBLE);
+            drawerLayout.setBackgroundColor(Color.argb(71,0,0,0));
+
             // This is important to clear the visual selection border
             notesAdapter.clearSelection();
             notesAdapterPinned.clearSelection();
