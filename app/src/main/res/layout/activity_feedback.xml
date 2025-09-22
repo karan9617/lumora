@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:layout_gravity="center"
     android:padding="16dp"
-    android:background="#281C2B">
+    android:background="#F3F3F3">
 
     <TextView
         android:id="@+id/textViewTitle"
@@ -14,7 +14,7 @@
         android:text="Feedback Form"
         android:fontFamily="sans-serif"
         android:textSize="20sp"
-        android:textColor="#BCAFAF"
+        android:textColor="#252323"
         android:textStyle="bold"
         android:layout_gravity="center_horizontal"
         android:paddingBottom="16dp"/>

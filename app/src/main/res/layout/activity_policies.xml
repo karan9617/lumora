@@ -19,7 +19,13 @@
             android:textStyle="bold"
             android:layout_gravity="center_horizontal"
             android:paddingBottom="16dp"/>
-
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@mipmap/logotransparent"
+            android:id="@+id/logo"
+            android:layout_gravity="center_horizontal"
+            />
         <TextView
             android:id="@+id/textViewPolicies"
             android:layout_width="match_parent"
