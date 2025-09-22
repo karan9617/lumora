@@ -138,8 +138,8 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                 listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
-/*
-        // Add the color animation on long press
+
+        // The following code for the long-press animation and labels has been restored.
         holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
@@ -226,7 +226,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                     holder.labelsContainer.addView(labelView);
                 }
             });
-        }).start();*/
+        }).start();
     }
 
     @Override

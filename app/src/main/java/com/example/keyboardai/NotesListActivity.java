@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -48,30 +49,28 @@ import java.util.concurrent.Executors;
 
 public class NotesListActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
-    //  RelativeLayout mainLayout;
     private NotesAdapter notesAdapter;
-    //TextView option_excel;
     private NotesAdapterPinned notesAdapterPinned;
     private List<Note> notesList;
     List<Note> allNotesFromDb, allPinnedNotesFromDb;
     public static List<Note> trashList = new ArrayList<>();
-    ;
     Toolbar toolbar;
     private NoteRepository noteRepository;
     FloatingActionButton fabAddNote;
+    LinearLayout option_text_layout, option_drawings_layout;
     private DrawerLayout drawerLayout;
     ItemTouchHelper itemTouchHelper,itemTouchHelperPinned;
     private SearchView searchView;
-    static public List<Note> allNotes, pinnedNotes; // To hold the full, unfiltered list of notes
-
-    // Contextual Action Bar variables
+    static public List<Note> allNotes, pinnedNotes;
     private ActionMode actionMode;
     private Note selectedNote;
-    TextView pinnednotesnotice;
+    TextView pinnedNotesHeader;
 
     private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,17 +79,15 @@ public class NotesListActivity extends AppCompatActivity {
         getWindow().setAllowEnterTransitionOverlap(false);
         getWindow().setAllowReturnTransitionOverlap(false);
 
-        // Initialize the repository
         noteRepository = new NoteRepository(this);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
-        // Initialize the views
         drawerLayout = findViewById(R.id.drawer_layout);
-        pinnednotesnotice = findViewById(R.id.pinnednotesnotice);
         NavigationView navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        //option_excel = findViewById(R.id.option_excel);
+        option_drawings_layout = findViewById(R.id.option_drawings_layout);
+        option_text_layout = findViewById(R.id.option_text_layout);
+        pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
         searchView = findViewById(R.id.search_view);
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
@@ -101,17 +98,14 @@ public class NotesListActivity extends AppCompatActivity {
 
 
         optionsLayout = findViewById(R.id.options_layout);
-        //TextView optionImage = findViewById(R.id.option_images);
         TextView optionText = findViewById(R.id.option_text);
         TextView optionDrawing = findViewById(R.id.option_drawings);
 
-        // Setup the drawer toggle button
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Handle navigation item clicks
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -129,27 +123,26 @@ public class NotesListActivity extends AppCompatActivity {
                 startActivity(new Intent(this, Feedback.class));
             }
 
-            // Close drawer after selection
             drawerLayout.closeDrawers();
             return true;
         });
 
-        // Setup the search functionality
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-
             @Override
             public boolean onQueryTextSubmit(String query) {
+                // This is still here for when the user hits enter on the keyboard
                 filterNotes(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                return false;
+                // Call filterNotes here to enable real-time searching
+                filterNotes(newText);
+                return true;
             }
         });
 
-        // Set up the FAB
         fabAddNote.setOnClickListener(v -> {
             if (isOptionsVisible) {
                 optionsLayout.setVisibility(View.VISIBLE);
@@ -160,57 +153,53 @@ public class NotesListActivity extends AppCompatActivity {
                 slideDownAnimation.setAnimationListener(new Animation.AnimationListener() {
                     @Override
                     public void onAnimationStart(Animation animation) {
-                        // Do nothing here
                     }
 
                     @Override
                     public void onAnimationEnd(Animation animation) {
-                        // When the animation is over, hide the layout to free up space
                         optionsLayout.setVisibility(View.GONE);
-                        // Clear the animation to prevent it from causing issues later
                         optionsLayout.clearAnimation();
                     }
 
                     @Override
                     public void onAnimationRepeat(Animation animation) {
-                        // Do nothing here
                     }
                 });
                 showOptions();
             }
         });
-       /* option_excel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(NotesListActivity.this, ExcelSheetActivity.class);
-                startActivity(i);
-            }
-        });
-       optionImage.setOnClickListener(v -> {
-            Toast.makeText(this, "Opening Image Note", Toast.LENGTH_SHORT).show();
-            // TODO: Start the activity for adding an image note here
-            hideOptions();
-        });*/
 
         optionText.setOnClickListener(v -> {
-            Toast.makeText(this, "Opening Text Note", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(NotesListActivity.this, Notepad.class);
             startActivity(intent);
             hideOptions();
         });
 
         optionDrawing.setOnClickListener(v -> {
-            Toast.makeText(this, "Opening Drawing Note", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(NotesListActivity.this, DrawingActivity.class);
             startActivity(intent);
             hideOptions();
         });
+        option_drawings_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(NotesListActivity.this, DrawingActivity.class);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
+        option_text_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(NotesListActivity.this, Notepad.class);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
 
-        // Set up the RecyclerView
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
 
-        // Set up the RecyclerView
         StaggeredGridLayoutManager layoutManagerPinned = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerViewPinned.setLayoutManager(layoutManagerPinned);
 
@@ -218,7 +207,6 @@ public class NotesListActivity extends AppCompatActivity {
         allNotes = new ArrayList<>();
         pinnedNotes = new ArrayList<>();
 
-        // Create the callback and ItemTouchHelper for notesAdapter
         ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
@@ -234,7 +222,6 @@ public class NotesListActivity extends AppCompatActivity {
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-                // Not used in this case
             }
             @Override
             public void onMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y) {
@@ -247,7 +234,6 @@ public class NotesListActivity extends AppCompatActivity {
                 if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
                     notesAdapter.onItemsMoved();
                 } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    // Start the contextual action bar here when a drag begins
                     if (actionMode == null) {
                         actionMode = startSupportActionMode(actionModeCallback);
                     }
@@ -283,7 +269,6 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
-                //intent.putExtra("drawing_data", note.getDrawingData());
 
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
@@ -298,10 +283,17 @@ public class NotesListActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             }
-        }, null, itemTouchHelper);
+        }, new NotesAdapter.OnNoteLongClickListener() {
+            @Override
+            public void onNoteLongClick(Note note, View sharedView) {
+                if (actionMode == null) {
+                    selectedNote = note;
+                    actionMode = startSupportActionMode(actionModeCallback);
+                }
+            }
+        }, itemTouchHelper);
         notesRecyclerView.setAdapter(notesAdapter);
 
-        // Create the callback and ItemTouchHelper for notesAdapterPinned
         ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
@@ -317,7 +309,6 @@ public class NotesListActivity extends AppCompatActivity {
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-                // Not used in this case
             }
             @Override
             public void onMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y) {
@@ -330,7 +321,6 @@ public class NotesListActivity extends AppCompatActivity {
                 if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
                     notesAdapterPinned.onItemsMoved();
                 } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    // Start the contextual action bar here when a drag begins
                     if (actionMode == null) {
                         actionMode = startSupportActionMode(actionModeCallback);
                     }
@@ -366,7 +356,6 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
-                //intent.putExtra("drawing_data", note.getDrawingData());
 
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
@@ -381,22 +370,26 @@ public class NotesListActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             }
-        }, null, itemTouchHelperPinned);
+        }, new NotesAdapterPinned.OnNoteLongClickListener() {
+            @Override
+            public void onNoteLongClick(Note note, View sharedView) {
+                if (actionMode == null) {
+                    selectedNote = note;
+                    actionMode = startSupportActionMode(actionModeCallback);
+                }
+            }
+        }, itemTouchHelperPinned);
         notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
-        messageForNoPinnedNotes();
+        updatePinnedSectionVisibility();
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                // Check if a touch event occurred outside the options menu
                 if (isOptionsVisible && event.getAction() == MotionEvent.ACTION_DOWN) {
-                    // Check if the touch is outside the bounds of the options layout
                     if (!isTouchInsideView(optionsLayout, event)) {
                         hideOptions(slideDownAnimation);
-                        // Return true to consume the touch event
                         return true;
                     }
                 }
-                // Return false to let the touch event pass through to other views if needed
                 return false;
             }
         });
@@ -432,12 +425,9 @@ public class NotesListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
         loadNotesFromDatabase();
-
     }
 
-    // Override onDestroy to destroy CAB if it's active
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -486,59 +476,76 @@ public class NotesListActivity extends AppCompatActivity {
 
                 notesAdapter.notifyDataSetChanged();
                 notesAdapterPinned.notifyDataSetChanged();
-
+                updatePinnedSectionVisibility();
             });
         }).start();
-        messageForNoPinnedNotes();
+
     }
 
     private void filterNotes(String query) {
+        // Create new lists to hold the filtered results.
+        List<Note> filteredNotesList = new ArrayList<>();
+        List<Note> filteredPinnedNotesList = new ArrayList<>();
+
         if (query == null || query.isEmpty()) {
-            notesList.clear();
-            notesList.addAll(allNotes);
+            // If the query is empty, add all notes back from the master lists.
+            filteredNotesList.addAll(allNotesFromDb);
+            filteredPinnedNotesList.addAll(allPinnedNotesFromDb);
         } else {
-            List<Note> filteredList = new ArrayList<>();
             String lowercaseQuery = query.toLowerCase();
-            for (Note note : allNotes) {
-                // Check if the title is not null before converting to lowercase
+
+            // Filter un-pinned notes from the master list.
+            for (Note note : allNotesFromDb) {
                 boolean titleMatches = note.getTitle() != null && note.getTitle().toLowerCase().contains(lowercaseQuery);
-                // Check if the content is not null before converting to lowercase
                 boolean contentMatches = note.getContent() != null && note.getContent().toLowerCase().contains(lowercaseQuery);
 
                 if (titleMatches || contentMatches) {
-                    filteredList.add(note);
+                    filteredNotesList.add(note);
                 }
             }
-            notesList.clear();
-            notesList.addAll(filteredList);
+
+            // Filter pinned notes from the master list.
+            for (Note note : allPinnedNotesFromDb) {
+                boolean titleMatches = note.getTitle() != null && note.getTitle().toLowerCase().contains(lowercaseQuery);
+                boolean contentMatches = note.getContent() != null && note.getContent().toLowerCase().contains(lowercaseQuery);
+
+                if (titleMatches || contentMatches) {
+                    filteredPinnedNotesList.add(note);
+                }
+            }
         }
+
+        // Update the adapters with the filtered lists.
+        notesList.clear();
+        notesList.addAll(filteredNotesList);
         notesAdapter.notifyDataSetChanged();
+
+        pinnedNotes.clear();
+        pinnedNotes.addAll(filteredPinnedNotesList);
+        notesAdapterPinned.notifyDataSetChanged();
+
+        updatePinnedSectionVisibility();
     }
-    public void messageForNoPinnedNotes(){
-        new Thread(() -> {
-            runOnUiThread(() -> {
-                if(allPinnedNotesFromDb == null || (allPinnedNotesFromDb!= null && allPinnedNotesFromDb.size() == 0)){
-                    pinnednotesnotice.setVisibility(View.VISIBLE);
-                }
-                else{
-                    pinnednotesnotice.setVisibility(View.GONE);
-                }
-            });
-        });
+
+    public void updatePinnedSectionVisibility(){
+        if(pinnedNotes.isEmpty()){
+            pinnedNotesHeader.setVisibility(View.GONE);
+        }
+        else{
+            pinnedNotesHeader.setVisibility(View.VISIBLE);
+        }
+
     }
-    // Contextual Action Bar Callback
     private ActionMode.Callback actionModeCallback = new ActionMode.Callback() {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             MenuInflater inflater = mode.getMenuInflater();
             inflater.inflate(R.menu.menu_contextual_action_bar, menu);
-            // Hide the search bar and FAB when the CAB is active
             searchView.setVisibility(View.GONE);
             toolbar.setVisibility(View.GONE);
             drawerLayout.setBackgroundColor(Color.argb(43,135,73,251));
 
             fabAddNote.setVisibility(View.GONE);
-            // Also hide the floating menu options if they are visible
             optionsLayout.setVisibility(View.GONE);
 
             return true;
@@ -546,8 +553,6 @@ public class NotesListActivity extends AppCompatActivity {
 
         @Override
         public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-            // This is called every time the menu is invalidated.
-            // You can use this to show/hide menu items based on the selected note.
             return false;
         }
 
@@ -560,7 +565,6 @@ public class NotesListActivity extends AppCompatActivity {
 
             int id = item.getItemId();
             if (id == R.id.action_share) {
-                // Handle share action
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 shareIntent.setType("text/plain");
                 shareIntent.putExtra(Intent.EXTRA_TEXT, selectedNote.getContent());
@@ -568,27 +572,22 @@ public class NotesListActivity extends AppCompatActivity {
                 mode.finish();
                 return true;
             } else if (id == R.id.action_pin) {
-                // Handle pin/unpin action
                 boolean isPinned = selectedNote.isPinned();
                 notesAdapter.onPinUnpinNote(selectedNote, !isPinned);
                 notesAdapterPinned.onPinUnpinNote(selectedNote,!isPinned);
-                messageForNoPinnedNotes();
                 mode.finish();
                 return true;
             }
             else if (id == R.id.action_delete_note) {
-                // Handle delete action
                 Executors.newSingleThreadExecutor().execute(() -> {
                     noteRepository.deleteNote(selectedNote.getId());
                     runOnUiThread(() -> {
-                        // Find the note in both lists to ensure it is removed from the correct one.
-                        // This handles cases where the `selectedNote` object reference might be ambiguous.
                         int pinnedPosition = pinnedNotes.indexOf(selectedNote);
                         if (pinnedPosition != -1) {
                             Note removedNote = pinnedNotes.remove(pinnedPosition);
                             notesRepositoryTrash.addNote(removedNote);
                             notesAdapterPinned.notifyItemRemoved(pinnedPosition);
-                            messageForNoPinnedNotes();
+                            updatePinnedSectionVisibility();
                         }
 
                         int notesListPosition = notesList.indexOf(selectedNote);
@@ -598,7 +597,6 @@ public class NotesListActivity extends AppCompatActivity {
                             notesAdapter.notifyItemRemoved(notesListPosition);
                         }
 
-                        // Also remove from the master list to keep it in sync for filtering
                         allNotes.remove(selectedNote);
 
                         Toast.makeText(NotesListActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
@@ -614,13 +612,11 @@ public class NotesListActivity extends AppCompatActivity {
         public void onDestroyActionMode(ActionMode mode) {
             actionMode = null;
             selectedNote = null;
-            // Restore the visibility of the search bar and FAB when the CAB is dismissed
             searchView.setVisibility(View.VISIBLE);
             fabAddNote.setVisibility(View.VISIBLE);
             toolbar.setVisibility(View.VISIBLE);
             drawerLayout.setBackgroundColor(Color.argb(71,0,0,0));
 
-            // This is important to clear the visual selection border
             notesAdapter.clearSelection();
             notesAdapterPinned.clearSelection();
         }

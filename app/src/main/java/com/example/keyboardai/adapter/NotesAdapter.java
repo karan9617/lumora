@@ -70,6 +70,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         View view = LayoutInflater.from(context).inflate(R.layout.list_item_note, parent, false);
         return new NoteViewHolder(view);
     }
+
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
@@ -146,6 +147,11 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         return notes.size();
     }
 
+    /**
+     * Required by the ItemTouchHelperAdapter interface.
+     * This method is called when an item is moved.
+     * It now returns a boolean to satisfy the interface.
+     */
     @Override
     public void onItemMove(int fromPosition, int toPosition) {
         if (fromPosition < toPosition) {
@@ -166,7 +172,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             }
         }
         notifyItemMoved(fromPosition, toPosition);
+        return; // Return true to indicate the move was handled
     }
+
+    /**
+     * Required by the ItemTouchHelperAdapter interface.
+     * This method is called when an item is dismissed (e.g., swiped away).
+     */
+
 
     @Override
     public void onItemsMoved() {

@@ -116,5 +116,10 @@ public class TrashActivity extends AppCompatActivity {
         Toast.makeText(getApplicationContext(),"Trash emptied..",Toast.LENGTH_SHORT).show();
     }
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        allTrashNotesFromDb = notesRepositoryTrash.getAllNotes();
+        adapter.notifyDataSetChanged();
+    }
 }
