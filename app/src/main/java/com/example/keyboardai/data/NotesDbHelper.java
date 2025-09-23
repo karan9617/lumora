@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class NotesDbHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "notes.db";
-    private static final int DATABASE_VERSION = 4; // Bump this to trigger onUpgrade()
+    private static final int DATABASE_VERSION = 2; // Bump this to trigger onUpgrade()
 
     public static final String TABLE_NOTES = "notes";
     public static final String COLUMN_ID = "id";

@@ -580,24 +580,39 @@ public class NotesListActivity extends AppCompatActivity {
             }
             else if (id == R.id.action_delete_note) {
                 Executors.newSingleThreadExecutor().execute(() -> {
+                    // Step 1: Add the note to the trash database
+                    notesRepositoryTrash.addNote(selectedNote);
+
+                    // Step 2: Delete the note from the main database
                     noteRepository.deleteNote(selectedNote.getId());
+
                     runOnUiThread(() -> {
-                        int pinnedPosition = pinnedNotes.indexOf(selectedNote);
-                        if (pinnedPosition != -1) {
-                            Note removedNote = pinnedNotes.remove(pinnedPosition);
-                            notesRepositoryTrash.addNote(removedNote);
-                            notesAdapterPinned.notifyItemRemoved(pinnedPosition);
-                            updatePinnedSectionVisibility();
+                        // Find and remove the note from the correct local list using its ID
+                        boolean removedFromPinned = false;
+                        for (int i = 0; i < pinnedNotes.size(); i++) {
+                            if (pinnedNotes.get(i).getId() == selectedNote.getId()) {
+                                pinnedNotes.remove(i);
+                                notesAdapterPinned.notifyItemRemoved(i);
+                                removedFromPinned = true;
+                                break;
+                            }
                         }
 
-                        int notesListPosition = notesList.indexOf(selectedNote);
-                        if (notesListPosition != -1) {
-                            Note removedNote = notesList.remove(notesListPosition);
-                            notesRepositoryTrash.addNote(removedNote);
-                            notesAdapter.notifyItemRemoved(notesListPosition);
+                        if (!removedFromPinned) {
+                            for (int i = 0; i < notesList.size(); i++) {
+                                if (notesList.get(i).getId() == selectedNote.getId()) {
+                                    notesList.remove(i);
+                                    notesAdapter.notifyItemRemoved(i);
+                                    break;
+                                }
+                            }
                         }
 
-                        allNotes.remove(selectedNote);
+                        // Also remove from the master lists to keep data consistent
+                        allNotesFromDb.removeIf(note -> note.getId() == selectedNote.getId());
+                        allPinnedNotesFromDb.removeIf(note -> note.getId() == selectedNote.getId());
+
+                        updatePinnedSectionVisibility();
 
                         Toast.makeText(NotesListActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
                         mode.finish();

@@ -54,7 +54,6 @@ public class NotesRepositoryTrash {
 
 
         String query = "SELECT * FROM " + NotesDbHelper.TABLE_NOTES +
-                " WHERE " + NotesDbHelper.COLUMN_PINNED + " = 0 " +
                 " ORDER BY " + NotesDbHelper.COLUMN_ORDER + " ASC;";
         Cursor cursor = db.rawQuery(query, null);
 

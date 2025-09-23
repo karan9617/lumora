@@ -33,6 +33,7 @@ public class TrashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_trash);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         notesRepository = new NoteRepository(this);
+        allTrashNotesFromDb = new ArrayList<>(); // Initialize the list to be used throughout the activity
         allTrashNotesFromDb = notesRepositoryTrash.getAllNotes();
         // Initialize UI components
         recyclerView = findViewById(R.id.recyclerViewTrash);
@@ -119,7 +120,12 @@ public class TrashActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        allTrashNotesFromDb = notesRepositoryTrash.getAllNotes();
+        // Load the fresh data from the database
+        List<Note> freshData = notesRepositoryTrash.getAllNotes();
+        // Clear the existing list and add all the new data
+        allTrashNotesFromDb.clear();
+        allTrashNotesFromDb.addAll(freshData);
+        // Notify the adapter that the underlying data has changed
         adapter.notifyDataSetChanged();
     }
 }
