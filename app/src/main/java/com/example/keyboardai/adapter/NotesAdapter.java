@@ -29,8 +29,12 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> implements ItemTouchHelperAdapter {
 
@@ -76,8 +80,21 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         Note note = notes.get(position);
 
         holder.noteTitle.setText(note.getTitle());
-        holder.noteDate.setText(note.getDate());
+        try {
+            // Define the input and output date formats
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
 
+            // Parse the existing date string into a Date object
+            Date date = inputFormat.parse(note.getDate());
+
+            // Format the Date object into the desired output string
+            String formattedDate = outputFormat.format(date);
+            holder.noteDate.setText(formattedDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            holder.noteDate.setText(note.getDate()); // Fallback to original date if parsing fails
+        }
         // Conditionally show/hide drawing and text content views
         byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
 
@@ -140,7 +157,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
-        holder.itemView.setOnLongClickListener(v -> {
+        /*holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note clickedNote = notes.get(currentPosition);
@@ -150,7 +167,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 return true;
             }
             return false;
-        });
+        });*/
     }
     public void selectItem(int position) {
         if (selectedPosition == position) {

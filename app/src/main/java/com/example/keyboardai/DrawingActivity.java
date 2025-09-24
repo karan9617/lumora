@@ -97,6 +97,11 @@ public class DrawingActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
     public void init() {
         blackBtn = findViewById(R.id.color_black);
         redBtn = findViewById(R.id.color_red);

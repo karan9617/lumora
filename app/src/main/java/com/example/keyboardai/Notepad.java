@@ -28,6 +28,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -36,6 +37,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.core.view.ViewCompat;
 
 import com.example.keyboardai.Models.Note;
@@ -69,11 +71,13 @@ public class Notepad extends AppCompatActivity {
     private static final String TAG = "NotepadActivity";
 
     private SpeechRecognizer speechRecognizer;
+    FrameLayout imageframelayout;
     private StringBuilder resultBuilder = new StringBuilder(),titleBuilder = new StringBuilder();;
     private boolean isListening = false;
     private ProgressBar listeningProgress;
     private EditText resultText;
     private EditText titleText;
+    CardView imageCard;
     private TextView hintTextView;
     private Intent recognizerIntent;
     private NoteRepository noteRepository;
@@ -147,7 +151,9 @@ public class Notepad extends AppCompatActivity {
             if (savedBitmap != null) {
                 // Assign the bitmap to your ImageView and make it visible
                 imagesketch.setImageBitmap(savedBitmap);
+                imageframelayout.setVisibility(View.VISIBLE);
                 imagesketch.setVisibility(View.VISIBLE);
+                imageCard.setVisibility(View.VISIBLE);
                 clearImageButton.setVisibility(View.VISIBLE);
             }
         }
@@ -333,6 +339,7 @@ public class Notepad extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 drawingData = null;
+                imageframelayout.setVisibility(View.GONE);
                 saveNote();
             }
         });
@@ -418,6 +425,8 @@ public class Notepad extends AppCompatActivity {
             toolbar.setVisibility(View.GONE);
             resultText.setVisibility(View.GONE);
             imagesketch.setVisibility(View.GONE); // Hide the ImageView when drawing
+            imageCard.setVisibility(View.GONE);
+            imageframelayout.setVisibility(View.GONE);
             clearImageButton.setVisibility(View.GONE);
             drawingView.setVisibility(View.VISIBLE);
             toggleModeDrawSave.setVisibility(View.VISIBLE);
@@ -433,7 +442,9 @@ public class Notepad extends AppCompatActivity {
             resultText.setVisibility(View.VISIBLE);
             if (imagesketch.getDrawable() != null) { // Only show imagesketch if it has an image
                 imagesketch.setVisibility(View.VISIBLE);
+                imageCard.setVisibility(View.VISIBLE);
                 clearImageButton.setVisibility(View.VISIBLE);
+                imageframelayout.setVisibility(View.VISIBLE);
             }
             drawingView.setVisibility(View.GONE);
             toggleModeDrawSave.setVisibility(View.GONE);
@@ -600,11 +611,16 @@ public class Notepad extends AppCompatActivity {
             if (savedBitmap != null) {
                 imagesketch.setImageBitmap(savedBitmap);
                 imagesketch.setVisibility(View.VISIBLE);
+                imageCard.setVisibility(View.VISIBLE);
+
+                imageframelayout.setVisibility(View.VISIBLE);
                 clearImageButton.setVisibility(View.VISIBLE);
             }
         } else {
             imagesketch.setImageDrawable(null);
             imagesketch.setVisibility(View.GONE);
+            imageCard.setVisibility(View.GONE);
+            imageframelayout.setVisibility(View.GONE);
             clearImageButton.setVisibility(View.GONE);
         }
 
@@ -787,7 +803,9 @@ public class Notepad extends AppCompatActivity {
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
         listeningProgress = findViewById(R.id.listeningProgress);
+        imageframelayout = findViewById(R.id.imageframelayout);
         clearImageButton =  findViewById(R.id.clearImageButton);
+        imageCard = findViewById(R.id.imageCard);
         resultText = findViewById(R.id.resultText);
         titleText = findViewById(R.id.noteTitleEditText);
         mainContentLayout = findViewById(R.id.main_content_layout);

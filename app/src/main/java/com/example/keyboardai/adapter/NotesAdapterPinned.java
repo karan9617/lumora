@@ -28,8 +28,12 @@ import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.NoteViewHolder> implements ItemTouchHelperAdapter {
 
@@ -75,7 +79,21 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
 
         holder.noteTitle.setText(note.getTitle());
         //holder.noteContent.setText(note.getContent());
-        holder.noteDate.setText(note.getDate());
+        try {
+            // Define the input and output date formats
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
+
+            // Parse the existing date string into a Date object
+            Date date = inputFormat.parse(note.getDate());
+
+            // Format the Date object into the desired output string
+            String formattedDate = outputFormat.format(date);
+            holder.noteDate.setText(formattedDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            holder.noteDate.setText(note.getDate()); // Fallback to original date if parsing fails
+        }
 
         // Check if the note has a drawing and set its visibility
         byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
