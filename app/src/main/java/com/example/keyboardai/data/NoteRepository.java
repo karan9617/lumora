@@ -1,5 +1,9 @@
 package com.example.keyboardai.data;
 
+import static android.system.Os.close;
+import static androidx.fragment.app.FragmentManager.TAG;
+import static java.nio.channels.SocketChannel.open;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -16,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 public class NoteRepository {
 
@@ -190,7 +195,23 @@ public class NoteRepository {
         db.close();
         return deletedRows;
     }
-
+    public void updateNotePinStatusBulk(List<Note> notes, boolean isPinned) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (Note note : notes) {
+                ContentValues values = new ContentValues();
+                values.put(NotesDbHelper.COLUMN_PINNED, isPinned ? 1 : 0);
+                db.update(NotesDbHelper.TABLE_NOTES, values, NotesDbHelper.COLUMN_ID + " = ?", new String[]{String.valueOf(note.getId())});
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e("NoteRepository", "Error updating pin status for multiple notes", e);
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+    }
     // --- New Label-related methods ---
     public long addLabel(Label label) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();

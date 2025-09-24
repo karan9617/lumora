@@ -67,6 +67,15 @@
                 android:textColor="@android:color/white"
                android:layout_gravity="right"
                 />
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_shuffle"
+                android:id="@+id/shuffle"
+                android:layout_gravity="right"
+                android:background="@drawable/button_background_transparent"
+                android:layout_marginEnd="3dp"
+                />
 
         </androidx.appcompat.widget.Toolbar>
 

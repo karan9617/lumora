@@ -29,7 +29,14 @@
             android:text="Note content goes here..."
             android:maxLines="3"
             android:ellipsize="end" />
-
+        <ImageView
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:src="@drawable/ic_save"
+            android:id="@+id/imagesketch"
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone"
+        />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -41,6 +48,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:fontFamily="@font/latoregular"
                 android:text="Restore"
                 android:layout_marginEnd="4dp" />
 
@@ -49,6 +57,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:fontFamily="@font/latoregular"
                 android:text="Delete"
                 android:layout_marginStart="4dp" />
 

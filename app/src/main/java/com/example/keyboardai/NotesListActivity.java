@@ -1,6 +1,7 @@
 package com.example.keyboardai;
 
 import android.app.ActivityOptions;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -44,8 +45,13 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class NotesListActivity extends AppCompatActivity {
@@ -72,6 +78,7 @@ public class NotesListActivity extends AppCompatActivity {
     private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
+    ImageButton shuffle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +102,7 @@ public class NotesListActivity extends AppCompatActivity {
         initialtext = findViewById(R.id.initialtext);
         option_drawings_layout = findViewById(R.id.option_drawings_layout);
         option_text_layout = findViewById(R.id.option_text_layout);
+        shuffle = findViewById(R.id.shuffle);
         pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
         searchView = findViewById(R.id.search_view);
         fabAddNote = findViewById(R.id.fabAddNote);
@@ -133,7 +141,12 @@ public class NotesListActivity extends AppCompatActivity {
             drawerLayout.closeDrawers();
             return true;
         });
-
+        shuffle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showSortDialog();
+            }
+        });
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -422,7 +435,79 @@ public class NotesListActivity extends AppCompatActivity {
         });
 
     }
+    private void showSortDialog() {
+        final String[] options = {"Sort by Date", "Sort Alphabetically"};
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Sort notes by");
+        builder.setItems(options, (dialog, which) -> {
+            switch (which) {
+                case 0: // Sort by Date
+                    sortNotesByDate();
+                    break;
+                case 1: // Sort Alphabetically
+                    sortNotesAlphabetically();
+                    break;
+            }
+        });
+        builder.show();
+    }
+    /**
+     * Sorts the notes in both lists (pinned and unpinned) by date in descending order.
+     */
+    private void sortNotesByDate() {
+        // Sort the unpinned notes
+        Collections.sort(notesList, (note1, note2) -> {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            try {
+                Date date1 = dateFormat.parse(note1.getDate());
+                Date date2 = dateFormat.parse(note2.getDate());
+                // Sort in descending order (newest first)
+                return date2.compareTo(date1);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        });
+        notesAdapter.notifyDataSetChanged();
 
+        // Sort the pinned notes
+        Collections.sort(pinnedNotes, (note1, note2) -> {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            try {
+                Date date1 = dateFormat.parse(note1.getDate());
+                Date date2 = dateFormat.parse(note2.getDate());
+                // Sort in descending order (newest first)
+                return date2.compareTo(date1);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                return 0;
+            }
+        });
+        notesAdapterPinned.notifyDataSetChanged();
+        Toast.makeText(this, "Notes sorted by date", Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Sorts the notes in both lists (pinned and unpinned) alphabetically by title.
+     */
+    private void sortNotesAlphabetically() {
+        // Sort the unpinned notes
+        Collections.sort(notesList, (note1, note2) -> {
+            String title1 = note1.getTitle() != null ? note1.getTitle() : "";
+            String title2 = note2.getTitle() != null ? note2.getTitle() : "";
+            return title1.compareToIgnoreCase(title2);
+        });
+        notesAdapter.notifyDataSetChanged();
+
+        // Sort the pinned notes
+        Collections.sort(pinnedNotes, (note1, note2) -> {
+            String title1 = note1.getTitle() != null ? note1.getTitle() : "";
+            String title2 = note2.getTitle() != null ? note2.getTitle() : "";
+            return title1.compareToIgnoreCase(title2);
+        });
+        notesAdapterPinned.notifyDataSetChanged();
+        Toast.makeText(this, "Notes sorted alphabetically", Toast.LENGTH_SHORT).show();
+    }
     private void hideOptions(final Animation animation) {
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -610,17 +695,25 @@ public class NotesListActivity extends AppCompatActivity {
             } else if (id == R.id.dragNotes) {
 
             } else if (id == R.id.action_pin) {
-                List<Note> selectedNotes = notesAdapter.getSelectedNotes();
-                if (selectedNotes.isEmpty()) {
-                    mode.finish();
-                    return true;
-                }
-                for (Note note : selectedNotes) {
-                    boolean isPinned = note.isPinned();
-                    notesAdapter.onPinUnpinNote(note, !isPinned);
-                    notesAdapterPinned.onPinUnpinNote(note,!isPinned);
-                }
-                mode.finish();
+                final List<Note> selectedNotesToPin = notesAdapter.getSelectedNotes();
+                final List<Note> selectedPinnedNotesToUnpin = notesAdapterPinned.getSelectedNotes();
+
+                // Determine if we are pinning or unpinning.
+                boolean isPinning = !selectedNotesToPin.isEmpty();
+
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    if (isPinning) {
+                        noteRepository.updateNotePinStatusBulk(selectedNotesToPin, true);
+                    } else {
+                        noteRepository.updateNotePinStatusBulk(selectedPinnedNotesToUnpin, false);
+                    }
+
+                    runOnUiThread(() -> {
+                        loadNotesFromDatabase();
+                        Toast.makeText(NotesListActivity.this, isPinning ? "Notes pinned" : "Notes unpinned", Toast.LENGTH_SHORT).show();
+                        mode.finish();
+                    });
+                });
                 return true;
             }
             else if (id == R.id.action_delete_note) {

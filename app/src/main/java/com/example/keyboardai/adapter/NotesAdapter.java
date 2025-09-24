@@ -193,6 +193,9 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         }).start();
     }
 
+    public void onPinUnpinNote(List<Note> notes, boolean isPinned) {
+        noteRepository.updateNotePinStatusBulk(notes, isPinned);
+    }
     /**
      * Toggles the selection state of an item.
      * @param position The position of the item to toggle.
