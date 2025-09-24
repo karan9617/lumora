@@ -67,6 +67,7 @@
                 android:textColor="@android:color/white"
                android:layout_gravity="right"
                 />
+
         </androidx.appcompat.widget.Toolbar>
 
         <!-- NestedScrollView for unified scrolling of all note lists -->

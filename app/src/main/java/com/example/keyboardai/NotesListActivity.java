@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -71,7 +72,6 @@ public class NotesListActivity extends AppCompatActivity {
     private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -149,7 +149,7 @@ public class NotesListActivity extends AppCompatActivity {
                 return true;
             }
         });
-       
+
         fabAddNote.setOnClickListener(v -> {
             if (isOptionsVisible) {
                 optionsLayout.setVisibility(View.VISIBLE);
@@ -225,7 +225,7 @@ public class NotesListActivity extends AppCompatActivity {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 notesAdapter.onItemMove(fromPosition, toPosition);
-                return false;
+                return true;
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
@@ -240,6 +240,7 @@ public class NotesListActivity extends AppCompatActivity {
                 super.onSelectedChanged(viewHolder, actionState);
                 if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
                     notesAdapter.onItemsMoved();
+
                 } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                     if (actionMode == null) {
                         actionMode = startSupportActionMode(actionModeCallback);
@@ -251,6 +252,7 @@ public class NotesListActivity extends AppCompatActivity {
                         //selectedNote.setSelected(true);
                     }
                 }
+
 
             }
 
@@ -299,6 +301,7 @@ public class NotesListActivity extends AppCompatActivity {
                 } else {
                     startActivity(intent);
                 }
+
             }
         }, new NotesAdapter.OnNoteLongClickListener() {
             @Override
@@ -306,7 +309,6 @@ public class NotesListActivity extends AppCompatActivity {
                 if (actionMode == null) {
                     selectedNote = note;
                     actionMode = startSupportActionMode(actionModeCallback);
-                    //view.setBackgroundColor(Color.BLUE);
                 }
             }
         }, itemTouchHelper);
@@ -323,7 +325,7 @@ public class NotesListActivity extends AppCompatActivity {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 notesAdapterPinned.onItemMove(fromPosition, toPosition);
-                return false;
+                return true;
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
@@ -345,9 +347,14 @@ public class NotesListActivity extends AppCompatActivity {
                     int position = viewHolder.getAdapterPosition();
                     if (position != RecyclerView.NO_POSITION) {
                         selectedNote = pinnedNotes.get(position);
-                        selectedNote.setSelected(true);
+                        //selectedNote.setSelected(true);
                     }
                 }
+            }
+            @Override
+            public boolean isLongPressDragEnabled() {
+                // Enable long press drag
+                return false;
             }
         };
 
@@ -391,7 +398,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         }, new NotesAdapterPinned.OnNoteLongClickListener() {
             @Override
-            public void onNoteLongClick(Note note, View sharedView) {
+            public void onNoteLongClick(View view, Note note, View sharedView) {
                 if (actionMode == null) {
                     selectedNote = note;
                     actionMode = startSupportActionMode(actionModeCallback);
@@ -556,7 +563,7 @@ public class NotesListActivity extends AppCompatActivity {
         else{
             pinnedNotesHeader.setVisibility(View.VISIBLE);
         }
-        if(allNotes.size() == 0){
+        if(allNotes.size() == 0 && pinnedNotes.size() == 0){
             initialtext.setVisibility(View.VISIBLE);
         }
         else{
@@ -600,50 +607,47 @@ public class NotesListActivity extends AppCompatActivity {
                 startActivity(Intent.createChooser(shareIntent, "Share note via"));
                 mode.finish();
                 return true;
+            } else if (id == R.id.dragNotes) {
+
             } else if (id == R.id.action_pin) {
-                boolean isPinned = selectedNote.isPinned();
-                notesAdapter.onPinUnpinNote(selectedNote, !isPinned);
-                notesAdapterPinned.onPinUnpinNote(selectedNote,!isPinned);
+                List<Note> selectedNotes = notesAdapter.getSelectedNotes();
+                if (selectedNotes.isEmpty()) {
+                    mode.finish();
+                    return true;
+                }
+                for (Note note : selectedNotes) {
+                    boolean isPinned = note.isPinned();
+                    notesAdapter.onPinUnpinNote(note, !isPinned);
+                    notesAdapterPinned.onPinUnpinNote(note,!isPinned);
+                }
                 mode.finish();
                 return true;
             }
             else if (id == R.id.action_delete_note) {
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    // Step 1: Add the note to the trash database
-                    notesRepositoryTrash.addNote(selectedNote);
+                final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
+                final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
 
-                    // Step 2: Delete the note from the main database
-                    noteRepository.deleteNote(selectedNote.getId());
+                if (selectedNotes.isEmpty() && selectedPinnedNotes.isEmpty()) {
+                    mode.finish();
+                    return true;
+                }
+
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    // Delete notes from the main list
+                    for (Note note : selectedNotes) {
+                        notesRepositoryTrash.addNote(note);
+                        noteRepository.deleteNote(note.getId());
+                    }
+                    // Delete notes from the pinned list
+                    for (Note note : selectedPinnedNotes) {
+                        notesRepositoryTrash.addNote(note);
+                        noteRepository.deleteNote(note.getId());
+                    }
 
                     runOnUiThread(() -> {
-                        // Find and remove the note from the correct local list using its ID
-                        boolean removedFromPinned = false;
-                        for (int i = 0; i < pinnedNotes.size(); i++) {
-                            if (pinnedNotes.get(i).getId() == selectedNote.getId()) {
-                                pinnedNotes.remove(i);
-                                notesAdapterPinned.notifyItemRemoved(i);
-                                removedFromPinned = true;
-                                break;
-                            }
-                        }
-
-                        if (!removedFromPinned) {
-                            for (int i = 0; i < notesList.size(); i++) {
-                                if (notesList.get(i).getId() == selectedNote.getId()) {
-                                    notesList.remove(i);
-                                    notesAdapter.notifyItemRemoved(i);
-                                    break;
-                                }
-                            }
-                        }
-
-                        // Also remove from the master lists to keep data consistent
-                        allNotesFromDb.removeIf(note -> note.getId() == selectedNote.getId());
-                        allPinnedNotesFromDb.removeIf(note -> note.getId() == selectedNote.getId());
-
-                        updatePinnedSectionVisibility();
-
-                        Toast.makeText(NotesListActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
+                        // Reload data to reflect changes
+                        loadNotesFromDatabase();
+                        Toast.makeText(NotesListActivity.this, "Notes Deleted", Toast.LENGTH_SHORT).show();
                         mode.finish();
                     });
                 });
@@ -661,8 +665,8 @@ public class NotesListActivity extends AppCompatActivity {
             toolbar.setVisibility(View.VISIBLE);
             drawerLayout.setBackgroundColor(Color.argb(71,0,0,0));
 
-            notesAdapter.clearSelection();
-            notesAdapterPinned.clearSelection();
+            notesAdapter.clearSelections();
+            notesAdapterPinned.clearSelections();
         }
     };
 }

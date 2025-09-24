@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,8 +28,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.ArrayList;
 
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> implements ItemTouchHelperAdapter {
 
@@ -40,14 +42,16 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     private final OnNoteLongClickListener longClickListener;
     private final NoteRepository noteRepository;
     private final ItemTouchHelper itemTouchHelper;
-    private int selectedPosition = RecyclerView.NO_POSITION;
+
+    // Use a Set to store multiple selected positions
+    private final Set<Integer> selectedPositions = new HashSet<>();
 
     public interface OnNoteClickListener {
         void onNoteClick(Note note, View sharedView);
     }
 
     public interface OnNoteLongClickListener {
-        void onNoteLongClick(View v,Note note, View sharedView);
+        void onNoteLongClick(View v, Note note, View sharedView);
     }
 
     public NotesAdapter(Context context,
@@ -86,7 +90,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             holder.noteDate.setText(note.getDate());
         }
 
-        // Show drawing or text
         byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
         if (drawingData != null && drawingData.length > 0) {
             try {
@@ -110,58 +113,42 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             holder.noteDrawing.setVisibility(View.GONE);
         }
 
-        // Set background color
-        //holder.noteCard.setCardBackgroundColor(note.getColor());
-
-        // Transition name
         ViewCompat.setTransitionName(holder.noteCard, "note_card_transition_" + note.getId());
-
-        // Pin icon
         holder.notePinImageView.setVisibility(note.isPinned() ? View.VISIBLE : View.GONE);
-        /*
-        // Highlight border if selected
-        GradientDrawable border = new GradientDrawable();
-        border.setColor(Color.RED);
-        border.setCornerRadius(16);
-        border.setStroke(6, Color.parseColor("#3399FF")); // blue highlight border
-*/
-        if (position == selectedPosition || note.isSelected()) {
-            holder.noteCard.setCardBackgroundColor(Color.BLUE);
 
-            //holder.noteCard.setForeground(Color.RED);
+        // Check if the current note's position is in the set of selected positions.
+        if (selectedPositions.contains(position)) {
+            holder.noteCard.setCardBackgroundColor(Color.BLUE);
         } else {
             holder.noteCard.setCardBackgroundColor(note.getColor());
-            holder.noteCard.setForeground(null);
-
         }
 
-        // Normal click
         holder.itemView.setOnClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
-                Note clickedNote = notes.get(currentPosition);
-                int oldSelectedPosition = selectedPosition;
-                selectedPosition = RecyclerView.NO_POSITION;
-                if (oldSelectedPosition != RecyclerView.NO_POSITION && oldSelectedPosition < notes.size()) {
-                    notifyItemChanged(oldSelectedPosition);
+                // If we are in multi-selection mode, a click should toggle the selection.
+                if (selectedPositions.size() > 0) {
+                    toggleSelection(currentPosition);
+                } else {
+                    // Otherwise, a normal click should open the note.
+                    Note clickedNote = notes.get(currentPosition);
+                    listener.onNoteClick(clickedNote, holder.noteCard);
                 }
-                listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
 
-        // Long click = highlight + trigger listener
         holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note clickedNote = notes.get(currentPosition);
-                selectItem(currentPosition);
+                // On long click, we toggle the selection and enter multi-selection mode.
+                toggleSelection(currentPosition);
                 longClickListener.onNoteLongClick(v, clickedNote, holder.noteCard);
                 return true;
             }
             return false;
         });
     }
-
 
     @Override
     public int getItemCount() {
@@ -177,13 +164,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         } else {
             for (int i = fromPosition; i > toPosition; i--) {
                 Collections.swap(notes, i, i - 1);
-            }
-        }
-        if (selectedPosition != RecyclerView.NO_POSITION) {
-            int oldSelectedPosition = selectedPosition;
-            selectedPosition = RecyclerView.NO_POSITION;
-            if (oldSelectedPosition < notes.size()) {
-                notifyItemChanged(oldSelectedPosition);
             }
         }
         notifyItemMoved(fromPosition, toPosition);
@@ -213,24 +193,50 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         }).start();
     }
 
-    public void selectItem(int position) {
-        int oldPosition = selectedPosition;
-        selectedPosition = position;
-
-        if (oldPosition != RecyclerView.NO_POSITION) {
-            notifyItemChanged(oldPosition);
+    /**
+     * Toggles the selection state of an item.
+     * @param position The position of the item to toggle.
+     */
+    public void toggleSelection(int position) {
+        if (selectedPositions.contains(position)) {
+            selectedPositions.remove(position);
+        } else {
+            selectedPositions.add(position);
         }
-        if (selectedPosition != RecyclerView.NO_POSITION) {
-            notifyItemChanged(selectedPosition);
+        notifyItemChanged(position);
+    }
+
+    /**
+     * Clears all current selections.
+     */
+    public void clearSelections() {
+        if (!selectedPositions.isEmpty()) {
+            Set<Integer> oldSelections = new HashSet<>(selectedPositions);
+            selectedPositions.clear();
+            for (Integer position : oldSelections) {
+                notifyItemChanged(position);
+            }
         }
     }
 
-    public void clearSelection() {
-        int oldPosition = selectedPosition;
-        selectedPosition = RecyclerView.NO_POSITION;
-        if (oldPosition != RecyclerView.NO_POSITION) {
-            notifyItemChanged(oldPosition);
+    /**
+     * @return The number of notes currently selected.
+     */
+    public int getSelectedItemCount() {
+        return selectedPositions.size();
+    }
+
+    /**
+     * @return A list of the currently selected Note objects.
+     */
+    public List<Note> getSelectedNotes() {
+        List<Note> selectedNotes = new ArrayList<>();
+        for (int position : selectedPositions) {
+            if (position >= 0 && position < notes.size()) {
+                selectedNotes.add(notes.get(position));
+            }
         }
+        return selectedNotes;
     }
 
     public static class NoteViewHolder extends RecyclerView.ViewHolder {

@@ -30,10 +30,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.NoteViewHolder> implements ItemTouchHelperAdapter {
 
@@ -44,13 +47,13 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     private final NoteRepository noteRepository;
     private int selectedPosition = RecyclerView.NO_POSITION;
     private final ItemTouchHelper itemTouchHelper;
-
+    private final Set<Integer> selectedPositions = new HashSet<>();
     public interface OnNoteClickListener {
         void onNoteClick(Note note, View sharedView);
     }
 
     public interface OnNoteLongClickListener {
-        void onNoteLongClick(Note note, View sharedView);
+        void onNoteLongClick(View v,Note note, View sharedView);
     }
 
     public NotesAdapterPinned(Context context,
@@ -83,11 +86,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
             // Define the input and output date formats
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
-
-            // Parse the existing date string into a Date object
             Date date = inputFormat.parse(note.getDate());
-
-            // Format the Date object into the desired output string
             String formattedDate = outputFormat.format(date);
             holder.noteDate.setText(formattedDate);
         } catch (ParseException e) {
@@ -120,40 +119,26 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         }
 
         // Set the note's background color
-        holder.noteCard.setCardBackgroundColor(note.getColor());
-
-        // Set transition name for shared element transition
         ViewCompat.setTransitionName(holder.noteCard, "note_card_transition_" + note.getId());
-
-        // Manage the visibility of the pin icon based on the note's pinned status
-        if (note.isPinned()) {
-            holder.notePinImageView.setVisibility(View.VISIBLE);
+        holder.notePinImageView.setVisibility(note.isPinned() ? View.VISIBLE : View.GONE);
+// Check if the current note's position is in the set of selected positions.
+        if (selectedPositions.contains(position)) {
+            holder.noteCard.setCardBackgroundColor(Color.BLUE);
         } else {
-            holder.notePinImageView.setVisibility(View.GONE);
-        }
-
-        // Add a border for the selected note
-        GradientDrawable border = new GradientDrawable();
-        border.setColor(Color.TRANSPARENT);
-        border.setCornerRadius(16);
-        border.setStroke(4, Color.parseColor("#ADD8E6"));
-
-        if (position == selectedPosition) {
-            holder.noteCard.setForeground(border);
-        } else {
-            holder.noteCard.setForeground(null);
+            holder.noteCard.setCardBackgroundColor(note.getColor());
         }
 
         holder.itemView.setOnClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
-                Note clickedNote = notes.get(currentPosition);
-                int oldSelectedPosition = selectedPosition;
-                selectedPosition = RecyclerView.NO_POSITION;
-                if (oldSelectedPosition != RecyclerView.NO_POSITION && oldSelectedPosition < notes.size()) {
-                    notifyItemChanged(oldSelectedPosition);
+                // If we are in multi-selection mode, a click should toggle the selection.
+                if (selectedPositions.size() > 0) {
+                    toggleSelection(currentPosition);
+                } else {
+                    // Otherwise, a normal click should open the note.
+                    Note clickedNote = notes.get(currentPosition);
+                    listener.onNoteClick(clickedNote, holder.noteCard);
                 }
-                listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
 
@@ -161,97 +146,29 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
-                Note longPressedNote = notes.get(currentPosition);
-
-                // Animate the background color to a light blue color
-                ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), longPressedNote.getColor(), Color.parseColor("#ADD8E6"));
-                colorAnimation.setDuration(300); // Animation duration in milliseconds
-
-                colorAnimation.addUpdateListener(animator -> {
-                    holder.noteCard.setCardBackgroundColor((int) animator.getAnimatedValue());
-                });
-
-                // Animate the color back to the original after the long press is finished
-                colorAnimation.addListener(new android.animation.Animator.AnimatorListener() {
-                    @Override
-                    public void onAnimationStart(android.animation.Animator animator) {}
-
-                    @Override
-                    public void onAnimationEnd(android.animation.Animator animator) {
-                        ValueAnimator reverseAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), Color.parseColor("#ADD8E6"), longPressedNote.getColor());
-                        reverseAnimation.setDuration(300);
-                        reverseAnimation.addUpdateListener(reverseAnimator -> {
-                            holder.noteCard.setCardBackgroundColor((int) reverseAnimator.getAnimatedValue());
-                        });
-                        reverseAnimation.start();
-                    }
-
-                    @Override
-                    public void onAnimationCancel(android.animation.Animator animator) {}
-
-                    @Override
-                    public void onAnimationRepeat(android.animation.Animator animator) {}
-                });
-
-                colorAnimation.start();
-
-                if (currentPosition != selectedPosition) {
-                    int oldSelectedPosition = selectedPosition;
-                    selectedPosition = currentPosition;
-                    if (oldSelectedPosition != RecyclerView.NO_POSITION && oldSelectedPosition < notes.size()) {
-                        notifyItemChanged(oldSelectedPosition);
-                    }
-                    notifyItemChanged(selectedPosition);
-                }
-                longClickListener.onNoteLongClick(longPressedNote, holder.noteCard);
-                // Start the drag
-                if (itemTouchHelper != null) {
-                    itemTouchHelper.startDrag(holder);
-                }
+                Note clickedNote = notes.get(currentPosition);
+                // On long click, we toggle the selection and enter multi-selection mode.
+                toggleSelection(currentPosition);
+                longClickListener.onNoteLongClick(v, clickedNote, holder.noteCard);
                 return true;
             }
             return false;
         });
-
-        // Clear previous labels to prevent duplicates on recycled views
-        holder.labelsContainer.removeAllViews();
-
-        // Dynamically create and add TextViews for each label
-        new Thread(() -> {
-            List<Label> labels = noteRepository.getLabelsForNote(note.getId());
-            ((NotesListActivity) context).runOnUiThread(() -> {
-                for (Label label : labels) {
-                    TextView labelView = new TextView(context);
-                    labelView.setText(label.getName());
-                    labelView.setTextColor(Color.WHITE);
-                    labelView.setTextSize(10);
-                    labelView.setPadding(8, 4, 8, 4);
-
-                    // Create a rounded background with the label's color
-                    GradientDrawable background = new GradientDrawable();
-                    background.setColor(label.getColor());
-                    background.setCornerRadius(16);
-                    labelView.setBackground(background);
-
-                    // Add margins between label views
-                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                    );
-                    params.setMargins(0, 0, 8, 0); // Right margin for spacing
-                    labelView.setLayoutParams(params);
-
-                    holder.labelsContainer.addView(labelView);
-                }
-            });
-        }).start();
     }
 
     @Override
     public int getItemCount() {
         return notes.size();
     }
-
+    public List<Note> getSelectedNotes() {
+        List<Note> selectedNotes = new ArrayList<>();
+        for (int position : selectedPositions) {
+            if (position >= 0 && position < notes.size()) {
+                selectedNotes.add(notes.get(position));
+            }
+        }
+        return selectedNotes;
+    }
     @Override
     public void onItemMove(int fromPosition, int toPosition) {
         if (fromPosition < toPosition) {
@@ -261,14 +178,6 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         } else {
             for (int i = fromPosition; i > toPosition; i--) {
                 Collections.swap(notes, i, i - 1);
-            }
-        }
-
-        if (selectedPosition != RecyclerView.NO_POSITION) {
-            int oldSelectedPosition = selectedPosition;
-            selectedPosition = RecyclerView.NO_POSITION;
-            if (oldSelectedPosition < notes.size()) {
-                notifyItemChanged(oldSelectedPosition);
             }
         }
         notifyItemMoved(fromPosition, toPosition);
@@ -294,22 +203,23 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                 notes.clear();
                 notes.addAll(updatedNotes);
                 notifyDataSetChanged();
-
-                if (isPinned) {
-                    Toast.makeText(context, "Note pinned to top", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(context, "Note unpinned", Toast.LENGTH_SHORT).show();
-                }
             });
         }).start();
     }
-
-    public void clearSelection() {
-        if (selectedPosition != RecyclerView.NO_POSITION) {
-            int oldSelectedPosition = selectedPosition;
-            selectedPosition = RecyclerView.NO_POSITION;
-            if (oldSelectedPosition < notes.size()) {
-                notifyItemChanged(oldSelectedPosition);
+    public void toggleSelection(int position) {
+        if (selectedPositions.contains(position)) {
+            selectedPositions.remove(position);
+        } else {
+            selectedPositions.add(position);
+        }
+        notifyItemChanged(position);
+    }
+    public void clearSelections() {
+        if (!selectedPositions.isEmpty()) {
+            Set<Integer> oldSelections = new HashSet<>(selectedPositions);
+            selectedPositions.clear();
+            for (Integer position : oldSelections) {
+                notifyItemChanged(position);
             }
         }
     }
