@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="#B4000000"
-    tools:openDrawer="left"
+
     >
    <!-- tools:openDrawer="left"
     <TextView
@@ -28,7 +28,23 @@
         android:layout_height="match_parent"
 
         >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/initialtext"
+            android:textColor="@color/white"
+            android:gravity="center"
 
+            android:layout_centerInParent="true"
+            android:background="@drawable/rounded_purple_background"
+            android:padding="24dp"
+            android:elevation="8dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="NotesAI helps you create creative notes. Click on the plus button to get started. Happy noting :)"
+            />
         <!-- Toolbar is at the top -->
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"

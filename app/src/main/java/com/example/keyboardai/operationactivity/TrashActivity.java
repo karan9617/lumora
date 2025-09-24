@@ -98,7 +98,11 @@ public class TrashActivity extends AppCompatActivity {
             }
             allTrashNotesFromDb.clear();
             NotesListActivity.allNotes.addAll(allTrashNotesFromDb);
-            adapter.notifyDataSetChanged();
+
+            runOnUiThread(() -> {
+                adapter.notifyDataSetChanged();
+            });
+
         }).start();
         Toast.makeText(getApplicationContext(),"All notes restored..",Toast.LENGTH_SHORT).show();
     }

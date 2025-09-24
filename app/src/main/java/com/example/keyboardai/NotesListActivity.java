@@ -56,6 +56,7 @@ public class NotesListActivity extends AppCompatActivity {
     public static List<Note> trashList = new ArrayList<>();
     Toolbar toolbar;
     private NoteRepository noteRepository;
+    TextView initialtext;
     FloatingActionButton fabAddNote;
     LinearLayout option_text_layout, option_drawings_layout;
     private DrawerLayout drawerLayout;
@@ -85,6 +86,7 @@ public class NotesListActivity extends AppCompatActivity {
         NavigationView navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        initialtext = findViewById(R.id.initialtext);
         option_drawings_layout = findViewById(R.id.option_drawings_layout);
         option_text_layout = findViewById(R.id.option_text_layout);
         pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
@@ -533,6 +535,12 @@ public class NotesListActivity extends AppCompatActivity {
         }
         else{
             pinnedNotesHeader.setVisibility(View.VISIBLE);
+        }
+        if(allNotes.size() == 0){
+            initialtext.setVisibility(View.VISIBLE);
+        }
+        else{
+            initialtext.setVisibility(View.GONE);
         }
 
     }

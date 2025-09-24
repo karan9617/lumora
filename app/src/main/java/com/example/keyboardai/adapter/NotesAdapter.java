@@ -140,6 +140,30 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
+        holder.itemView.setOnLongClickListener(v -> {
+            int currentPosition = holder.getAdapterPosition();
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                Note clickedNote = notes.get(currentPosition);
+                selectItem(currentPosition);
+
+                longClickListener.onNoteLongClick(clickedNote, holder.noteCard);
+                return true;
+            }
+            return false;
+        });
+    }
+    public void selectItem(int position) {
+        if (selectedPosition == position) {
+            // If the same item is long-clicked again, clear the selection
+            clearSelection();
+        } else {
+            // Un-select the previously selected item
+            int oldSelectedPosition = selectedPosition;
+            selectedPosition = position;
+            notifyItemChanged(oldSelectedPosition);
+            // Select the new item
+            notifyItemChanged(selectedPosition);
+        }
     }
 
     @Override

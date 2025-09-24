@@ -131,7 +131,6 @@ public class Notepad extends AppCompatActivity {
         selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
         imagePath = (currentNode == null )? "":currentNode.getImagePath();
         drawingData = (currentNode == null )? null :FileUtils.loadFileFromPath(currentNode.getImagePath());
-
         DrawingActivity.DrawingDataManager.clearDrawingData();
         /*
         // NEW: Retrieve the pinned status from the intent
@@ -149,6 +148,7 @@ public class Notepad extends AppCompatActivity {
                 // Assign the bitmap to your ImageView and make it visible
                 imagesketch.setImageBitmap(savedBitmap);
                 imagesketch.setVisibility(View.VISIBLE);
+                clearImageButton.setVisibility(View.VISIBLE);
             }
         }
 
@@ -329,6 +329,13 @@ public class Notepad extends AppCompatActivity {
         });
     }
     public void registerListeners(){
+        clearImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingData = null;
+                saveNote();
+            }
+        });
         black_pen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -411,6 +418,7 @@ public class Notepad extends AppCompatActivity {
             toolbar.setVisibility(View.GONE);
             resultText.setVisibility(View.GONE);
             imagesketch.setVisibility(View.GONE); // Hide the ImageView when drawing
+            clearImageButton.setVisibility(View.GONE);
             drawingView.setVisibility(View.VISIBLE);
             toggleModeDrawSave.setVisibility(View.VISIBLE);
 
@@ -425,6 +433,7 @@ public class Notepad extends AppCompatActivity {
             resultText.setVisibility(View.VISIBLE);
             if (imagesketch.getDrawable() != null) { // Only show imagesketch if it has an image
                 imagesketch.setVisibility(View.VISIBLE);
+                clearImageButton.setVisibility(View.VISIBLE);
             }
             drawingView.setVisibility(View.GONE);
             toggleModeDrawSave.setVisibility(View.GONE);
@@ -591,10 +600,12 @@ public class Notepad extends AppCompatActivity {
             if (savedBitmap != null) {
                 imagesketch.setImageBitmap(savedBitmap);
                 imagesketch.setVisibility(View.VISIBLE);
+                clearImageButton.setVisibility(View.VISIBLE);
             }
         } else {
             imagesketch.setImageDrawable(null);
             imagesketch.setVisibility(View.GONE);
+            clearImageButton.setVisibility(View.GONE);
         }
 
         isNoteModified = false;
@@ -776,6 +787,7 @@ public class Notepad extends AppCompatActivity {
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
         listeningProgress = findViewById(R.id.listeningProgress);
+        clearImageButton =  findViewById(R.id.clearImageButton);
         resultText = findViewById(R.id.resultText);
         titleText = findViewById(R.id.noteTitleEditText);
         mainContentLayout = findViewById(R.id.main_content_layout);
