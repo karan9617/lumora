@@ -1,7 +1,5 @@
 package com.example.keyboardai.adapter;
 
-import android.animation.ArgbEvaluator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -15,7 +13,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.keyboardai.Models.Label;
 import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.NotesListActivity;
 import com.example.keyboardai.R;
@@ -28,7 +25,6 @@ import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -51,10 +47,9 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     }
 
     public interface OnNoteLongClickListener {
-        void onNoteLongClick(Note note, View sharedView);
+        void onNoteLongClick(View v,Note note, View sharedView);
     }
 
-    // This constructor expects an ItemTouchHelper instance as the last argument
     public NotesAdapter(Context context,
                         List<Note> notes,
                         OnNoteClickListener listener,
@@ -81,23 +76,18 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
         holder.noteTitle.setText(note.getTitle());
         try {
-            // Define the input and output date formats
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
-
-            // Parse the existing date string into a Date object
             Date date = inputFormat.parse(note.getDate());
-
-            // Format the Date object into the desired output string
             String formattedDate = outputFormat.format(date);
             holder.noteDate.setText(formattedDate);
         } catch (ParseException e) {
             e.printStackTrace();
-            holder.noteDate.setText(note.getDate()); // Fallback to original date if parsing fails
+            holder.noteDate.setText(note.getDate());
         }
-        // Conditionally show/hide drawing and text content views
-        byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
 
+        // Show drawing or text
+        byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
         if (drawingData != null && drawingData.length > 0) {
             try {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
@@ -120,31 +110,32 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             holder.noteDrawing.setVisibility(View.GONE);
         }
 
-        // Set the note's background color
-        holder.noteCard.setCardBackgroundColor(note.getColor());
+        // Set background color
+        //holder.noteCard.setCardBackgroundColor(note.getColor());
 
-        // Set transition name for shared element transition
+        // Transition name
         ViewCompat.setTransitionName(holder.noteCard, "note_card_transition_" + note.getId());
 
-        // Manage the visibility of the pin icon based on the note's pinned status
-        if (note.isPinned()) {
-            holder.notePinImageView.setVisibility(View.VISIBLE);
-        } else {
-            holder.notePinImageView.setVisibility(View.GONE);
-        }
-
-        // Add a border for the selected note
+        // Pin icon
+        holder.notePinImageView.setVisibility(note.isPinned() ? View.VISIBLE : View.GONE);
+        /*
+        // Highlight border if selected
         GradientDrawable border = new GradientDrawable();
-        border.setColor(Color.TRANSPARENT);
+        border.setColor(Color.RED);
         border.setCornerRadius(16);
-        border.setStroke(4, Color.parseColor("#ADD8E6"));
+        border.setStroke(6, Color.parseColor("#3399FF")); // blue highlight border
+*/
+        if (position == selectedPosition || note.isSelected()) {
+            holder.noteCard.setCardBackgroundColor(Color.BLUE);
 
-        if (position == selectedPosition) {
-            holder.noteCard.setForeground(border);
+            //holder.noteCard.setForeground(Color.RED);
         } else {
+            holder.noteCard.setCardBackgroundColor(note.getColor());
             holder.noteCard.setForeground(null);
+
         }
 
+        // Normal click
         holder.itemView.setOnClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
@@ -157,42 +148,26 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 listener.onNoteClick(clickedNote, holder.noteCard);
             }
         });
-        /*holder.itemView.setOnLongClickListener(v -> {
+
+        // Long click = highlight + trigger listener
+        holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note clickedNote = notes.get(currentPosition);
                 selectItem(currentPosition);
-
-                longClickListener.onNoteLongClick(clickedNote, holder.noteCard);
+                longClickListener.onNoteLongClick(v, clickedNote, holder.noteCard);
                 return true;
             }
             return false;
-        });*/
+        });
     }
-    public void selectItem(int position) {
-        if (selectedPosition == position) {
-            // If the same item is long-clicked again, clear the selection
-            clearSelection();
-        } else {
-            // Un-select the previously selected item
-            int oldSelectedPosition = selectedPosition;
-            selectedPosition = position;
-            notifyItemChanged(oldSelectedPosition);
-            // Select the new item
-            notifyItemChanged(selectedPosition);
-        }
-    }
+
 
     @Override
     public int getItemCount() {
         return notes.size();
     }
 
-    /**
-     * Required by the ItemTouchHelperAdapter interface.
-     * This method is called when an item is moved.
-     * It now returns a boolean to satisfy the interface.
-     */
     @Override
     public void onItemMove(int fromPosition, int toPosition) {
         if (fromPosition < toPosition) {
@@ -204,7 +179,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 Collections.swap(notes, i, i - 1);
             }
         }
-
         if (selectedPosition != RecyclerView.NO_POSITION) {
             int oldSelectedPosition = selectedPosition;
             selectedPosition = RecyclerView.NO_POSITION;
@@ -213,14 +187,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             }
         }
         notifyItemMoved(fromPosition, toPosition);
-        return; // Return true to indicate the move was handled
     }
-
-    /**
-     * Required by the ItemTouchHelperAdapter interface.
-     * This method is called when an item is dismissed (e.g., swiped away).
-     */
-
 
     @Override
     public void onItemsMoved() {
@@ -240,30 +207,34 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             ((NotesListActivity) context).runOnUiThread(() -> {
                 notes.clear();
                 notes.addAll(updatedNotes);
-
                 notifyDataSetChanged();
-
-                if (isPinned) {
-                    Toast.makeText(context, "Note pinned to top", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(context, "Note unpinned", Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(context, isPinned ? "Note pinned to top" : "Note unpinned", Toast.LENGTH_SHORT).show();
             });
         }).start();
     }
 
-    public void clearSelection() {
+    public void selectItem(int position) {
+        int oldPosition = selectedPosition;
+        selectedPosition = position;
+
+        if (oldPosition != RecyclerView.NO_POSITION) {
+            notifyItemChanged(oldPosition);
+        }
         if (selectedPosition != RecyclerView.NO_POSITION) {
-            int oldSelectedPosition = selectedPosition;
-            selectedPosition = RecyclerView.NO_POSITION;
-            if (oldSelectedPosition < notes.size()) {
-                notifyItemChanged(oldSelectedPosition);
-            }
+            notifyItemChanged(selectedPosition);
+        }
+    }
+
+    public void clearSelection() {
+        int oldPosition = selectedPosition;
+        selectedPosition = RecyclerView.NO_POSITION;
+        if (oldPosition != RecyclerView.NO_POSITION) {
+            notifyItemChanged(oldPosition);
         }
     }
 
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
-        TextView noteTitle,noteContent,noteDate;
+        TextView noteTitle, noteContent, noteDate;
         ImageView noteDrawing;
         ImageView notePinImageView;
         CardView noteCard;

@@ -104,7 +104,6 @@ public class NotesListActivity extends AppCompatActivity {
         final Animation slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         final Animation slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
 
-
         optionsLayout = findViewById(R.id.options_layout);
         TextView optionText = findViewById(R.id.option_text);
         TextView optionDrawing = findViewById(R.id.option_drawings);
@@ -246,11 +245,21 @@ public class NotesListActivity extends AppCompatActivity {
                         actionMode = startSupportActionMode(actionModeCallback);
                     }
                     int position = viewHolder.getAdapterPosition();
+
                     if (position != RecyclerView.NO_POSITION) {
                         selectedNote = notesList.get(position);
+                        //selectedNote.setSelected(true);
                     }
                 }
+
             }
+
+            @Override
+            public boolean isLongPressDragEnabled() {
+                // Enable long press drag
+                return false;
+            }
+
         };
 
         itemTouchHelper = new ItemTouchHelper(callback);
@@ -293,10 +302,11 @@ public class NotesListActivity extends AppCompatActivity {
             }
         }, new NotesAdapter.OnNoteLongClickListener() {
             @Override
-            public void onNoteLongClick(Note note, View sharedView) {
+            public void onNoteLongClick(View view, Note note, View sharedView) {
                 if (actionMode == null) {
                     selectedNote = note;
                     actionMode = startSupportActionMode(actionModeCallback);
+                    //view.setBackgroundColor(Color.BLUE);
                 }
             }
         }, itemTouchHelper);
@@ -335,6 +345,7 @@ public class NotesListActivity extends AppCompatActivity {
                     int position = viewHolder.getAdapterPosition();
                     if (position != RecyclerView.NO_POSITION) {
                         selectedNote = pinnedNotes.get(position);
+                        selectedNote.setSelected(true);
                     }
                 }
             }
@@ -554,14 +565,15 @@ public class NotesListActivity extends AppCompatActivity {
 
     }
     private ActionMode.Callback actionModeCallback = new ActionMode.Callback() {
+
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             MenuInflater inflater = mode.getMenuInflater();
             inflater.inflate(R.menu.menu_contextual_action_bar, menu);
             searchView.setVisibility(View.GONE);
+
             toolbar.setVisibility(View.GONE);
             drawerLayout.setBackgroundColor(Color.argb(43,135,73,251));
-
             fabAddNote.setVisibility(View.GONE);
             optionsLayout.setVisibility(View.GONE);
 

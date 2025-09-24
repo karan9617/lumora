@@ -15,7 +15,8 @@ public class Note implements Serializable {
     private boolean isPinned;
     // NEW FIELD: To store the file path of the saved image
     private String imagePath;
-
+    // NEW FIELD: For selection state (not stored in database)
+    private boolean isSelected = false;
     public Note(){}
 
     // Full constructor for loading notes from the database
@@ -28,6 +29,8 @@ public class Note implements Serializable {
         this.order = order;
         this.isPinned = isPinned;
         this.imagePath = imagePath;
+        this.isSelected = false; // Default to not selected
+
     }
 
     // Constructor for creating a new note before insertion
@@ -38,6 +41,8 @@ public class Note implements Serializable {
         this.color = color;
         this.isPinned = isPinned;
         this.imagePath = imagePath;
+        this.isSelected = false; // Default to not selected
+
     }
     public Note(String title, String content, String date, int color, int order, boolean isPinned, String imagePath) {
         this.title = title;
@@ -47,6 +52,8 @@ public class Note implements Serializable {
         this.order = order;
         this.isPinned = isPinned;
         this.imagePath = imagePath;
+        this.isSelected = false; // Default to not selected
+
     }
 
     // --- Getters and Setters ---
@@ -118,4 +125,6 @@ public class Note implements Serializable {
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
     }
+    public boolean isSelected() { return isSelected; }
+    public void setSelected(boolean selected) { this.isSelected = selected; }
 }
