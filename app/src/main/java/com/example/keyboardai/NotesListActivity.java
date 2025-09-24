@@ -51,6 +51,7 @@ public class NotesListActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
     private NotesAdapterPinned notesAdapterPinned;
+    View transparentOverlay;
     private List<Note> notesList;
     List<Note> allNotesFromDb, allPinnedNotesFromDb;
     public static List<Note> trashList = new ArrayList<>();
@@ -79,7 +80,12 @@ public class NotesListActivity extends AppCompatActivity {
 
         getWindow().setAllowEnterTransitionOverlap(false);
         getWindow().setAllowReturnTransitionOverlap(false);
-
+        transparentOverlay = findViewById(R.id.transparent_overlay);
+        transparentOverlay.setOnClickListener(v -> {
+            if (isOptionsVisible) {
+                hideOptions();
+            }
+        });
         noteRepository = new NoteRepository(this);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -144,7 +150,7 @@ public class NotesListActivity extends AppCompatActivity {
                 return true;
             }
         });
-
+       
         fabAddNote.setOnClickListener(v -> {
             if (isOptionsVisible) {
                 optionsLayout.setVisibility(View.VISIBLE);
@@ -383,6 +389,7 @@ public class NotesListActivity extends AppCompatActivity {
         }, itemTouchHelperPinned);
         notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
         updatePinnedSectionVisibility();
+
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -443,6 +450,7 @@ public class NotesListActivity extends AppCompatActivity {
         AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
         fadeIn.setDuration(250);
         optionsLayout.startAnimation(fadeIn);
+        transparentOverlay.setVisibility(View.VISIBLE);
         isOptionsVisible = true;
     }
     private void hideOptions() {
@@ -454,6 +462,7 @@ public class NotesListActivity extends AppCompatActivity {
             @Override
             public void onAnimationEnd(Animation animation) {
                 optionsLayout.setVisibility(View.GONE);
+                transparentOverlay.setVisibility(View.GONE);
             }
 
             @Override
