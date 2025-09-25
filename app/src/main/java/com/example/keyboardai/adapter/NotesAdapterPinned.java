@@ -92,7 +92,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
             holder.labeltext1.setText("general");
             holder.labeltext2.setText("general");
         }
-        holder.noteTitle.setText(note.getTitle());
+        holder.noteTitle.setText(titleArr[0]);
         //holder.noteContent.setText(note.getContent());
         try {
             // Define the input and output date formats
