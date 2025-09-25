@@ -11,9 +11,11 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -38,6 +40,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 
 import com.example.keyboardai.Models.Note;
@@ -69,6 +73,7 @@ import org.json.JSONObject;
 public class Notepad extends AppCompatActivity {
 
     private static final String TAG = "NotepadActivity";
+    private static final int PERMISSION_REQUEST_CODE = 1;
 
     private SpeechRecognizer speechRecognizer;
     FrameLayout imageframelayout;
@@ -353,24 +358,76 @@ public class Notepad extends AppCompatActivity {
         voiceicon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaPlayer mp = MediaPlayer.create(Notepad.this, R.raw.googleassistant);
-                if (mp != null) {
-                    mp.start();
-                    mp.setOnCompletionListener(mediaPlayer -> {
-                        mediaPlayer.release();
-                    });
-                }
-                if (!isListening) {
-                    isListening = true;
-                    hintTextView.setVisibility(View.VISIBLE);
-                    speechRecognizer.startListening(recognizerIntent);
-                    Toast.makeText(getApplicationContext(), "Listening...", Toast.LENGTH_SHORT).show();
+                // Check if the permission is already granted.
+                if (ContextCompat.checkSelfPermission(Notepad.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+                    // --- Case 1: Permission is denied, but not permanently. ---
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(Notepad.this, android.Manifest.permission.RECORD_AUDIO)) {
+                        // Show an explanation to the user via a dialog.
+                        new AlertDialog.Builder(Notepad.this)
+                                .setTitle("Microphone Permission Required")
+                                .setMessage("This app needs microphone access to enable voice-to-text functionality. Please grant the permission to use this feature.")
+                                .setPositiveButton("Grant", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // Request the permission again.
+                                        ActivityCompat.requestPermissions(Notepad.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+                                    }
+                                })
+                                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                    }
+                                })
+                                .create()
+                                .show();
+                    } else {
+                        // --- Case 2: Permission is permanently denied ("Don't ask again" was checked). ---
+                        new AlertDialog.Builder(Notepad.this)
+                                .setTitle("Permission Permanently Denied")
+                                .setMessage("Microphone permission is required for this feature. Please enable it manually in the app settings.")
+                                .setPositiveButton("Go to Settings", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // Direct the user to the app's settings page.
+                                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        Uri uri = Uri.fromParts("package", getPackageName(), null);
+                                        intent.setData(uri);
+                                        startActivity(intent);
+                                    }
+                                })
+                                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                    }
+                                })
+                                .create()
+                                .show();
+                    }
+
                 } else {
-                    isListening = false;
-                    hintTextView.setVisibility(View.INVISIBLE);
-                    speechRecognizer.stopListening();
-                    listeningProgress.setVisibility(ProgressBar.GONE);
-                    Toast.makeText(getApplicationContext(), "Stopped listening", Toast.LENGTH_SHORT).show();
+                    // --- Case 3: Permission is already granted. ---
+                    MediaPlayer mp = MediaPlayer.create(Notepad.this, R.raw.googleassistant);
+                    if (mp != null) {
+                        mp.start();
+                        mp.setOnCompletionListener(mediaPlayer -> {
+                            mediaPlayer.release();
+                        });
+                    }
+                    if (!isListening) {
+                        isListening = true;
+                        hintTextView.setVisibility(View.VISIBLE);
+                        speechRecognizer.startListening(recognizerIntent);
+                        Toast.makeText(getApplicationContext(), "Listening...", Toast.LENGTH_SHORT).show();
+                    } else {
+                        isListening = false;
+                        hintTextView.setVisibility(View.INVISIBLE);
+                        speechRecognizer.stopListening();
+                        listeningProgress.setVisibility(ProgressBar.GONE);
+                        Toast.makeText(getApplicationContext(), "Stopped listening", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
