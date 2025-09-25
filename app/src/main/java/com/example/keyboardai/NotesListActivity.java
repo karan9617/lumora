@@ -541,6 +541,12 @@ public class NotesListActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finishAffinity();  // closes all activities in the task
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
 

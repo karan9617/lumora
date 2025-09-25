@@ -138,7 +138,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
         // Check if the current note's position is in the set of selected positions.
         if (selectedPositions.contains(position)) {
-            holder.noteCard.setCardBackgroundColor(Color.BLUE);
+            holder.noteCard.setCardBackgroundColor(Color.argb(71,123,166,239));
         } else {
             holder.noteCard.setCardBackgroundColor(note.getColor());
         }

@@ -111,7 +111,8 @@ public class Notepad extends AppCompatActivity {
 
     // API Key for Gemini API, will be provided at runtime
     private static final String API_KEY = "AIzaSyCes8zNYgUuYAfpKGLGYmG5r0oQW5cx_2o";
-    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
+   // private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
+   private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -676,16 +677,19 @@ public class Notepad extends AppCompatActivity {
         this.drawingData = drawingDataToSave;
 
         if (drawingData != null && drawingData.length > 0) {
-            Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
-            noteRepository.saveBytesToFile(drawingDataToSave,imagePath);
-            if (savedBitmap != null) {
-                imagesketch.setImageBitmap(savedBitmap);
-                imagesketch.setVisibility(View.VISIBLE);
-                imageCard.setVisibility(View.VISIBLE);
+            if(drawingDataToSave != null && drawingDataToSave.length > 0){
+                Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
+                noteRepository.saveBytesToFile(drawingDataToSave,imagePath);
+                if (savedBitmap != null) {
+                    imagesketch.setImageBitmap(savedBitmap);
+                    imagesketch.setVisibility(View.VISIBLE);
+                    imageCard.setVisibility(View.VISIBLE);
 
-                imageframelayout.setVisibility(View.VISIBLE);
-                clearImageButton.setVisibility(View.VISIBLE);
+                    imageframelayout.setVisibility(View.VISIBLE);
+                    clearImageButton.setVisibility(View.VISIBLE);
+                }
             }
+
         } else {
             imagesketch.setImageDrawable(null);
             imagesketch.setVisibility(View.GONE);
