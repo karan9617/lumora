@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -177,6 +179,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note clickedNote = notes.get(currentPosition);
+                Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+                vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
                 float[] hsv = new float[3];
                 Color.colorToHSV(baseColor, hsv);
                 // Reduce the Value (brightness) component, e.g., by 20% (0.8)
@@ -281,7 +285,19 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     public void toggleSelection(int position) {
         if (selectedPositions.contains(position)) {
             selectedPositions.remove(position);
+
+            // Check if this was the last item. If so, stop the shaking globally.
+            if (selectedPositions.size() == 0) {
+                stopShaking();
+                // Note: If you have an ActionMode/Contextual Toolbar, you would also close it here
+                // or rely on the Activity/Fragment to close it when getSelectedItemCount() is 0.
+            }
+
         } else {
+            // Check if this is the first item being selected. If so, start the shaking globally.
+            if (selectedPositions.size() == 0) {
+                startShaking();
+            }
             selectedPositions.add(position);
         }
         notifyItemChanged(position);

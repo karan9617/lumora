@@ -7,6 +7,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -158,7 +160,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
             int darkerColor = Color.HSVToColor(hsv);
             holder.noteCard.setCardBackgroundColor(darkerColor);
             holder.noteCard.setStrokeWidth(12); // Adjust the thickness as needed (in pixels)
-
+            startShaking();
             holder.noteCard.setStrokeColor(Color.rgb(41, 128, 185)); // A nice dark blue color
         } else {
             holder.noteCard.setCardBackgroundColor(note.getColor());
@@ -182,6 +184,9 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         // The following code for the long-press animation and labels has been restored.
         holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
+            Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE));
+
             float[] hsv = new float[3];
             Color.colorToHSV(baseColor, hsv);
             // Reduce the Value (brightness) component, e.g., by 20% (0.8)
@@ -289,7 +294,19 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     public void toggleSelection(int position) {
         if (selectedPositions.contains(position)) {
             selectedPositions.remove(position);
+
+            // Check if this was the last item. If so, stop the shaking globally.
+            if (selectedPositions.size() == 0) {
+                stopShaking();
+                // Note: If you have an ActionMode/Contextual Toolbar, you would also close it here
+                // or rely on the Activity/Fragment to close it when getSelectedItemCount() is 0.
+            }
+
         } else {
+            // Check if this is the first item being selected. If so, start the shaking globally.
+            if (selectedPositions.size() == 0) {
+                startShaking();
+            }
             selectedPositions.add(position);
         }
         notifyItemChanged(position);

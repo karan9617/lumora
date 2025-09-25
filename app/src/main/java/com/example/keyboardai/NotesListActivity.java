@@ -124,10 +124,7 @@ public class NotesListActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            if (id == R.id.nav_home) {
-                Intent homeIntent = new Intent(NotesListActivity.this, NotesListActivity.class);
-                startActivity(homeIntent);
-            }  else if (id == R.id.nav_instructions) {
+            if (id == R.id.nav_instructions) {
                 startActivity(new Intent(this, InstructionsActivity.class));
                 Toast.makeText(this, "Instructions clicked", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_trash) {
@@ -699,9 +696,7 @@ public class NotesListActivity extends AppCompatActivity {
                 startActivity(Intent.createChooser(shareIntent, "Share note via"));
                 mode.finish();
                 return true;
-            } else if (id == R.id.dragNotes) {
-
-            } else if (id == R.id.action_pin) {
+            }  else if (id == R.id.action_pin) {
                 final List<Note> selectedNotesToPin = notesAdapter.getSelectedNotes();
                 final List<Note> selectedPinnedNotesToUnpin = notesAdapterPinned.getSelectedNotes();
 
