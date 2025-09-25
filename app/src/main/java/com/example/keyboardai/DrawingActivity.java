@@ -169,6 +169,7 @@ public class DrawingActivity extends AppCompatActivity {
                         drawingNote.setTitle("Sketch");
                         drawingNote.setColor(Color.WHITE); // Default color
                         drawingNote.setDate(getCurrentDate());
+                        drawingNote.setContent("");
                         drawingNote.setPinned(false);
                         drawingNote.setImagePath(imagePath);
                         long newRowId = noteRepository.addNote(drawingNote);

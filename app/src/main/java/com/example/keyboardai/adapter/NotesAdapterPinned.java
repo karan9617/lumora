@@ -79,7 +79,19 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
-
+        String[] titleArr = note.getTitle().split(";");
+        if(titleArr.length >= 3){
+            holder.labeltext1.setText(titleArr[1]);
+            holder.labeltext2.setText(titleArr[2]);
+        }
+        else if(titleArr.length >=2){
+            holder.labeltext1.setText(titleArr[1]);
+            holder.labeltext2.setText("general");
+        }
+        else{
+            holder.labeltext1.setText("general");
+            holder.labeltext2.setText("general");
+        }
         holder.noteTitle.setText(note.getTitle());
         //holder.noteContent.setText(note.getContent());
         try {
@@ -97,6 +109,14 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         // Check if the note has a drawing and set its visibility
         byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
         if (drawingData != null && drawingData.length > 0) {
+            if(note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)){
+                holder.labeltext1.setVisibility(View.GONE);
+                holder.labeltext2.setVisibility(View.GONE);
+            }
+            else{
+                holder.labeltext1.setVisibility(View.VISIBLE);
+                holder.labeltext2.setVisibility(View.VISIBLE);
+            }
             try {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
                 if (drawingBitmap != null) {
@@ -225,7 +245,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     }
 
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
-        TextView noteTitle;
+        TextView noteTitle,labeltext1,labeltext2;
         TextView noteContent;
         TextView noteDate;
         ImageView noteDrawing;
@@ -237,6 +257,8 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
             super(itemView);
             noteTitle = itemView.findViewById(R.id.noteTitleTextView);
             noteContent = itemView.findViewById(R.id.noteContentTextView);
+            labeltext1 = itemView.findViewById(R.id.labeltext1);
+            labeltext2 = itemView.findViewById(R.id.labeltext2);
             noteDate = itemView.findViewById(R.id.noteDateTextView);
             noteDrawing = itemView.findViewById(R.id.noteDrawingImageView);
             notePinImageView = itemView.findViewById(R.id.pinImageView);

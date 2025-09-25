@@ -77,8 +77,20 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
-
-        holder.noteTitle.setText(note.getTitle());
+        String[] titleArr = note.getTitle().split(";");
+        if(titleArr.length >= 3){
+            holder.labeltext1.setText(titleArr[1]);
+            holder.labeltext2.setText(titleArr[2]);
+        }
+        else if(titleArr.length >=2){
+            holder.labeltext1.setText(titleArr[1]);
+            holder.labeltext2.setText("general");
+        }
+        else{
+            holder.labeltext1.setText("general");
+            holder.labeltext2.setText("general");
+        }
+        holder.noteTitle.setText(titleArr[0]);
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
@@ -92,6 +104,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
         byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
         if (drawingData != null && drawingData.length > 0) {
+            if(note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)){
+                holder.labeltext1.setVisibility(View.GONE);
+                holder.labeltext2.setVisibility(View.GONE);
+            }
+            else{
+                holder.labeltext1.setVisibility(View.VISIBLE);
+                holder.labeltext2.setVisibility(View.VISIBLE);
+            }
             try {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
                 if (drawingBitmap != null) {
@@ -243,7 +263,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     }
 
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
-        TextView noteTitle, noteContent, noteDate;
+        TextView noteTitle, noteContent, noteDate,labeltext1,labeltext2;
         ImageView noteDrawing;
         ImageView notePinImageView;
         CardView noteCard;
@@ -253,6 +273,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             super(itemView);
             noteTitle = itemView.findViewById(R.id.noteTitleTextView);
             noteContent = itemView.findViewById(R.id.noteContentTextView);
+            labeltext1 = itemView.findViewById(R.id.labeltext1);
+            labeltext2 = itemView.findViewById(R.id.labeltext2);
             noteDate = itemView.findViewById(R.id.noteDateTextView);
             noteDrawing = itemView.findViewById(R.id.noteDrawingImageView);
             notePinImageView = itemView.findViewById(R.id.pinImageView);

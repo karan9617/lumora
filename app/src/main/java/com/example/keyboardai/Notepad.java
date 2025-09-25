@@ -47,6 +47,7 @@ import androidx.core.view.ViewCompat;
 import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.data.FileUtils;
 import com.example.keyboardai.data.NoteRepository;
+import com.example.keyboardai.data.WordTokenizer;
 import com.example.keyboardai.processor.WordProcessor;
 import com.example.keyboardai.ui.DrawingView;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -134,7 +135,7 @@ public class Notepad extends AppCompatActivity {
         imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
         drawingData = FileUtils.loadFileFromPath(getIntent().getStringExtra("note_image_path"));
         */
-        String noteTitle = (currentNode == null )? "":currentNode.getTitle();
+        String noteTitle = (currentNode == null )? "":(currentNode.getTitle().split(";")[0]);
         String noteContent = (currentNode == null )? "":currentNode.getContent();
         noteDate = (currentNode == null )? "":currentNode.getDate();
         selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
@@ -611,8 +612,20 @@ public class Notepad extends AppCompatActivity {
     }
 
     public void saveNote() {
-        String title = titleText.getText().toString().trim();
+
         String content = resultText.getText().toString().trim();
+        WordTokenizer tokenizer = new WordTokenizer(content);
+        List<String> labels = tokenizer.getTokenizedWords();
+        if(labels == null) {
+            Log.d(TAG, "LABELS is actually NULL!");
+        } else if(labels.size() == 0) {
+            Log.d(TAG, "LABELS is empty (size=0) with content: '" + content + "'");
+        } else if(labels.size() == 1) {
+            Log.d(TAG, "LABELS has 1 item: " + labels.get(0) + " with content: '" + content + "'");
+        } else {
+            Log.d(TAG, "LABELS: " + labels.get(0) + " : " + labels.get(1) + " (total=" + labels.size() + ")");
+        }
+        String title = titleText.getText().toString().trim() + ";"+ labels.get(0) + ";" + labels.get(1);
         byte[] drawingDataToSave = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
         byte[] drawingData = (drawingView.getDrawingData() == null || drawingView.getDrawingData().length == 0) ? this.drawingData: drawingView.getDrawingData() ;
         if (title.isEmpty() && content.isEmpty() && (imagePath == null || imagePath.isEmpty())) {
@@ -861,6 +874,7 @@ public class Notepad extends AppCompatActivity {
         voiceicon = findViewById(R.id.voiceicon);
         listeningProgress = findViewById(R.id.listeningProgress);
         imageframelayout = findViewById(R.id.imageframelayout);
+
         clearImageButton =  findViewById(R.id.clearImageButton);
         imageCard = findViewById(R.id.imageCard);
         resultText = findViewById(R.id.resultText);
