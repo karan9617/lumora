@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -21,6 +22,7 @@ import com.example.keyboardai.NotesListActivity;
 import com.example.keyboardai.R;
 import com.example.keyboardai.data.FileUtils;
 import com.example.keyboardai.data.NoteRepository;
+import com.google.android.material.card.MaterialCardView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
@@ -46,8 +48,10 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     private final OnNoteLongClickListener longClickListener;
     private final NoteRepository noteRepository;
     private int selectedPosition = RecyclerView.NO_POSITION;
+    RecyclerView notesRecyclerViewPinned;
     private final ItemTouchHelper itemTouchHelper;
     private final Set<Integer> selectedPositions = new HashSet<>();
+    private Animation shakeAnimation;
     public interface OnNoteClickListener {
         void onNoteClick(Note note, View sharedView);
     }
@@ -60,14 +64,16 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                               List<Note> notes,
                               OnNoteClickListener listener,
                               OnNoteLongClickListener longClickListener,
-                              ItemTouchHelper itemTouchHelper) {
+                              ItemTouchHelper itemTouchHelper, RecyclerView notesRecyclerViewPinned) {
         this.context = context;
         this.notes = notes;
         this.listener = listener;
         this.longClickListener = longClickListener;
         this.noteRepository = new NoteRepository(context);
         this.itemTouchHelper = itemTouchHelper;
+        this.notesRecyclerViewPinned = notesRecyclerViewPinned;
     }
+
 
     @NonNull
     @Override
@@ -141,11 +147,22 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         // Set the note's background color
         ViewCompat.setTransitionName(holder.noteCard, "note_card_transition_" + note.getId());
         holder.notePinImageView.setVisibility(note.isPinned() ? View.VISIBLE : View.GONE);
+        final int baseColor = note.getColor();
+
 // Check if the current note's position is in the set of selected positions.
         if (selectedPositions.contains(position)) {
-            holder.noteCard.setCardBackgroundColor(Color.BLUE);
+            float[] hsv = new float[3];
+            Color.colorToHSV(baseColor, hsv);
+            // Reduce the Value (brightness) component, e.g., by 20% (0.8)
+            hsv[2] *= 0.8f;
+            int darkerColor = Color.HSVToColor(hsv);
+            holder.noteCard.setCardBackgroundColor(darkerColor);
+            holder.noteCard.setStrokeWidth(12); // Adjust the thickness as needed (in pixels)
+
+            holder.noteCard.setStrokeColor(Color.rgb(41, 128, 185)); // A nice dark blue color
         } else {
             holder.noteCard.setCardBackgroundColor(note.getColor());
+            holder.noteCard.setStrokeWidth(0);
         }
 
         holder.itemView.setOnClickListener(v -> {
@@ -165,6 +182,14 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         // The following code for the long-press animation and labels has been restored.
         holder.itemView.setOnLongClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
+            float[] hsv = new float[3];
+            Color.colorToHSV(baseColor, hsv);
+            // Reduce the Value (brightness) component, e.g., by 20% (0.8)
+            hsv[2] *= 0.8f;
+            int darkerColor = Color.HSVToColor(hsv);
+            startShaking();
+            holder.noteCard.setCardBackgroundColor(darkerColor);
+
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note clickedNote = notes.get(currentPosition);
                 // On long click, we toggle the selection and enter multi-selection mode.
@@ -175,7 +200,42 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
             return false;
         });
     }
+    private Animation getShakeAnimation() {
+        if (shakeAnimation == null) {
+            shakeAnimation = android.view.animation.AnimationUtils.loadAnimation(context, R.anim.shake);
+            // Set the number of times to repeat the shake.
+            // We'll just let it run until we explicitly stop it in this example.
+        }
+        return shakeAnimation;
+    }
 
+    /**
+     * Starts the shaking animation on all visible items.
+     */
+    public void startShaking() {
+        // Iterate over all currently visible ViewHolders in the RecyclerView
+        RecyclerView recyclerView = this.notesRecyclerViewPinned; // Assuming your RecyclerView ID is 'recyclerView'
+        for (int i = 0; i < getItemCount(); i++) {
+            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(i);
+            if (holder instanceof NotesAdapter.NoteViewHolder) {
+                ((NotesAdapter.NoteViewHolder) holder).noteCard.startAnimation(getShakeAnimation());
+            }
+        }
+    }
+
+    /**
+     * Stops the shaking animation on all visible items.
+     */
+    public void stopShaking() {
+        // Iterate over all currently visible ViewHolders in the RecyclerView
+        RecyclerView recyclerView = this.notesRecyclerViewPinned;
+        for (int i = 0; i < getItemCount(); i++) {
+            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(i);
+            if (holder instanceof NotesAdapter.NoteViewHolder) {
+                ((NotesAdapter.NoteViewHolder) holder).noteCard.clearAnimation();
+            }
+        }
+    }
     @Override
     public int getItemCount() {
         return notes.size();
@@ -236,6 +296,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
     }
     public void clearSelections() {
         if (!selectedPositions.isEmpty()) {
+            stopShaking();
             Set<Integer> oldSelections = new HashSet<>(selectedPositions);
             selectedPositions.clear();
             for (Integer position : oldSelections) {
@@ -250,7 +311,7 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         TextView noteDate;
         ImageView noteDrawing;
         ImageView notePinImageView;
-        CardView noteCard;
+        MaterialCardView noteCard;
         LinearLayout labelsContainer;
 
         public NoteViewHolder(@NonNull View itemView) {

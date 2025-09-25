@@ -198,8 +198,6 @@ public class Notepad extends AppCompatActivity {
 
         // NEW: Call the method to set the correct pin icon when the activity is created.
         setPinIcon(isPinned);
-
-
         clearDrawingButton = findViewById(R.id.clearDrawingButton);
         clearDrawingButton.setOnClickListener(v -> {
             //drawingView.setColor(Color.TRANSPARENT);

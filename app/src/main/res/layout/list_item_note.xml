@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/note_card_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
+    android:soundEffectsEnabled="true"
     android:clickable="true"
     android:focusable="true"
     app:cardCornerRadius="16dp"
@@ -94,19 +96,20 @@
                 android:textColor="@color/white"
                 android:layout_marginEnd="7dp"
                 />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="general"
-            android:id="@+id/labeltext2"
-            android:textSize="8sp"
-            android:paddingLeft="11dp"
-            android:paddingRight="11dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="5dp"
-            android:background="@drawable/rounded_purple_background"
-            android:textColor="@color/white"
-            />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="general"
+                android:id="@+id/labeltext2"
+                android:textSize="8sp"
+                android:paddingLeft="11dp"
+                android:paddingRight="11dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="5dp"
+                android:background="@drawable/rounded_purple_background"
+                android:textColor="@color/white"
+                />
         </LinearLayout>
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+</com.google.android.material.card.MaterialCardView>

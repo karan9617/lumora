@@ -324,7 +324,7 @@ public class NotesListActivity extends AppCompatActivity {
                     actionMode = startSupportActionMode(actionModeCallback);
                 }
             }
-        }, itemTouchHelper);
+        }, itemTouchHelper,notesRecyclerView);
         notesRecyclerView.setAdapter(notesAdapter);
 
         ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
@@ -417,7 +417,7 @@ public class NotesListActivity extends AppCompatActivity {
                     actionMode = startSupportActionMode(actionModeCallback);
                 }
             }
-        }, itemTouchHelperPinned);
+        }, itemTouchHelperPinned,notesRecyclerViewPinned);
         notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
         updatePinnedSectionVisibility();
 
@@ -694,6 +694,7 @@ public class NotesListActivity extends AppCompatActivity {
             if (id == R.id.action_share) {
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 shareIntent.setType("text/plain");
+                shareIntent.putExtra(Intent.EXTRA_TEXT,selectedNote.getTitle());
                 shareIntent.putExtra(Intent.EXTRA_TEXT, selectedNote.getContent());
                 startActivity(Intent.createChooser(shareIntent, "Share note via"));
                 mode.finish();

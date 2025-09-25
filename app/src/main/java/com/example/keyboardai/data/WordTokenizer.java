@@ -75,6 +75,7 @@ public class WordTokenizer {
         LABEL_KEYWORDS.put("prescription", "health");
         LABEL_KEYWORDS.put("symptoms", "health");
         LABEL_KEYWORDS.put("hospital", "health");
+        LABEL_KEYWORDS.put("medicines", "health");
 
         // Finance & Money
         LABEL_KEYWORDS.put("budget", "finance");

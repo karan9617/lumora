@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -17,6 +18,7 @@ import com.example.keyboardai.NotesListActivity;
 import com.example.keyboardai.R;
 import com.example.keyboardai.data.FileUtils;
 import com.example.keyboardai.data.NoteRepository;
+import com.google.android.material.card.MaterialCardView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
@@ -41,10 +43,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     private final OnNoteClickListener listener;
     private final OnNoteLongClickListener longClickListener;
     private final NoteRepository noteRepository;
+    private Animation shakeAnimation;
+
     private final ItemTouchHelper itemTouchHelper;
 
     // Use a Set to store multiple selected positions
     private final Set<Integer> selectedPositions = new HashSet<>();
+    RecyclerView notesRecyclerView;
 
     public interface OnNoteClickListener {
         void onNoteClick(Note note, View sharedView);
@@ -58,13 +63,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                         List<Note> notes,
                         OnNoteClickListener listener,
                         OnNoteLongClickListener longClickListener,
-                        ItemTouchHelper itemTouchHelper) {
+                        ItemTouchHelper itemTouchHelper, RecyclerView notesRecyclerView) {
         this.context = context;
         this.notes = notes;
         this.listener = listener;
         this.longClickListener = longClickListener;
         this.noteRepository = new NoteRepository(context);
         this.itemTouchHelper = itemTouchHelper;
+        this.notesRecyclerView = notesRecyclerView;
     }
 
     @NonNull
@@ -135,14 +141,24 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
         ViewCompat.setTransitionName(holder.noteCard, "note_card_transition_" + note.getId());
         holder.notePinImageView.setVisibility(note.isPinned() ? View.VISIBLE : View.GONE);
-
+        final int baseColor = note.getColor();
         // Check if the current note's position is in the set of selected positions.
         if (selectedPositions.contains(position)) {
-            holder.noteCard.setCardBackgroundColor(Color.argb(71,123,166,239));
+            //holder.noteCard.setCardBackgroundColor(Color.argb(0,123,166,239));
+            float[] hsv = new float[3];
+            Color.colorToHSV(baseColor, hsv);
+            // Reduce the Value (brightness) component, e.g., by 20% (0.8)
+            hsv[2] *= 0.8f;
+            int darkerColor = Color.HSVToColor(hsv);
+            holder.noteCard.setCardBackgroundColor(darkerColor);
+            //holder.noteCard.setCardBackgroundColor(note.getColor());
+            holder.noteCard.setStrokeWidth(12); // Adjust the thickness as needed (in pixels)
+            holder.noteCard.setStrokeColor(Color.rgb(41, 128, 185)); // A nice dark blue color
         } else {
             holder.noteCard.setCardBackgroundColor(note.getColor());
+            holder.noteCard.setStrokeWidth(0);
+            holder.noteCard.clearAnimation();
         }
-
         holder.itemView.setOnClickListener(v -> {
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
@@ -161,6 +177,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             int currentPosition = holder.getAdapterPosition();
             if (currentPosition != RecyclerView.NO_POSITION) {
                 Note clickedNote = notes.get(currentPosition);
+                float[] hsv = new float[3];
+                Color.colorToHSV(baseColor, hsv);
+                // Reduce the Value (brightness) component, e.g., by 20% (0.8)
+                hsv[2] *= 0.8f;
+                startShaking();
+                int darkerColor = Color.HSVToColor(hsv);
+                holder.noteCard.setCardBackgroundColor(darkerColor);
                 // On long click, we toggle the selection and enter multi-selection mode.
                 toggleSelection(currentPosition);
                 longClickListener.onNoteLongClick(v, clickedNote, holder.noteCard);
@@ -169,7 +192,42 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             return false;
         });
     }
+    private Animation getShakeAnimation() {
+        if (shakeAnimation == null) {
+            shakeAnimation = android.view.animation.AnimationUtils.loadAnimation(context, R.anim.shake);
+            // Set the number of times to repeat the shake.
+            // We'll just let it run until we explicitly stop it in this example.
+        }
+        return shakeAnimation;
+    }
 
+    /**
+     * Starts the shaking animation on all visible items.
+     */
+    public void startShaking() {
+        // Iterate over all currently visible ViewHolders in the RecyclerView
+        RecyclerView recyclerView = this.notesRecyclerView; // Assuming your RecyclerView ID is 'recyclerView'
+        for (int i = 0; i < getItemCount(); i++) {
+            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(i);
+            if (holder instanceof NoteViewHolder) {
+                ((NoteViewHolder) holder).noteCard.startAnimation(getShakeAnimation());
+            }
+        }
+    }
+
+    /**
+     * Stops the shaking animation on all visible items.
+     */
+    public void stopShaking() {
+        // Iterate over all currently visible ViewHolders in the RecyclerView
+        RecyclerView recyclerView = this.notesRecyclerView;
+        for (int i = 0; i < getItemCount(); i++) {
+            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(i);
+            if (holder instanceof NoteViewHolder) {
+                ((NoteViewHolder) holder).noteCard.clearAnimation();
+            }
+        }
+    }
     @Override
     public int getItemCount() {
         return notes.size();
@@ -234,6 +292,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
      */
     public void clearSelections() {
         if (!selectedPositions.isEmpty()) {
+            stopShaking();
             Set<Integer> oldSelections = new HashSet<>(selectedPositions);
             selectedPositions.clear();
             for (Integer position : oldSelections) {
@@ -266,7 +325,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         TextView noteTitle, noteContent, noteDate,labeltext1,labeltext2;
         ImageView noteDrawing;
         ImageView notePinImageView;
-        CardView noteCard;
+        MaterialCardView noteCard;
         LinearLayout labelsContainer;
 
         public NoteViewHolder(@NonNull View itemView) {
