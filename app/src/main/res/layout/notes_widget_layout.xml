@@ -25,7 +25,7 @@
         android:layout_centerInParent="true"
         android:gravity="center"
         android:padding="16dp"
-        android:text="No notes yet. Tap + to add one!"
+        android:text="@string/no_notes_text"
         android:textColor="@android:color/white"
         android:textSize="16sp" />
 

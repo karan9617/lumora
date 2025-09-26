@@ -12,7 +12,7 @@
         android:id="@+id/widget_note_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Note Title"
+        android:text="@string/note_title_widget"
         android:textColor="@color/black"
         android:textStyle="bold"
 
@@ -25,10 +25,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Note content preview..."
+        android:text="@string/note_preview"
         android:textColor="@color/black"
         android:textSize="12sp"
         android:maxLines="2"
         android:ellipsize="end" />
+
+
 
 </LinearLayout>

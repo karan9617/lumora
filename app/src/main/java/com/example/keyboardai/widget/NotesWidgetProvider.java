@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -136,9 +137,11 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                 if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {
                     File imageFile = new File(selectedNote.getImagePath());
                     if (imageFile.exists()) {
-                        if(selectedNote.getTitle().equalsIgnoreCase("sketch") == false) {
+                        String titleFromNotes = selectedNote.getTitle().split(";")[0].trim().toLowerCase();
+                        String titleFromStrings = context.getString(R.string.sketch_text).trim().toLowerCase();
+                        if(titleFromNotes.equalsIgnoreCase(titleFromStrings)) {
                             Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
-                            views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle());
+                            views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle().split(";")[0]);
                             views.setImageViewBitmap(R.id.image_drawing, bitmap);
                             // Set visibility for the drawing layout
                             views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.GONE);
@@ -159,15 +162,15 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                 }
             } else {
                 // Handle case where note was deleted or not found.
-                views.setTextViewText(R.id.widget_note_title, "Note not found");
-                views.setTextViewText(R.id.widget_note_content, "This note may have been deleted.");
+                views.setTextViewText(R.id.widget_note_title, context.getString(R.string.no_text_found));
+                views.setTextViewText(R.id.widget_note_content, context.getString(R.string.widget_text_deleted));
                 views.setImageViewBitmap(R.id.image_drawing, null);
             }
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
 
         private void updateViewsForTextNote(Note note) {
-            views.setTextViewText(R.id.widget_note_title, note.getTitle());
+            views.setTextViewText(R.id.widget_note_title, note.getTitle().split(";")[0]);
             views.setTextViewText(R.id.widget_note_content, note.getContent());
             views.setInt(R.id.layout_widget_id, "setBackgroundColor", note.getColor());
 

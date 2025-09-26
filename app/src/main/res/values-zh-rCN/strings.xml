@@ -134,4 +134,7 @@
     <string name="delete_menu">删除</string>
     <string name="color_menu1">颜色</string>
     <string name="label_text">标签</string>
+
+    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+
 </resources>

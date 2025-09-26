@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select a Note for the Widget"
+        android:text="@string/select_text"
         android:textColor="@android:color/white"
         android:textSize="20sp"
         android:textStyle="bold"
@@ -30,7 +30,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:padding="32dp"
-        android:text="No notes found."
+        android:text="@string/no_text_found"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:visibility="gone" />

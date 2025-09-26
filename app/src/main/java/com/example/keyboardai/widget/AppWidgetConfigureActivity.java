@@ -54,8 +54,11 @@ public class AppWidgetConfigureActivity extends Activity {
     }
 
     private void loadNotes() {
+
         Executors.newSingleThreadExecutor().execute(() -> {
+            List<Note> pinnedNotes = noteRepository.getAllPinnedNotes();
             List<Note> notes = noteRepository.getAllNotes();
+            notes.addAll(pinnedNotes);
             runOnUiThread(() -> {
                 if (notes.isEmpty()) {
                     emptyTextView.setVisibility(View.VISIBLE);

@@ -134,4 +134,7 @@
     <string name="delete_menu">Löschen</string>
     <string name="color_menu1">Farbe</string>
     <string name="label_text">Etikett</string>
+
+    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+
 </resources>

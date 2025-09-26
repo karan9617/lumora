@@ -147,4 +147,13 @@
     <string name="delete_menu">Delete</string>
     <string name="color_menu1">Color</string>
     <string name="label_text">Label</string>
+
+    <!-- widget -->
+    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+    <string name="no_text_found">Note not found</string>
+    <string name="widget_text_deleted">This note may have been deleted.</string>
+    <string name="sketch_text">sketch</string>
+    <string name="note_title_widget">Note Title</string>
+    <string name="note_preview">Note content preview...</string>
+    <string name="select_text">Select a Note for the Widget</string>
 </resources>

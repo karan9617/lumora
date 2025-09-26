@@ -134,4 +134,7 @@
     <string name="delete_menu">Удалить</string>
     <string name="color_menu1">Цвет</string>
     <string name="label_text">Метка</string>
+
+    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+
 </resources>

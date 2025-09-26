@@ -134,4 +134,7 @@
     <string name="delete_menu">Excluir</string>
     <string name="color_menu1">Cor</string>
     <string name="label_text">Etiqueta</string>
+
+    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+
 </resources>

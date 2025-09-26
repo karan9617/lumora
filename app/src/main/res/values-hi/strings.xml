@@ -134,4 +134,7 @@
     <string name="delete_menu">हटाएँ</string>
     <string name="color_menu1">रंग</string>
     <string name="label_text">लेबल</string>
+
+    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+
 </resources>

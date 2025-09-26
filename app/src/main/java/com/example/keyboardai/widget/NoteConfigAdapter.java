@@ -34,7 +34,8 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
-        holder.titleTextView.setText(note.getTitle());
+        String t = note.getTitle().split(";")[0];
+        holder.titleTextView.setText(t);
         holder.contentTextView.setText(note.getContent());
         holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
     }

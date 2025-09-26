@@ -56,13 +56,13 @@ public class NotesWidgetFactory implements RemoteViewsService.RemoteViewsFactory
         Note note = notes.get(position);
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_list_item);
 
-        views.setTextViewText(R.id.widget_note_title, note.getTitle());
+        views.setTextViewText(R.id.widget_note_title, note.getTitle().split(";")[0]);
         views.setTextViewText(R.id.widget_note_content, note.getContent());
 
         // Fill in the intent for the individual list item
         Intent fillInIntent = new Intent();
         fillInIntent.putExtra("note_id", note.getId());
-        fillInIntent.putExtra("note_title", note.getTitle());
+        fillInIntent.putExtra("note_title", note.getTitle().split(";")[0]);
         fillInIntent.putExtra("note_content", note.getContent());
         fillInIntent.putExtra("note_date", note.getDate());
         views.setOnClickFillInIntent(R.id.widget_list_item_root, fillInIntent); // You'll need to set an ID for your root layout in widget_list_item.xml
