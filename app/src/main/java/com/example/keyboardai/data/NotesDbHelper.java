@@ -95,4 +95,5 @@ public class NotesDbHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE temp_notes RENAME TO " + TABLE_NOTES + ";");
         }
     }
+
 }

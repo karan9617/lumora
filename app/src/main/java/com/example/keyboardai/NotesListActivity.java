@@ -100,6 +100,8 @@ public class NotesListActivity extends AppCompatActivity {
                 hideOptions();
             }
         });
+        allNotesFromDb = new ArrayList<>();
+        allPinnedNotesFromDb = new ArrayList<>();
         noteRepository = new NoteRepository(this);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -607,14 +609,17 @@ public class NotesListActivity extends AppCompatActivity {
     }
 
     private void filterNotes(String query) {
+        List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
+        List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
+
         // Create new lists to hold the filtered results.
         List<Note> filteredNotesList = new ArrayList<>();
         List<Note> filteredPinnedNotesList = new ArrayList<>();
 
         if (query == null || query.isEmpty()) {
             // If the query is empty, add all notes back from the master lists.
-            filteredNotesList.addAll(allNotesFromDb);
-            filteredPinnedNotesList.addAll(allPinnedNotesFromDb);
+            filteredNotesList.addAll(masterUnpinned);
+            filteredPinnedNotesList.addAll(masterPinned);
         } else {
             String lowercaseQuery = query.toLowerCase();
 
