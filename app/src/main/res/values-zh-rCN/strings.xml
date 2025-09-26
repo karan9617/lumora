@@ -135,6 +135,11 @@
     <string name="color_menu1">颜色</string>
     <string name="label_text">标签</string>
 
-    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
-
+    <string name="no_notes_text">还没有笔记。点击 + 添加一条！</string>
+    <string name="no_text_found">未找到笔记</string>
+    <string name="widget_text_deleted">此笔记可能已被删除。</string>
+    <string name="sketch_text">草图</string>
+    <string name="note_title_widget">笔记标题</string>
+    <string name="note_preview">笔记内容预览...</string>
+    <string name="select_text">选择一个笔记用于小部件</string>
 </resources>

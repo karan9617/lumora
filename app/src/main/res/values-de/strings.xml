@@ -135,6 +135,11 @@
     <string name="color_menu1">Farbe</string>
     <string name="label_text">Etikett</string>
 
-    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
-
+    <string name="no_notes_text">Noch keine Notizen. Tippe auf +, um eine hinzuzufügen!</string>
+    <string name="no_text_found">Notiz nicht gefunden</string>
+    <string name="widget_text_deleted">Diese Notiz wurde möglicherweise gelöscht.</string>
+    <string name="sketch_text">Skizze</string>
+    <string name="note_title_widget">Notiztitel</string>
+    <string name="note_preview">Notizinhalt Vorschau...</string>
+    <string name="select_text">Wähle eine Notiz für das Widget</string>
 </resources>

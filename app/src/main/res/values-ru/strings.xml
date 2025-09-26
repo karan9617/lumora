@@ -135,6 +135,12 @@
     <string name="color_menu1">Цвет</string>
     <string name="label_text">Метка</string>
 
-    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+    <string name="no_notes_text">Пока нет заметок. Нажмите +, чтобы добавить!</string>
+    <string name="no_text_found">Заметка не найдена</string>
+    <string name="widget_text_deleted">Эта заметка могла быть удалена.</string>
+    <string name="sketch_text">эскиз</string>
+    <string name="note_title_widget">Заголовок заметки</string>
+    <string name="note_preview">Предварительный просмотр содержимого заметки...</string>
+    <string name="select_text">Выберите заметку для виджета</string>
 
 </resources>

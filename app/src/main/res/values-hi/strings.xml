@@ -135,6 +135,12 @@
     <string name="color_menu1">रंग</string>
     <string name="label_text">लेबल</string>
 
-    <string name="no_notes_text">No notes yet. Tap + to add one!</string>
+    <string name="no_notes_text">अभी कोई नोट नहीं है। जोड़ने के लिए + दबाएँ!</string>
+    <string name="no_text_found">नोट नहीं मिला</string>
+    <string name="widget_text_deleted">यह नोट शायद हटा दिया गया है।</string>
+    <string name="sketch_text">रेखाचित्र</string>
+    <string name="note_title_widget">नोट का शीर्षक</string>
+    <string name="note_preview">नोट सामग्री का पूर्वावलोकन...</string>
+    <string name="select_text">विजेट के लिए एक नोट चुनें</string>
 
 </resources>
