@@ -296,17 +296,7 @@ public class NoteRepository {
      * @return The absolute path to the saved image file, or null if saving fails.
      */
     public String saveImageToInternalStorage(Bitmap bitmap, String filename) {
-        Bitmap whiteBackgroundBitmap = Bitmap.createBitmap(
-                bitmap.getWidth(),
-                bitmap.getHeight(),
-                bitmap.getConfig() != null ? bitmap.getConfig() : Bitmap.Config.ARGB_8888
-        );
 
-        Canvas canvas = new Canvas(whiteBackgroundBitmap);
-        canvas.drawColor(Color.WHITE); // Set the background to white
-        Paint paint = new Paint();
-
-        canvas.drawBitmap(bitmap, 0, 0, paint);
         try {
             File rootDir = context.getFilesDir();
             String DRAWING_IMAGES_DIR = "drawing_notes";
@@ -322,13 +312,11 @@ public class NoteRepository {
 
             // IMPORTANT: Recycle the temporary bitmaps
             bitmap.recycle();
-            whiteBackgroundBitmap.recycle();
 
             return imageFile.getAbsolutePath();
         } catch (IOException e) {
             Log.e("NoteRepository", "Error saving image", e);
             bitmap.recycle();
-            whiteBackgroundBitmap.recycle();
             return null;
         }
     }

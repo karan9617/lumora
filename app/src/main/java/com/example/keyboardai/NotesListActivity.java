@@ -3,6 +3,9 @@ package com.example.keyboardai;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -48,6 +51,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -693,57 +697,83 @@ public class NotesListActivity extends AppCompatActivity {
             int id = item.getItemId();
             if (id == R.id.action_share) {
 
-                // 1. Check if it's an image note
+                // 1. Check if it's an image/drawing note
                 if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {
-                    // This is a drawing note - share as image
-
                     try {
-                        // The FilePath needs to be the absolute path to the file.
-                        // Assuming your selectedNote.getImagePath() gives you the full path or a path relative to getFilesDir()
                         File imageFile = new File(selectedNote.getImagePath());
 
-                        // Check if the file exists before proceeding
                         if (!imageFile.exists()) {
                             Toast.makeText(NotesListActivity.this, "Image file not found.", Toast.LENGTH_SHORT).show();
                             mode.finish();
                             return true;
                         }
 
-                        // Use FileProvider to get a secure content URI
+                        // ---- Convert transparent image to white background ----
+                        Bitmap originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+                        if (originalBitmap == null) {
+                            Toast.makeText(NotesListActivity.this, "Failed to load image.", Toast.LENGTH_SHORT).show();
+                            mode.finish();
+                            return true;
+                        }
+
+                        Bitmap newBitmap = Bitmap.createBitmap(
+                                originalBitmap.getWidth(),
+                                originalBitmap.getHeight(),
+                                Bitmap.Config.ARGB_8888
+                        );
+
+                        Canvas canvas = new Canvas(newBitmap);
+                        canvas.drawColor(Color.WHITE); // white background
+                        canvas.drawBitmap(originalBitmap, 0, 0, null);
+
+                        File rootDir = getApplicationContext().getFilesDir();
+                        // Save the processed bitmap into cache directory
+                        File cachePath = new File(rootDir, "drawing_notes");
+                        if (!cachePath.exists()) cachePath.mkdirs();
+                        File newImageFile = new File(cachePath, "shared_image.png");
+
+                        FileOutputStream fos = new FileOutputStream(newImageFile);
+                        newBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                        fos.close();
+
+
+                        //File directory = context.getDir("images", Context.MODE_PRIVATE);
+
+                        // Get content URI using FileProvider
                         Uri contentUri = FileProvider.getUriForFile(
                                 NotesListActivity.this,
                                 getApplicationContext().getPackageName() + ".fileprovider",
-                                imageFile
+                                newImageFile
                         );
 
                         Intent shareIntent = new Intent(Intent.ACTION_SEND);
                         shareIntent.setType("image/*");
                         shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                        String title = selectedNote.getTitle().split(";")[0];
-                        // Optional: Include text with the image
-                        String shareText = "Note Title: " + title + "\n\n" + "Note Content: " + selectedNote.getContent();
+
+                        // Add optional text
+                        String title = selectedNote.getTitle() != null ? selectedNote.getTitle().split(";")[0] : "";
+                        String shareText = "Title: " + title + "\n\n" +
+                                "Description: " + (selectedNote.getContent() != null ? selectedNote.getContent() : "");
                         shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
 
-                        // Grant temporary read permission to the receiving app
                         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
                         startActivity(Intent.createChooser(shareIntent, "Share image note via"));
 
-                    } catch (IllegalArgumentException e) {
-                        // Handle the case where FileProvider fails (e.g., path not in file_paths.xml)
-                        Toast.makeText(NotesListActivity.this, "Error preparing image for sharing: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(NotesListActivity.this, "Error preparing image: " + e.getMessage(), Toast.LENGTH_LONG).show();
                         e.printStackTrace();
                     }
 
                 } else {
-                    // This is a text note (or drawing note without a path/content) - share as text
+                    // 2. This is a text note - share as text
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
-                    String title = selectedNote.getTitle().split(";")[0];
-                    // Combine title and content into a single shareable text block
-                    String shareText = title + "\n\n" + selectedNote.getContent();
 
-                    // Note: You should only use EXTRA_TEXT once for the main content
+                    String title = selectedNote.getTitle() != null ? selectedNote.getTitle().split(";")[0] : "";
+                    String content = selectedNote.getContent() != null ? selectedNote.getContent() : "";
+                    String shareText = title + "\n\n" + content;
+
                     shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
 
                     startActivity(Intent.createChooser(shareIntent, "Share text note via"));
