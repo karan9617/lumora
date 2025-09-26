@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
@@ -151,7 +152,8 @@ public class DrawingActivity extends AppCompatActivity {
             if (drawingBitmap != null) {
                 // Generate a unique file name using a timestamp
                 String filename = "drawing_" + System.currentTimeMillis() + ".png";
-                // Save the bitmap to internal storage and get the file path
+
+
                 String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
 
                 if (imagePath != null) {

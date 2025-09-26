@@ -10,6 +10,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.util.Log;
 
 import com.example.keyboardai.Models.Label;
@@ -293,15 +296,39 @@ public class NoteRepository {
      * @return The absolute path to the saved image file, or null if saving fails.
      */
     public String saveImageToInternalStorage(Bitmap bitmap, String filename) {
+        Bitmap whiteBackgroundBitmap = Bitmap.createBitmap(
+                bitmap.getWidth(),
+                bitmap.getHeight(),
+                bitmap.getConfig() != null ? bitmap.getConfig() : Bitmap.Config.ARGB_8888
+        );
+
+        Canvas canvas = new Canvas(whiteBackgroundBitmap);
+        canvas.drawColor(Color.WHITE); // Set the background to white
+        Paint paint = new Paint();
+
+        canvas.drawBitmap(bitmap, 0, 0, paint);
         try {
-            File directory = context.getDir("images", Context.MODE_PRIVATE);
+            File rootDir = context.getFilesDir();
+            String DRAWING_IMAGES_DIR = "drawing_notes";
+            //File directory = context.getDir("images", Context.MODE_PRIVATE);
+            File directory = new File(rootDir, DRAWING_IMAGES_DIR);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
             File imageFile = new File(directory, filename);
             FileOutputStream fos = new FileOutputStream(imageFile);
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
             fos.close();
+
+            // IMPORTANT: Recycle the temporary bitmaps
+            bitmap.recycle();
+            whiteBackgroundBitmap.recycle();
+
             return imageFile.getAbsolutePath();
         } catch (IOException e) {
             Log.e("NoteRepository", "Error saving image", e);
+            bitmap.recycle();
+            whiteBackgroundBitmap.recycle();
             return null;
         }
     }
