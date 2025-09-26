@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#95998BE1">
+    android:background="#95010102">
 
     <TextView
         android:layout_width="match_parent"
@@ -20,6 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1"
+
         android:clipToPadding="false"
         android:nestedScrollingEnabled="false"
         android:padding="8dp" />
