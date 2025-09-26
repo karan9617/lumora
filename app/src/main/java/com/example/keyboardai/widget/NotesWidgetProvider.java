@@ -118,7 +118,7 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                 views.setInt(R.id.layout_widget_id, "setBackgroundColor", selectedNote.getColor());
 
 
-                if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty() && "sketch".equalsIgnoreCase(selectedNote.getTitle()) == false) {
+                if (selectedNote.getImagePath() != null && selectedNote.getImagePath().length() > 0 && (context.getString(R.string.sketch_text).trim().toLowerCase()).equalsIgnoreCase(selectedNote.getTitle().toLowerCase().trim().split(";")[0])) {
                     // Note has a drawing, so we open the DrawingActivity.
                     openIntent = new Intent(context, DrawingActivity.class);
                     openIntent.putExtra("note_id", noteId);
