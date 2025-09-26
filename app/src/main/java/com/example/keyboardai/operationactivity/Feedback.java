@@ -37,30 +37,30 @@ public class Feedback extends AppCompatActivity {
             String feedback = feedbackInput.getText().toString().trim();
 
             if (name.isEmpty() || email.isEmpty() || feedback.isEmpty()) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.fill_notes_messages, Toast.LENGTH_SHORT).show();
             } else {
                 // For now just show a success message
-                Toast.makeText(this, "Thank you for your feedback!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.thank_you_feedback, Toast.LENGTH_LONG).show();
                 if(name != null && email != null && feedback != null){
                     if(name.length() > 0){
                         if(EmailValidator.isValidEmail(email)){
                             if(feedback.length() > 10){
-                                Toast.makeText(getApplicationContext(),"Feedback shared",Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getApplicationContext(),R.string.feedback_successful,Toast.LENGTH_SHORT).show();
                             }
                             else{
-                                message("Please elaborate your feedback, it will helps us to assist you better.");
+                                Toast.makeText(getApplicationContext(),R.string.elaborate_feedback_text,Toast.LENGTH_SHORT).show();
                             }
                         }
                         else{
-                            message("Please enter a valid email.");
+                            Toast.makeText(getApplicationContext(),R.string.invalid_email_text,Toast.LENGTH_SHORT).show();
                         }
                     }
                     else{
-                        message("Please enter a name");
+                        Toast.makeText(getApplicationContext(),R.string.enter_name_feedback,Toast.LENGTH_SHORT).show();
                     }
                 }
                 else{
-                    message("Please enter all the fields.");
+                    Toast.makeText(getApplicationContext(),R.string.enter_fields_text,Toast.LENGTH_SHORT).show();
                 }
 
                 // Later: You could send this data to a server, Firebase, or email
@@ -70,9 +70,7 @@ public class Feedback extends AppCompatActivity {
             }
         });
     }
-    private void message(String s){
-        Toast.makeText(getApplicationContext(),s,Toast.LENGTH_SHORT).show();
-    }
+
     // New method to create and launch the email Intent
     private void sendFeedbackEmail(String name, String senderEmail, String feedback) {
 

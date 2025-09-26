@@ -1,5 +1,7 @@
 package com.example.keyboardai.adapter;
 
+// Remove this incorrect import:
+// import static android.provider.Settings.Secure.getString;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -11,14 +13,11 @@ import com.example.keyboardai.R;
 
 public class OnboardingAdapter extends FragmentStateAdapter {
 
+    private final FragmentActivity activityContext; // Store the context
+    private String[] titles; // Declare, but don't initialize here
+
     // You can customize the page content here
-    private String[] titles = {"Welcome!", "Create Notes", "Voice enabled AI", "Sketch the photos"};
-    private String[] descriptions = {
-            "Welcome to Notes.AI! This app helps you capture and organize your thoughts with ease with Integrated AI tools.",
-            "Quickly create text or drawing notes. Just tap the plus button to get started.",
-            "Voice enabled note taking with AI brain storming feature enabled.",
-            "Draw on the rich canvas to enhance the note taking experience with images editing options."
-    };
+    private String[] descriptions;
     private int[] images = {
             R.mipmap.logotransparent, // You'll need to create these drawable resources
             R.drawable.ic_large_pen,
@@ -28,6 +27,27 @@ public class OnboardingAdapter extends FragmentStateAdapter {
 
     public OnboardingAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);
+        // 1. Store the FragmentActivity/Context
+        this.activityContext = fragmentActivity;
+
+        // 2. Initialize the titles array using the stored Context/Activity
+        initializeTitles();
+    }
+
+    // New method to load strings using the context
+    private void initializeTitles() {
+        this.titles = new String[]{
+                activityContext.getString(R.string.welcome_text),
+                activityContext.getString(R.string.create_note_initial_text),
+                activityContext.getString(R.string.voice_enabled_ai_text),
+                activityContext.getString(R.string.sketch_photo_text)
+        };
+        this.descriptions = new String[]{
+                activityContext.getString(R.string.welcome_note_text_ai),
+                activityContext.getString(R.string.quick_notes_welcome_page_text),
+                activityContext.getString(R.string.voice_enabled_initial_text),
+                activityContext.getString(R.string.draw_sketch_welcome_page)
+        };
     }
 
     @NonNull

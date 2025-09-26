@@ -6,17 +6,17 @@
     <item
         android:id="@+id/action_pin"
         android:icon="@drawable/baseline_push_pin_24"
-        android:title="Pin"
+        android:title="@string/context_bar_pin"
         app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/action_share"
         android:icon="@drawable/ic_share"
-        android:title="Share"
+        android:title="@string/share_menu"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_delete_note"
-        android:title="Delete"
+        android:title="@string/delete_menu"
         app:showAsAction="ifRoom" />
 
 

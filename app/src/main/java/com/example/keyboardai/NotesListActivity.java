@@ -135,7 +135,6 @@ public class NotesListActivity extends AppCompatActivity {
 
             if (id == R.id.nav_instructions) {
                 startActivity(new Intent(this, InstructionsActivity.class));
-                Toast.makeText(this, "Instructions clicked", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_trash) {
                 startActivity(new Intent(this, TrashActivity.class));
             } else if (id == R.id.nav_policies) {
@@ -442,9 +441,9 @@ public class NotesListActivity extends AppCompatActivity {
 
     }
     private void showSortDialog() {
-        final String[] options = {"Sort by Date", "Sort Alphabetically"};
+        final String[] options = {getApplicationContext().getString(R.string.sort_by_date), getApplicationContext().getString(R.string.sort_by_alpha)};
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Sort notes by");
+        builder.setTitle(R.string.sort_notes_by);
         builder.setItems(options, (dialog, which) -> {
             switch (which) {
                 case 0: // Sort by Date
@@ -490,7 +489,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
         notesAdapterPinned.notifyDataSetChanged();
-        Toast.makeText(this, "Notes sorted by date", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.notes_sorted_date, Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -512,7 +511,7 @@ public class NotesListActivity extends AppCompatActivity {
             return title1.compareToIgnoreCase(title2);
         });
         notesAdapterPinned.notifyDataSetChanged();
-        Toast.makeText(this, "Notes sorted alphabetically", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.notes_sorted_alphabetically, Toast.LENGTH_SHORT).show();
     }
     private void hideOptions(final Animation animation) {
         animation.setAnimationListener(new Animation.AnimationListener() {
@@ -708,7 +707,6 @@ public class NotesListActivity extends AppCompatActivity {
                         File imageFile = new File(selectedNote.getImagePath());
 
                         if (!imageFile.exists()) {
-                            Toast.makeText(NotesListActivity.this, "Image file not found.", Toast.LENGTH_SHORT).show();
                             mode.finish();
                             return true;
                         }
@@ -716,7 +714,6 @@ public class NotesListActivity extends AppCompatActivity {
                         // ---- Convert transparent image to white background ----
                         Bitmap originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
                         if (originalBitmap == null) {
-                            Toast.makeText(NotesListActivity.this, "Failed to load image.", Toast.LENGTH_SHORT).show();
                             mode.finish();
                             return true;
                         }
@@ -766,7 +763,6 @@ public class NotesListActivity extends AppCompatActivity {
                         startActivity(Intent.createChooser(shareIntent, "Share image note via"));
 
                     } catch (Exception e) {
-                        Toast.makeText(NotesListActivity.this, "Error preparing image: " + e.getMessage(), Toast.LENGTH_LONG).show();
                         e.printStackTrace();
                     }
 

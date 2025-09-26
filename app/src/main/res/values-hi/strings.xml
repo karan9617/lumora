@@ -1,0 +1,137 @@
+<resources>
+    <string name="app_name">NotesAI</string>
+    <string name="title_activity_notes_list">नोट्ससूचीActivity</string>
+    <string name="first_fragment_label">पहला खंड</string>
+    <string name="second_fragment_label">दूसरा खंड</string>
+    <string name="next">अगला</string>
+    <string name="pinned_note_icon">पिन किया गया नोट</string>
+    <string name="note_drawing">नोट पर ड्राइंग</string>
+
+    <string name="previous">पिछला</string>
+    <string name="pin_icon_description">पिन आइकॉन</string>
+    <string name="lorem_ipsum">टेक्स्ट</string>
+    <string name="navigation_drawer_open">नेविगेशन ड्रॉअर खोलें</string>
+    <string name="navigation_drawer_close">नेविगेशन ड्रॉअर बंद करें</string>
+    <string name="menu_home">होम</string>
+    <string name="menu_send_all">सभी नोट्स भेजें</string>
+    <string name="menu_settings">सेटिंग्स</string>
+    <string name="menu_labels">लेबल</string>
+    <string name="menu_colors">रंग</string>
+    <string name="title_activity_excel_sheet">एक्सेलशीटActivity</string>
+    <string name="notes_sorted_alphabetically">नोट्स वर्णमाला क्रम में क्रमबद्ध</string>
+    <string name="notes_sorted_date">नोट्स दिनांक के अनुसार क्रमबद्ध</string>
+    <string name="general_text">सामान्य</string>
+
+    <string name="welcome_text">आपका स्वागत है!</string>
+    <string name="create_note_initial_text">नोट्स बनाएं</string>
+    <string name="voice_enabled_ai_text">वॉयस-सक्षम AI</string>
+    <string name="sketch_photo_text">फ़ोटो स्केच करें</string>
+    <string name="welcome_note_text_ai">Notes.AI में आपका स्वागत है! यह ऐप आपको एकीकृत AI उपकरणों के साथ आसानी से अपने विचारों को कैप्चर और व्यवस्थित करने में मदद करता है।</string>
+    <string name="quick_notes_welcome_page_text">त्वरित रूप से टेक्स्ट या ड्राइंग नोट्स बनाएं। शुरू करने के लिए बस प्लस बटन पर टैप करें।</string>
+    <string name="voice_enabled_initial_text">AI ब्रेन स्टॉर्मिंग सुविधा के साथ वॉयस-सक्षम नोट लेने की सुविधा सक्षम।</string>
+    <string name="draw_sketch_welcome_page">छवियों को संपादित करने के विकल्पों के साथ नोट लेने के अनुभव को बढ़ाने के लिए समृद्ध कैनवास पर ड्रा करें।</string>
+
+    <string name="fill_notes_messages">कृपया सभी फ़ील्ड भरें</string>
+    <string name="thank_you_feedback">आपके फ़ीडबैक के लिए धन्यवाद!</string>
+    <string name="feedback_successful">फ़ीडबैक साझा किया गया</string>
+    <string name="elaborate_feedback_text">कृपया अपने फ़ीडबैक को विस्तार से बताएं, यह हमें आपकी बेहतर सहायता करने में मदद करेगा।</string>
+    <string name="invalid_email_text">कृपया एक वैध ईमेल दर्ज करें।</string>
+    <string name="enter_name_feedback">कृपया एक नाम दर्ज करें</string>
+    <string name="enter_fields_text">कृपया सभी फ़ील्ड दर्ज करें।</string>
+
+    <string name="feedback_form_heading">फ़ीडबैक फ़ॉर्म</string>
+    <string name="name_hint_text">आपका नाम</string>
+    <string name="feedback_email_text">आपका ईमेल</string>
+    <string name="feedback_text">कृपया अपना फ़ीडबैक दर्ज करें। हमें मदद करना अच्छा लगेगा :)</string>
+    <string name="feedback_submit_button">जमा करें</string>
+
+    <string name="instruction_heading">निर्देश</string>
+    <string name="notes_main_text">Notes AI उपयोगकर्ताओं के लिए नोट बनाने के अनुभव को सहज बनाने के लिए विभिन्न कार्यक्षमताएं प्रदान करता है।</string>
+    <string name="text_instruction_view_note">1. नोट्स लेना:\n- आसानी से टेक्स्ट नोट्स बनाएं।\n- अपने विचारों को कुशलता से व्यवस्थित करें।</string>
+    <string name="voice_notes_instruction">2. वॉयस नोट्स:\n- सीधे ऐप से वॉयस नोट्स रिकॉर्ड करें।\n- विचारों को तुरंत कैप्चर करने के लिए सुविधाजनक।</string>
+    <string name="pin_notes_instruction">3. नोट्स पिन करें:\n- महत्वपूर्ण नोट्स को शीर्ष पर पिन करें।\n- उच्च प्राथमिकता वाले नोट्स तक तुरंत पहुंचें।</string>
+    <string name="sort_notes_instruction">4. नोट्स क्रमबद्ध करें:\n- नोट्स को दिनांक, शीर्षक या प्राथमिकता के अनुसार क्रमबद्ध करें।\n- अपने नोट्स को व्यवस्थित रखें।</string>
+    <string name="ai_completition_instruction">5. AI पूर्णता:\n- अपने नोट्स को स्वतः-पूर्ण करने के लिए AI का उपयोग करें।\n- कुशलता से विचार या सारांश उत्पन्न करें।</string>
+    <string name="drawing_instruction_note">6. ड्राइंग:\n- अपने नोट्स के भीतर सीधे स्केच और ड्रा करें।\n- अपने नोट्स में दृश्य तत्व जोड़ें।</string>
+    <string name="string_instruction">7. स्केचिंग:\n- अधिक विस्तृत स्केच या आरेख बनाएं।\n- ब्रेन स्टॉर्मिंग या दृश्य नोट्स के लिए उत्तम।</string>
+
+    <string name="notes_ai_policies_line1">NotesAI नीतियां Notes AI एंड्रॉइड एप्लिकेशन की गोपनीयता प्रथाओं का वर्णन करती हैं।</string>
+    <string name="notes_ai_policies_line2">NotesAI एक सॉफ्टवेयर है जो उपयोगकर्ताओं को व्यक्तिगत नोट्स के रूप में डेटा और व्यक्तिगत जानकारी सहेजने में सक्षम बनाता है।</string>
+    <string name="notes_ai_policies_line3">उपयोगकर्ता जानकारी को संभालने के तरीके के लिए एक व्यापक दिशानिर्देश नीचे वर्णित है:</string>
+    <string name="information_heading">सूचना संग्रह और उपयोग।</string>
+    <string name="notes_ai_1">NotesAI का उपयोग करते समय, उपयोगकर्ता एक ही एप्लिकेशन पर बरकरार रखने के लिए डेटा के साथ-साथ जानकारी भी स्टोर कर सकते हैं।</string>
+    <string name="notes_ai_2">नोट्स के रूप में, डेटा को भविष्य के संदर्भों के लिए बाद में एक्सेस किया जा सकता है।</string>
+    <string name="notes_ai_3">उपयोगकर्ता द्वारा साझा की गई व्यक्तिगत जानकारी उपयोगकर्ता के फ़ोन में संग्रहीत की जाएगी और NotesAI एप्लिकेशन या किसी अन्य तृतीय पक्ष द्वारा एक्सेस नहीं की जाएगी।</string>
+    <string name="notes_ai_4">केवल उपयोगकर्ता ही अपनी जानकारी का उपयोग और उसे देखने के लिए योग्य है, जब तक कि उपयोगकर्ता इसे मैन्युअल रूप से साझा नहीं करता है।</string>
+    <string name="notes_ai_5">जानकारी उपयोगकर्ता के फ़ोन में सुरक्षित है।</string>
+    <string name="notes_ai_6">आपकी सामग्री तक हमारी पहुंच।</string>
+    <string name="notes_ai_7">NotesAI का उपयोग करते समय, उपयोगकर्ता वॉयस नोट्स के रूप में डेटा को टेक्स्ट के रूप में स्टोर कर सकता है।</string>
+    <string name="notes_ai_8">कार्यक्षमता प्रदान करने के लिए, NotesAI उपयोगकर्ता के फ़ोन से माइक्रोफ़ोन अनुमति का उपयोग करता है।</string>
+    <string name="notes_ai_9">माइक्रोफ़ोन से एकत्र किया गया डेटा उपयोगकर्ता के फ़ोन में संग्रहीत किया जाता है।</string>
+    <string name="notes_ai_10">डेटा उपयोगकर्ता के फ़ोन में सुरक्षित है और भविष्य के उपयोग के लिए पुनर्प्राप्त किया जा सकता है।</string>
+
+    <string name="notes_deleted_trash">नोट हटा दिया गया</string>
+    <string name="notes_restored">नोट बहाल कर दिया गया..</string>
+    <string name="note_deleted">नोट स्थायी रूप से हटा दिया गया</string>
+    <string name="all_notes_restored">सभी नोट्स बहाल कर दिए गए..</string>
+    <string name="trash_emptied">ट्रैश खाली कर दिया गया..</string>
+    <string name="trash_heading">ट्रैश</string>
+    <string name="layout_restore">सभी बहाल करें</string>
+    <string name="adapter_title_name">नोट का शीर्षक</string>
+    <string name="delete_all">ट्रैश खाली करें</string>
+    <string name="trash_content">नोट की सामग्री यहाँ जाती है...</string>
+    <string name="trash_layout_restore">बहाल करें</string>
+    <string name="trash_delete_button">हटाएँ</string>
+
+
+    <string name="image_failed">छवि लोड करने में विफल।</string>
+    <string name="image_load_text">छवि सफलतापूर्वक लोड हुई!</string>
+    <string name="drawing_saved">ड्राइंग सफलतापूर्वक सहेजी गई!</string>
+    <string name="save_failed">ड्राइंग सहेजने में विफल।</string>
+
+    <string name="draw_menu">ड्रा करें</string>
+    <string name="save_menu">सहेजें</string>
+    <string name="color_menu">रंग</string>
+    <string name="pin_menu">पिन</string>
+    <string name="notepad_title">शीर्षक</string>
+    <string name="content_text">टेक्स्ट नोट्स...</string>
+
+    <string name="microphone_permission">माइक्रोफ़ोन अनुमति आवश्यक</string>
+    <string name="microphone_message">NotesAI को वॉयस-टू-टेक्स्ट कार्यक्षमता को सक्षम करने के लिए माइक्रोफ़ोन एक्सेस की आवश्यकता है। कृपया इस सुविधा का उपयोग करने के लिए अनुमति दें।</string>
+    <string name="permission_denied">अनुमति स्थायी रूप से अस्वीकार</string>
+    <string name="permission_text">इस सुविधा के लिए माइक्रोफ़ोन अनुमति आवश्यक है। कृपया इसे ऐप सेटिंग्स में मैन्युअल रूप से सक्षम करें।</string>
+    <string name="settings_text">सेटिंग्स पर जाएं</string>
+    <string name="grant_text">अनुमति दें</string>
+    <string name="cancel_text">रद्द करें</string>
+    <string name="listening_text">सुन रहा है...</string>
+    <string name="save_note_text">नोट सहेजें?</string>
+    <string name="save_note_message">आपके पास असहेजे गए बदलाव हैं। क्या आप इस नोट को सहेजना चाहते हैं?</string>
+    <string name="discard_text">छोड़ दें</string>
+    <string name="background_color_choose">पृष्ठभूमि रंग चुनें</string>
+    <string name="white_text">सफेद</string>
+    <string name="pink_text">गुलाबी</string>
+    <string name="yellow_text">पीला</string>
+    <string name="silver_text">चाँदी</string>
+    <string name="blue_text">हल्का नीला</string>
+
+    <string name="notes_main_message">NotesAI आपको रचनात्मक नोट्स बनाने में मदद करता है। शुरू करने के लिए प्लस बटन पर क्लिक करें। नोट्स बनाने का आनंद लें! :)</string>
+    <string name="notes_pinned_heading">पिन किए गए</string>
+    <string name="all_notes_heading">सभी नोट्स</string>
+    <string name="option_text_layout">टेक्स्ट</string>
+    <string name="options_draw_layout">ड्रा करें</string>
+    <string name="sort_notes_by">नोट्स को इसके अनुसार क्रमबद्ध करें</string>
+    <string name="sort_by_date">दिनांक के अनुसार क्रमबद्ध करें</string>
+    <string name="sort_by_alpha">वर्णमाला क्रम में क्रमबद्ध करें</string>
+
+    <string name="drawer_menu_instructions">निर्देश</string>
+    <string name="drawer_menu_Trash">ट्रैश</string>
+    <string name="drawer_menu_policies">नीतियां</string>
+    <string name="drawer_feedback_text">फ़ीडबैक</string>
+    <string name="communicate_text">संवाद करें</string>
+
+    <string name="context_bar_pin">पिन करें</string>
+    <string name="share_menu">साझा करें</string>
+    <string name="delete_menu">हटाएँ</string>
+    <string name="color_menu1">रंग</string>
+    <string name="label_text">लेबल</string>
+</resources>

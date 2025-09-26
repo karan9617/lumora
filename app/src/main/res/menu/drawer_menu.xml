@@ -8,23 +8,23 @@
         <item
             android:id="@+id/nav_instructions"
             android:icon="@drawable/ic_menu_settings"
-            android:title="Instructions" />
+            android:title="@string/drawer_menu_instructions" />
         <item
             android:id="@+id/nav_trash"
             android:icon="@drawable/baseline_auto_delete_24"
-            android:title="Trash" />
+            android:title="@string/drawer_menu_Trash" />
     </group>
 
-    <item android:title="Communicate">
+    <item android:title="@string/communicate_text">
         <menu>
             <item
                 android:id="@+id/nav_policies"
                 android:icon="@drawable/ic_menu_share"
-                android:title="Policies" />
+                android:title="@string/drawer_menu_policies" />
             <item
                 android:id="@+id/nav_feedback"
                 android:icon="@drawable/ic_menu_send"
-                android:title="Feedback" />
+                android:title="@string/drawer_feedback_text" />
         </menu>
     </item>
 

@@ -153,7 +153,6 @@ public class Notepad extends AppCompatActivity {
         // setting the imagesketch from the database
         if(drawingData != null && drawingData.length > 0){
             Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
-            Toast.makeText(getApplicationContext(),"rendering image",Toast.LENGTH_SHORT).show();
             // Check if the bitmap was successfully created
             if (savedBitmap != null) {
                 // Assign the bitmap to your ImageView and make it visible
@@ -265,7 +264,9 @@ public class Notepad extends AppCompatActivity {
         recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toString());
 
         speechRecognizer.setRecognitionListener(new RecognitionListener() {
             @Override public void onReadyForSpeech(Bundle params) { listeningProgress.setVisibility(ProgressBar.VISIBLE); }
@@ -365,16 +366,16 @@ public class Notepad extends AppCompatActivity {
                     if (ActivityCompat.shouldShowRequestPermissionRationale(Notepad.this, android.Manifest.permission.RECORD_AUDIO)) {
                         // Show an explanation to the user via a dialog.
                         new AlertDialog.Builder(Notepad.this)
-                                .setTitle("Microphone Permission Required")
-                                .setMessage("This app needs microphone access to enable voice-to-text functionality. Please grant the permission to use this feature.")
-                                .setPositiveButton("Grant", new DialogInterface.OnClickListener() {
+                                .setTitle(R.string.microphone_permission)
+                                .setMessage(R.string.microphone_message)
+                                .setPositiveButton(R.string.grant_text, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         // Request the permission again.
                                         ActivityCompat.requestPermissions(Notepad.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
                                     }
                                 })
-                                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                .setNegativeButton(R.string.cancel_text, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.dismiss();
@@ -385,9 +386,9 @@ public class Notepad extends AppCompatActivity {
                     } else {
                         // --- Case 2: Permission is permanently denied ("Don't ask again" was checked). ---
                         new AlertDialog.Builder(Notepad.this)
-                                .setTitle("Permission Permanently Denied")
-                                .setMessage("Microphone permission is required for this feature. Please enable it manually in the app settings.")
-                                .setPositiveButton("Go to Settings", new DialogInterface.OnClickListener() {
+                                .setTitle(R.string.permission_denied)
+                                .setMessage(R.string.permission_text)
+                                .setPositiveButton(R.string.settings_text, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         // Direct the user to the app's settings page.
@@ -420,13 +421,12 @@ public class Notepad extends AppCompatActivity {
                         isListening = true;
                         hintTextView.setVisibility(View.VISIBLE);
                         speechRecognizer.startListening(recognizerIntent);
-                        Toast.makeText(getApplicationContext(), "Listening...", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), R.string.listening_text, Toast.LENGTH_SHORT).show();
                     } else {
                         isListening = false;
                         hintTextView.setVisibility(View.INVISIBLE);
                         speechRecognizer.stopListening();
                         listeningProgress.setVisibility(ProgressBar.GONE);
-                        Toast.makeText(getApplicationContext(), "Stopped listening", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -521,11 +521,11 @@ public class Notepad extends AppCompatActivity {
         else {
             if (isNoteModified) {
                 new AlertDialog.Builder(this)
-                        .setTitle("Save Note?")
-                        .setMessage("You have unsaved changes. Do you want to save this note?")
-                        .setPositiveButton("Save", (dialog, which) -> saveNote())
-                        .setNegativeButton("Discard", (dialog, which) -> supportFinishAfterTransition())
-                        .setNeutralButton("Cancel", (dialog, which) -> {
+                        .setTitle(R.string.save_note_text)
+                        .setMessage(R.string.save_note_message)
+                        .setPositiveButton(R.string.save_menu, (dialog, which) -> saveNote())
+                        .setNegativeButton(R.string.discard_text, (dialog, which) -> supportFinishAfterTransition())
+                        .setNeutralButton(R.string.cancel_text, (dialog, which) -> {
                         })
                         .show();
             } else {
@@ -595,10 +595,14 @@ public class Notepad extends AppCompatActivity {
                 Color.parseColor("#ADD8E6")
         };
 
-        final String[] colorNames = {"White", "Pink", "Yellow", "Silver", "Light Blue"};
+        final String[] colorNames = {getApplicationContext().getString(R.string.white_text),
+                getApplicationContext().getString(R.string.pink_text),
+                getApplicationContext().getString(R.string.yellow_text),
+                getApplicationContext().getString(R.string.silver_text),
+                getApplicationContext().getString(R.string.blue_text)};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Choose Background Color");
+        builder.setTitle(R.string.background_color_choose);
         builder.setItems(colorNames, (dialog, which) -> {
             selectedColor = colors[which];
             mainContentLayout.setBackgroundColor(selectedColor);

@@ -5,13 +5,13 @@
     <item
         android:id="@+id/action_pin"
         android:icon="@drawable/ic_pin_24"
-        android:title="Pin"
+        android:title="@string/context_bar_pin"
         app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/action_label"
         android:icon="@drawable/ic_label_24"
-        android:title="Label"
+        android:title="@string/label_text"
         app:showAsAction="ifRoom" />
 
 </menu>

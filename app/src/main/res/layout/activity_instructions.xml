@@ -17,7 +17,7 @@
             android:id="@+id/textViewTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Instructions"
+            android:text="@string/instruction_heading"
             android:textSize="22sp"
             android:textStyle="bold"
             android:layout_gravity="center_horizontal"
@@ -35,7 +35,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#3C3838"
-            android:text="Notes AI provides various functionalities to make the notes making experience smoother for the users."
+            android:text="@string/notes_main_text"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
         <TextView
@@ -43,7 +43,7 @@
             android:layout_width="match_parent"
             android:textColor="#3C3838"
             android:layout_height="wrap_content"
-            android:text="1. Taking Notes:\n- Create text notes easily.\n- Organize your thoughts efficiently."
+            android:text="@string/text_instruction_view_note"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
 
@@ -53,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#3C3838"
-            android:text="2. Voice Notes:\n- Record voice notes directly from the app.\n- Convenient for capturing ideas quickly."
+            android:text="@string/voice_notes_instruction"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
 
@@ -63,7 +63,7 @@
             android:layout_width="match_parent"
             android:textColor="#3C3838"
             android:layout_height="wrap_content"
-            android:text="3. Pin Notes:\n- Pin important notes at the top.\n- Quickly access high-priority notes."
+            android:text="@string/pin_notes_instruction"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
 
@@ -73,7 +73,7 @@
             android:layout_width="match_parent"
             android:textColor="#3C3838"
             android:layout_height="wrap_content"
-            android:text="4. Sort Notes:\n- Sort notes by date, title, or priority.\n- Keep your notes organized."
+            android:text="@string/sort_notes_instruction"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
 
@@ -83,7 +83,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#3C3838"
-            android:text="5. AI Completion:\n- Use AI to auto-complete your notes.\n- Generate ideas or summaries efficiently."
+            android:text="@string/ai_completition_instruction"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
 
@@ -93,7 +93,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#3C3838"
-            android:text="6. Drawing:\n- Sketch and draw directly within your notes.\n- Add visual elements to your notes."
+            android:text="@string/drawing_instruction_note"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
 
@@ -103,7 +103,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#3C3838"
-            android:text="7. Sketching:\n- Create more detailed sketches or diagrams.\n- Perfect for brainstorming or visual notes."
+            android:text="@string/string_instruction"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
 

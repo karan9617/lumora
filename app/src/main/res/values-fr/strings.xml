@@ -1,0 +1,137 @@
+<resources>
+    <string name="app_name">NotesAI</string>
+    <string name="title_activity_notes_list">ListeDesNotesActivity</string>
+    <string name="first_fragment_label">Premier Fragment</string>
+    <string name="second_fragment_label">Deuxième Fragment</string>
+    <string name="next">Suivant</string>
+    <string name="pinned_note_icon">Note Épinglée</string>
+    <string name="note_drawing">Dessin de Note</string>
+
+    <string name="previous">Précédent</string>
+    <string name="pin_icon_description">icône d\'épingle</string>
+    <string name="lorem_ipsum">texte</string>
+    <string name="navigation_drawer_open">Ouvrir le tiroir de navigation</string>
+    <string name="navigation_drawer_close">Fermer le tiroir de navigation</string>
+    <string name="menu_home">Accueil</string>
+    <string name="menu_send_all">Envoyer Toutes les Notes</string>
+    <string name="menu_settings">Paramètres</string>
+    <string name="menu_labels">Étiquettes</string>
+    <string name="menu_colors">Couleurs</string>
+    <string name="title_activity_excel_sheet">FeuilleDeCalculActivity</string>
+    <string name="notes_sorted_alphabetically">Notes triées par ordre alphabétique</string>
+    <string name="notes_sorted_date">Notes triées par date</string>
+    <string name="general_text">général</string>
+
+    <string name="welcome_text">Bienvenue !</string>
+    <string name="create_note_initial_text">Créer des Notes</string>
+    <string name="voice_enabled_ai_text">IA à commande vocale</string>
+    <string name="sketch_photo_text">Dessiner les photos</string>
+    <string name="welcome_note_text_ai">Bienvenue sur Notes.AI ! Cette application vous aide à capturer et organiser vos pensées facilement grâce à des outils d\'IA intégrés.</string>
+    <string name="quick_notes_welcome_page_text">Créez rapidement des notes de texte ou de dessin. Appuyez simplement sur le bouton plus pour commencer.</string>
+    <string name="voice_enabled_initial_text">Prise de notes activée par la voix avec fonction de brainstorming IA.</string>
+    <string name="draw_sketch_welcome_page">Dessinez sur le canevas enrichi pour améliorer l\'expérience de prise de notes avec des options d\'édition d\'images.</string>
+
+    <string name="fill_notes_messages">Veuillez remplir tous les champs</string>
+    <string name="thank_you_feedback">Merci pour votre retour !</string>
+    <string name="feedback_successful">Commentaire partagé</string>
+    <string name="elaborate_feedback_text">Veuillez détailler votre commentaire, cela nous aidera à mieux vous assister.</string>
+    <string name="invalid_email_text">Veuillez entrer une adresse e-mail valide.</string>
+    <string name="enter_name_feedback">Veuillez entrer un nom</string>
+    <string name="enter_fields_text">Veuillez entrer tous les champs.</string>
+
+    <string name="feedback_form_heading">Formulaire de Commentaires</string>
+    <string name="name_hint_text">Votre Nom</string>
+    <string name="feedback_email_text">Votre E-mail</string>
+    <string name="feedback_text">Veuillez entrer votre commentaire. Nous serions ravis de vous aider :)</string>
+    <string name="feedback_submit_button">Soumettre</string>
+
+    <string name="instruction_heading">Instructions</string>
+    <string name="notes_main_text">Notes AI offre diverses fonctionnalités pour rendre l\'expérience de prise de notes plus fluide pour les utilisateurs.</string>
+    <string name="text_instruction_view_note">1. Prise de Notes:\n- Créez facilement des notes de texte.\n- Organisez vos pensées efficacement.</string>
+    <string name="voice_notes_instruction">2. Notes Vocales:\n- Enregistrez des notes vocales directement depuis l\'application.\n- Pratique pour capturer des idées rapidement.</string>
+    <string name="pin_notes_instruction">3. Épingler des Notes:\n- Épinglez les notes importantes en haut.\n- Accédez rapidement aux notes de haute priorité.</string>
+    <string name="sort_notes_instruction">4. Trier les Notes:\n- Triez les notes par date, titre ou priorité.\n- Maintenez vos notes organisées.</string>
+    <string name="ai_completition_instruction">5. Complétion par IA:\n- Utilisez l\'IA pour auto-compléter vos notes.\n- Générez des idées ou des résumés efficacement.</string>
+    <string name="drawing_instruction_note">6. Dessin:\n- Faites des croquis et dessinez directement dans vos notes.\n- Ajoutez des éléments visuels à vos notes.</string>
+    <string name="string_instruction">7. Croquis:\n- Créez des croquis ou des diagrammes plus détaillés.\n- Parfait pour le brainstorming ou les notes visuelles.</string>
+
+    <string name="notes_ai_policies_line1">Les politiques de NotesAI décrivent les pratiques de confidentialité de l\'application Android Notes AI.</string>
+    <string name="notes_ai_policies_line2">NotesAI est un logiciel qui permet aux utilisateurs de sauvegarder des données et des informations personnelles sous forme de notes personnalisées.</string>
+    <string name="notes_ai_policies_line3">Des lignes directrices complètes sur la manière dont les informations de l\'utilisateur sont traitées sont décrites ci-dessous:</string>
+    <string name="information_heading">Collecte et utilisation des informations.</string>
+    <string name="notes_ai_1">En utilisant NotesAI, les utilisateurs peuvent stocker des données ainsi que des informations pour les conserver intactes dans une seule application.</string>
+    <string name="notes_ai_2">Sous forme de notes, les données peuvent être consultées ultérieurement pour référence future. </string>
+    <string name="notes_ai_3">Les informations personnelles partagées par l\'utilisateur seront stockées sur le téléphone de l\'utilisateur et ne seront pas accessibles par l\'application NotesAI ni par un tiers. </string>
+    <string name="notes_ai_4">Seul l\'utilisateur est autorisé à utiliser et à consulter ses informations tant qu\'il ne les partage pas manuellement. </string>
+    <string name="notes_ai_5">Les informations sont sécurisées dans le téléphone de l\'utilisateur.</string>
+    <string name="notes_ai_6">Notre accès à votre contenu.</string>
+    <string name="notes_ai_7">En utilisant NotesAI, l\'utilisateur peut stocker des données sous forme de notes vocales au format texte. </string>
+    <string name="notes_ai_8">Pour fournir cette fonctionnalité, NotesAI utilise une permission d\'accès au microphone du téléphone de l\'utilisateur. </string>
+    <string name="notes_ai_9">Les données collectées via le microphone sont stockées sur le téléphone de l\'utilisateur. </string>
+    <string name="notes_ai_10">Les données sont sécurisées dans le téléphone de l\'utilisateur et peuvent être récupérées pour une utilisation future.</string>
+
+    <string name="notes_deleted_trash">Note Supprimée</string>
+    <string name="notes_restored">Note restaurée..</string>
+    <string name="note_deleted">Note supprimée définitivement</string>
+    <string name="all_notes_restored">Toutes les notes restaurées..</string>
+    <string name="trash_emptied">Corbeille vidée..</string>
+    <string name="trash_heading">Corbeille</string>
+    <string name="layout_restore">Restaurer Tout</string>
+    <string name="adapter_title_name">Titre de la Note</string>
+    <string name="delete_all">Vider la Corbeille</string>
+    <string name="trash_content">Le contenu de la note est ici...</string>
+    <string name="trash_layout_restore">Restaurer</string>
+    <string name="trash_delete_button">Supprimer</string>
+
+
+    <string name="image_failed">Échec du chargement de l\'image.</string>
+    <string name="image_load_text">Image chargée avec succès !</string>
+    <string name="drawing_saved">Dessin enregistré avec succès !</string>
+    <string name="save_failed">Échec de l\'enregistrement du dessin.</string>
+
+    <string name="draw_menu">Dessiner</string>
+    <string name="save_menu">Enregistrer</string>
+    <string name="color_menu">Couleur</string>
+    <string name="pin_menu">Épingler</string>
+    <string name="notepad_title">Titre</string>
+    <string name="content_text">notes de texte...</string>
+
+    <string name="microphone_permission">Permission Micro Requis</string>
+    <string name="microphone_message">NotesAI a besoin d\'un accès au microphone pour activer la fonctionnalité voix-texte. Veuillez accorder la permission pour utiliser cette fonctionnalité.</string>
+    <string name="permission_denied">Permission Refusée Définitivement</string>
+    <string name="permission_text">La permission d\'accès au microphone est requise pour cette fonctionnalité. Veuillez l\'activer manuellement dans les paramètres de l\'application.</string>
+    <string name="settings_text">Aller aux Paramètres</string>
+    <string name="grant_text">Accorder</string>
+    <string name="cancel_text">Annuler</string>
+    <string name="listening_text">Écoute...</string>
+    <string name="save_note_text">Enregistrer la Note ?</string>
+    <string name="save_note_message">Vous avez des changements non enregistrés. Voulez-vous enregistrer cette note ?</string>
+    <string name="discard_text">Jeter</string>
+    <string name="background_color_choose">Choisir la Couleur de Fond</string>
+    <string name="white_text">Blanc</string>
+    <string name="pink_text">Rose</string>
+    <string name="yellow_text">Jaune</string>
+    <string name="silver_text">Argent</string>
+    <string name="blue_text">Bleu Clair</string>
+
+    <string name="notes_main_message">NotesAI vous aide à créer des notes créatives. Cliquez sur le bouton plus pour commencer. Bonne prise de notes ! :)</string>
+    <string name="notes_pinned_heading">Épinglées</string>
+    <string name="all_notes_heading">Toutes les Notes</string>
+    <string name="option_text_layout">Texte</string>
+    <string name="options_draw_layout">Dessin</string>
+    <string name="sort_notes_by">Trier les notes par</string>
+    <string name="sort_by_date">Trier par Date</string>
+    <string name="sort_by_alpha">Trier par Ordre Alphabétique</string>
+
+    <string name="drawer_menu_instructions">Instructions</string>
+    <string name="drawer_menu_Trash">Corbeille</string>
+    <string name="drawer_menu_policies">Politiques</string>
+    <string name="drawer_feedback_text">Commentaires</string>
+    <string name="communicate_text">Communiquer</string>
+
+    <string name="context_bar_pin">Épingler</string>
+    <string name="share_menu">Partager</string>
+    <string name="delete_menu">Supprimer</string>
+    <string name="color_menu1">Couleur</string>
+    <string name="label_text">Étiquette</string>
+</resources>

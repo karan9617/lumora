@@ -85,7 +85,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="general"
+                android:text="@string/general_text"
                 android:id="@+id/labeltext1"
                 android:paddingLeft="11dp"
                 android:paddingRight="11dp"
@@ -99,7 +99,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="general"
+                android:text="@string/general_text"
                 android:id="@+id/labeltext2"
                 android:textSize="8sp"
                 android:paddingLeft="11dp"

@@ -94,11 +94,11 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         }
         else if(titleArr.length >=2){
             holder.labeltext1.setText(titleArr[1]);
-            holder.labeltext2.setText("general");
+            holder.labeltext2.setText(R.string.general_text);
         }
         else{
-            holder.labeltext1.setText("general");
-            holder.labeltext2.setText("general");
+            holder.labeltext1.setText(R.string.general_text);
+            holder.labeltext2.setText(R.string.general_text);
         }
         holder.noteTitle.setText(titleArr[0]);
         //holder.noteContent.setText(note.getContent());

@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/toolbar"
         android:background="@android:color/transparent"
-        android:hint="Title"
+        android:hint="@string/notepad_title"
         android:textColor="#706E6E"
         android:inputType="textCapSentences"
         android:paddingStart="16dp"
@@ -69,7 +69,7 @@
                         android:padding="16dp"
                         android:soundEffectsEnabled="true"
                         android:scrollbars="vertical"
-                        android:hint="text notes..."
+                        android:hint="@string/content_text"
                         android:textColor="@color/black"
                         android:textSize="18sp"
                         android:inputType="textMultiLine" />

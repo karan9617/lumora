@@ -44,7 +44,7 @@
             android:layout_marginRight="10dp"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:text="NotesAI helps you create creative notes. Click on the plus button to get started. Happy noting :)"
+            android:text="@string/notes_main_message"
             />
         <!-- Toolbar is at the top -->
         <androidx.appcompat.widget.Toolbar
@@ -96,7 +96,7 @@
                     android:id="@+id/pinnedNotesHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Pinned"
+                    android:text="@string/notes_pinned_heading"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="8dp"
@@ -128,7 +128,7 @@
                     android:id="@+id/otherNotesHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="All Notes"
+                    android:text="@string/all_notes_heading"
                     android:layout_marginStart="8dp"
                     android:layout_marginBottom="8dp"
                     android:textSize="20sp"
@@ -196,7 +196,7 @@
                     android:id="@+id/option_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Text"
+                    android:text="@string/option_text_layout"
                     android:textColor="@android:color/white"
                     android:textSize="16sp" />
                 <ImageView
@@ -246,7 +246,7 @@
                     android:id="@+id/option_drawings"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Draw"
+                    android:text="@string/options_draw_layout"
                     android:textColor="@android:color/white"
                     android:textSize="16sp" />
                 <ImageView

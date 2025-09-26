@@ -1,0 +1,137 @@
+<resources>
+    <string name="app_name">NotesAI</string>
+    <string name="title_activity_notes_list">СписокЗаметокActivity</string>
+    <string name="first_fragment_label">Первый фрагмент</string>
+    <string name="second_fragment_label">Второй фрагмент</string>
+    <string name="next">Далее</string>
+    <string name="pinned_note_icon">Закрепленная заметка</string>
+    <string name="note_drawing">Рисунок заметки</string>
+
+    <string name="previous">Назад</string>
+    <string name="pin_icon_description">значок булавки</string>
+    <string name="lorem_ipsum">текст</string>
+    <string name="navigation_drawer_open">Открыть панель навигации</string>
+    <string name="navigation_drawer_close">Закрыть панель навигации</string>
+    <string name="menu_home">Главная</string>
+    <string name="menu_send_all">Отправить все заметки</string>
+    <string name="menu_settings">Настройки</string>
+    <string name="menu_labels">Метки</string>
+    <string name="menu_colors">Цвета</string>
+    <string name="title_activity_excel_sheet">ExcelТаблицаActivity</string>
+    <string name="notes_sorted_alphabetically">Заметки отсортированы по алфавиту</string>
+    <string name="notes_sorted_date">Заметки отсортированы по дате</string>
+    <string name="general_text">Общие</string>
+
+    <string name="welcome_text">Добро пожаловать!</string>
+    <string name="create_note_initial_text">Создать заметки</string>
+    <string name="voice_enabled_ai_text">Голосовой помощник с ИИ</string>
+    <string name="sketch_photo_text">Наброски и фото</string>
+    <string name="welcome_note_text_ai">Добро пожаловать в Notes.AI! Это приложение поможет вам легко фиксировать и систематизировать свои мысли с помощью интегрированных инструментов ИИ.</string>
+    <string name="quick_notes_welcome_page_text">Быстро создавайте текстовые заметки или рисунки. Просто нажмите на кнопку плюса, чтобы начать.</string>
+    <string name="voice_enabled_initial_text">Голосовой ввод заметок с активированной функцией мозгового штурма ИИ.</string>
+    <string name="draw_sketch_welcome_page">Рисуйте на богатом холсте, чтобы улучшить процесс ведения заметок с помощью возможностей редактирования изображений.</string>
+
+    <string name="fill_notes_messages">Пожалуйста, заполните все поля</string>
+    <string name="thank_you_feedback">Спасибо за ваш отзыв!</string>
+    <string name="feedback_successful">Отзыв отправлен</string>
+    <string name="elaborate_feedback_text">Пожалуйста, изложите свой отзыв подробнее, это поможет нам лучше вам помочь.</string>
+    <string name="invalid_email_text">Пожалуйста, введите действительный адрес электронной почты.</string>
+    <string name="enter_name_feedback">Пожалуйста, введите имя</string>
+    <string name="enter_fields_text">Пожалуйста, введите все поля.</string>
+
+    <string name="feedback_form_heading">Форма обратной связи</string>
+    <string name="name_hint_text">Ваше имя</string>
+    <string name="feedback_email_text">Ваш Email</string>
+    <string name="feedback_text">Пожалуйста, введите свой отзыв. Мы будем рады помочь :)</string>
+    <string name="feedback_submit_button">Отправить</string>
+
+    <string name="instruction_heading">Инструкции</string>
+    <string name="notes_main_text">Notes AI предоставляет различные функции, чтобы сделать процесс создания заметок более удобным для пользователей.</string>
+    <string name="text_instruction_view_note">1. Создание заметок:\n- Легко создавайте текстовые заметки.\n- Эффективно организуйте свои мысли.</string>
+    <string name="voice_notes_instruction">2. Голосовые заметки:\n- Записывайте голосовые заметки прямо из приложения.\n- Удобно для быстрого улавливания идей.</string>
+    <string name="pin_notes_instruction">3. Закрепление заметок:\n- Закрепляйте важные заметки вверху.\n- Быстрый доступ к приоритетным заметкам.</string>
+    <string name="sort_notes_instruction">4. Сортировка заметок:\n- Сортируйте заметки по дате, заголовку или приоритету.\n- Держите свои заметки в порядке.</string>
+    <string name="ai_completition_instruction">5. Завершение с помощью ИИ:\n- Используйте ИИ для автозаполнения заметок.\n- Эффективно генерируйте идеи или сводки.</string>
+    <string name="drawing_instruction_note">6. Рисование:\n- Делайте наброски и рисуйте прямо в своих заметках.\n- Добавляйте визуальные элементы в свои заметки.</string>
+    <string name="string_instruction">7. Скетчинг:\n- Создавайте более подробные наброски или диаграммы.\n- Идеально подходит для мозгового штурма или визуальных заметок.</string>
+
+    <string name="notes_ai_policies_line1">Политика NotesAI описывает практику конфиденциальности приложения Notes AI для Android.</string>
+    <string name="notes_ai_policies_line2">NotesAI — это программное обеспечение, которое позволяет пользователям сохранять данные и личную информацию в виде персонализированных заметок.</string>
+    <string name="notes_ai_policies_line3">Ниже приведено исчерпывающее руководство по обработке информации пользователя:</string>
+    <string name="information_heading">Сбор и использование информации.</string>
+    <string name="notes_ai_1">При использовании NotesAI пользователи могут хранить данные, а также информацию, чтобы сохранить их в целости в одном приложении.</string>
+    <string name="notes_ai_2">В форме заметок данные могут быть доступны позже для будущих ссылок. </string>
+    <string name="notes_ai_3">Личная информация, переданная пользователем, будет храниться на телефоне пользователя и не будет доступна приложению NotesAI или какой-либо третьей стороне. </string>
+    <string name="notes_ai_4">Только пользователь имеет право использовать и просматривать свою информацию, если он или она не поделится ею вручную. </string>
+    <string name="notes_ai_5">Информация находится в безопасности на телефоне пользователя.</string>
+    <string name="notes_ai_6">Наш доступ к вашему контенту.</string>
+    <string name="notes_ai_7">При использовании NotesAI пользователь может хранить данные в виде голосовых заметок в виде текста. </string>
+    <string name="notes_ai_8">Для обеспечения функциональности NotesAI использует разрешение на использование микрофона с телефона пользователя. </string>
+    <string name="notes_ai_9">Данные, собранные с микрофона, хранятся на телефоне пользователя. </string>
+    <string name="notes_ai_10">Данные защищены на телефоне пользователя и могут быть получены для будущего использования.</string>
+
+    <string name="notes_deleted_trash">Заметка удалена</string>
+    <string name="notes_restored">Заметка восстановлена..</string>
+    <string name="note_deleted">Заметка удалена навсегда</string>
+    <string name="all_notes_restored">Все заметки восстановлены..</string>
+    <string name="trash_emptied">Корзина очищена..</string>
+    <string name="trash_heading">Корзина</string>
+    <string name="layout_restore">Восстановить все</string>
+    <string name="adapter_title_name">Название заметки</string>
+    <string name="delete_all">Очистить корзину</string>
+    <string name="trash_content">Содержимое заметки здесь...</string>
+    <string name="trash_layout_restore">Восстановить</string>
+    <string name="trash_delete_button">Удалить</string>
+
+
+    <string name="image_failed">Не удалось загрузить изображение.</string>
+    <string name="image_load_text">Изображение успешно загружено!</string>
+    <string name="drawing_saved">Рисунок успешно сохранен!</string>
+    <string name="save_failed">Не удалось сохранить рисунок.</string>
+
+    <string name="draw_menu">Рисовать</string>
+    <string name="save_menu">Сохранить</string>
+    <string name="color_menu">Цвет</string>
+    <string name="pin_menu">Закрепить</string>
+    <string name="notepad_title">Заголовок</string>
+    <string name="content_text">текстовые заметки...</string>
+
+    <string name="microphone_permission">Требуется разрешение на использование микрофона</string>
+    <string name="microphone_message">NotesAI требуется доступ к микрофону для включения функции преобразования голоса в текст. Пожалуйста, предоставьте разрешение для использования этой функции.</string>
+    <string name="permission_denied">Разрешение отклонено навсегда</string>
+    <string name="permission_text">Для этой функции требуется разрешение на использование микрофона. Включите его вручную в настройках приложения.</string>
+    <string name="settings_text">Перейти в настройки</string>
+    <string name="grant_text">Предоставить</string>
+    <string name="cancel_text">Отмена</string>
+    <string name="listening_text">Прослушивание...</string>
+    <string name="save_note_text">Сохранить заметку?</string>
+    <string name="save_note_message">У вас есть несохраненные изменения. Хотите сохранить эту заметку?</string>
+    <string name="discard_text">Отменить</string>
+    <string name="background_color_choose">Выбрать цвет фона</string>
+    <string name="white_text">Белый</string>
+    <string name="pink_text">Розовый</string>
+    <string name="yellow_text">Желтый</string>
+    <string name="silver_text">Серебристый</string>
+    <string name="blue_text">Светло-синий</string>
+
+    <string name="notes_main_message">NotesAI поможет вам создавать креативные заметки. Нажмите на кнопку плюса, чтобы начать. Удачных заметок! :)</string>
+    <string name="notes_pinned_heading">Закрепленные</string>
+    <string name="all_notes_heading">Все заметки</string>
+    <string name="option_text_layout">Текст</string>
+    <string name="options_draw_layout">Рисунок</string>
+    <string name="sort_notes_by">Сортировать заметки по</string>
+    <string name="sort_by_date">Сортировать по дате</string>
+    <string name="sort_by_alpha">Сортировать по алфавиту</string>
+
+    <string name="drawer_menu_instructions">Инструкции</string>
+    <string name="drawer_menu_Trash">Корзина</string>
+    <string name="drawer_menu_policies">Политика</string>
+    <string name="drawer_feedback_text">Отзыв</string>
+    <string name="communicate_text">Связаться</string>
+
+    <string name="context_bar_pin">Закрепить</string>
+    <string name="share_menu">Поделиться</string>
+    <string name="delete_menu">Удалить</string>
+    <string name="color_menu1">Цвет</string>
+    <string name="label_text">Метка</string>
+</resources>

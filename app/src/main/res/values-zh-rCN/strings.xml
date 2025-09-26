@@ -1,0 +1,137 @@
+<resources>
+    <string name="app_name">NotesAI</string>
+    <string name="title_activity_notes_list">笔记列表活动</string>
+    <string name="first_fragment_label">第一个片段</string>
+    <string name="second_fragment_label">第二个片段</string>
+    <string name="next">下一步</string>
+    <string name="pinned_note_icon">已置顶笔记</string>
+    <string name="note_drawing">笔记绘画</string>
+
+    <string name="previous">上一步</string>
+    <string name="pin_icon_description">图钉图标</string>
+    <string name="lorem_ipsum">文本</string>
+    <string name="navigation_drawer_open">打开导航抽屉</string>
+    <string name="navigation_drawer_close">关闭导航抽屉</string>
+    <string name="menu_home">主页</string>
+    <string name="menu_send_all">发送所有笔记</string>
+    <string name="menu_settings">设置</string>
+    <string name="menu_labels">标签</string>
+    <string name="menu_colors">颜色</string>
+    <string name="title_activity_excel_sheet">Excel表格活动</string>
+    <string name="notes_sorted_alphabetically">笔记按字母排序</string>
+    <string name="notes_sorted_date">笔记按日期排序</string>
+    <string name="general_text">常规</string>
+
+    <string name="welcome_text">欢迎！</string>
+    <string name="create_note_initial_text">创建笔记</string>
+    <string name="voice_enabled_ai_text">启用语音的AI</string>
+    <string name="sketch_photo_text">涂鸦照片</string>
+    <string name="welcome_note_text_ai">欢迎使用 Notes.AI！这款应用通过集成的 AI 工具，可帮助您轻松捕捉和整理您的想法。</string>
+    <string name="quick_notes_welcome_page_text">快速创建文本或绘图笔记。只需点击加号按钮即可开始。</string>
+    <string name="voice_enabled_initial_text">启用了语音笔记功能，并激活了 AI 头脑风暴功能。</string>
+    <string name="draw_sketch_welcome_page">在丰富的画布上进行绘画，以图像编辑选项增强笔记体验。</string>
+
+    <string name="fill_notes_messages">请填写所有字段</string>
+    <string name="thank_you_feedback">感谢您的反馈！</string>
+    <string name="feedback_successful">反馈已分享</string>
+    <string name="elaborate_feedback_text">请详细阐述您的反馈，这将有助于我们更好地为您提供帮助。</string>
+    <string name="invalid_email_text">请输入有效的电子邮件。</string>
+    <string name="enter_name_feedback">请输入姓名</string>
+    <string name="enter_fields_text">请输入所有字段。</string>
+
+    <string name="feedback_form_heading">反馈表</string>
+    <string name="name_hint_text">您的姓名</string>
+    <string name="feedback_email_text">您的电子邮件</string>
+    <string name="feedback_text">请填写您的反馈。我们很乐意提供帮助 :)</string>
+    <string name="feedback_submit_button">提交</string>
+
+    <string name="instruction_heading">使用说明</string>
+    <string name="notes_main_text">Notes AI 提供各种功能，使用户的笔记制作体验更加顺畅。</string>
+    <string name="text_instruction_view_note">1. 记笔记:\n- 轻松创建文本笔记。\n- 有效地组织您的想法。</string>
+    <string name="voice_notes_instruction">2. 语音笔记:\n- 直接从应用内录制语音笔记。\n- 方便快速捕捉想法。</string>
+    <string name="pin_notes_instruction">3. 置顶笔记:\n- 将重要笔记置顶。\n- 快速访问高优先级笔记。</string>
+    <string name="sort_notes_instruction">4. 笔记排序:\n- 按日期、标题或优先级对笔记进行排序。\n- 保持您的笔记井然有序。</string>
+    <string name="ai_completition_instruction">5. AI 自动完成:\n- 使用 AI 自动完成您的笔记。\n- 有效地生成想法或摘要。</string>
+    <string name="drawing_instruction_note">6. 绘图:\n- 直接在您的笔记中进行素描和绘图。\n- 为您的笔记添加视觉元素。</string>
+    <string name="string_instruction">7. 涂鸦:\n- 创建更详细的草图或图表。\n- 非常适合头脑风暴或视觉笔记。</string>
+
+    <string name="notes_ai_policies_line1">NotesAI 政策描述了 Notes AI Android 应用程序的隐私惯例。</string>
+    <string name="notes_ai_policies_line2">NotesAI 是一款软件，允许用户以个性化笔记的形式保存数据和个人信息。</string>
+    <string name="notes_ai_policies_line3">以下描述了处理用户信息方式的全面指南：</string>
+    <string name="information_heading">信息收集和使用。</string>
+    <string name="notes_ai_1">在使用 NotesAI 时，用户可以存储数据和信息，将其保持在一个应用程序中。</string>
+    <string name="notes_ai_2">以笔记的形式，数据可以在以后被访问，以供将来参考。</string>
+    <string name="notes_ai_3">用户共享的个人信息将存储在用户的手机中，NotesAI 应用程序或任何其他第三方将无法访问。</string>
+    <string name="notes_ai_4">只有用户有资格使用和查看他或她的信息，只要用户没有手动分享它。</string>
+    <string name="notes_ai_5">信息在用户的手机中是安全的。</string>
+    <string name="notes_ai_6">我们对您内容的访问。</string>
+    <string name="notes_ai_7">在使用 NotesAI 时，用户可以以文本形式存储语音笔记数据。</string>
+    <string name="notes_ai_8">为了提供此功能，NotesAI 使用了用户手机的麦克风权限。</string>
+    <string name="notes_ai_9">从麦克风收集的数据存储在用户的手机中。</string>
+    <string name="notes_ai_10">数据在用户的手机中是安全的，可以检索以供将来使用。</string>
+
+    <string name="notes_deleted_trash">笔记已删除</string>
+    <string name="notes_restored">笔记已恢复..</string>
+    <string name="note_deleted">笔记已永久删除</string>
+    <string name="all_notes_restored">所有笔记已恢复..</string>
+    <string name="trash_emptied">回收站已清空..</string>
+    <string name="trash_heading">回收站</string>
+    <string name="layout_restore">全部恢复</string>
+    <string name="adapter_title_name">笔记标题</string>
+    <string name="delete_all">清空回收站</string>
+    <string name="trash_content">笔记内容在这里...</string>
+    <string name="trash_layout_restore">恢复</string>
+    <string name="trash_delete_button">删除</string>
+
+
+    <string name="image_failed">图片加载失败。</string>
+    <string name="image_load_text">图片加载成功！</string>
+    <string name="drawing_saved">绘画保存成功！</string>
+    <string name="save_failed">保存绘画失败。</string>
+
+    <string name="draw_menu">绘画</string>
+    <string name="save_menu">保存</string>
+    <string name="color_menu">颜色</string>
+    <string name="pin_menu">置顶</string>
+    <string name="notepad_title">标题</string>
+    <string name="content_text">文本笔记...</string>
+
+    <string name="microphone_permission">需要麦克风权限</string>
+    <string name="microphone_message">NotesAI 需要麦克风权限才能启用语音转文本功能。请授予权限以使用此功能。</string>
+    <string name="permission_denied">权限永久拒绝</string>
+    <string name="permission_text">此功能需要麦克风权限。请在应用设置中手动启用。</string>
+    <string name="settings_text">前往设置</string>
+    <string name="grant_text">授予</string>
+    <string name="cancel_text">取消</string>
+    <string name="listening_text">正在聆听...</string>
+    <string name="save_note_text">保存笔记？</string>
+    <string name="save_note_message">您有未保存的更改。您想保存此笔记吗？</string>
+    <string name="discard_text">丢弃</string>
+    <string name="background_color_choose">选择背景颜色</string>
+    <string name="white_text">白色</string>
+    <string name="pink_text">粉色</string>
+    <string name="yellow_text">黄色</string>
+    <string name="silver_text">银色</string>
+    <string name="blue_text">浅蓝色</string>
+
+    <string name="notes_main_message">NotesAI 可帮助您创建创意笔记。点击加号按钮即可开始。记笔记愉快！ :)</string>
+    <string name="notes_pinned_heading">已置顶</string>
+    <string name="all_notes_heading">所有笔记</string>
+    <string name="option_text_layout">文本</string>
+    <string name="options_draw_layout">绘图</string>
+    <string name="sort_notes_by">笔记排序方式</string>
+    <string name="sort_by_date">按日期排序</string>
+    <string name="sort_by_alpha">按字母排序</string>
+
+    <string name="drawer_menu_instructions">使用说明</string>
+    <string name="drawer_menu_Trash">回收站</string>
+    <string name="drawer_menu_policies">政策</string>
+    <string name="drawer_feedback_text">反馈</string>
+    <string name="communicate_text">交流</string>
+
+    <string name="context_bar_pin">置顶</string>
+    <string name="share_menu">分享</string>
+    <string name="delete_menu">删除</string>
+    <string name="color_menu1">颜色</string>
+    <string name="label_text">标签</string>
+</resources>

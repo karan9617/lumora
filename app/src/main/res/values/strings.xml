@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Notes.AI</string>
+    <string name="app_name">NotesAI</string>
     <string name="title_activity_notes_list">NotesListActivity</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
@@ -19,4 +19,132 @@
     <string name="menu_labels">Labels</string>
     <string name="menu_colors">Colors</string>
     <string name="title_activity_excel_sheet">ExcelSheetActivity</string>
+    <string name="notes_sorted_alphabetically">Notes sorted alphabetically</string>
+    <string name="notes_sorted_date">Notes sorted by date</string>
+    <string name="general_text">general</string>
+
+    <!-- welcoming pages string -->
+    <string name="welcome_text">Welcome!</string>
+    <string name="create_note_initial_text">Create Notes</string>
+    <string name="voice_enabled_ai_text">Voice enabled AI</string>
+    <string name="sketch_photo_text">Sketch the photos</string>
+    <string name="welcome_note_text_ai">Welcome to Notes.AI! This app helps you capture and organize your thoughts with ease with Integrated AI tools.</string>
+    <string name="quick_notes_welcome_page_text">Quickly create text or drawing notes. Just tap the plus button to get started.</string>
+    <string name="voice_enabled_initial_text">Voice enabled note taking with AI brain storming feature enabled.</string>
+    <string name="draw_sketch_welcome_page">Draw on the rich canvas to enhance the note taking experience with images editing options.</string>
+
+    <!-- Toast messages text -->
+    <string name="fill_notes_messages">Please fill all fields</string>
+    <string name="thank_you_feedback">Thank you for your feedback!</string>
+    <string name="feedback_successful">Feedback shared</string>
+    <string name="elaborate_feedback_text">Please elaborate your feedback, it will helps us to assist you better.</string>
+    <string name="invalid_email_text">Please enter a valid email.</string>
+    <string name="enter_name_feedback">Please enter a name</string>
+    <string name="enter_fields_text">Please enter all the fields.</string>
+
+    <!-- Feedback form strings-->
+    <string name="feedback_form_heading">Feedback Form</string>
+    <string name="name_hint_text">Your Name</string>
+    <string name="feedback_email_text">Your Email</string>
+    <string name="feedback_text">Please enter your feedback. We would love to help :)</string>
+    <string name="feedback_submit_button">Submit</string>
+
+    <!-- Instruction activity-->
+    <string name="instruction_heading">Instructions</string>
+    <string name="notes_main_text">Notes AI provides various functionalities to make the notes making experience smoother for the users.</string>
+    <string name="text_instruction_view_note">1. Taking Notes:\n- Create text notes easily.\n- Organize your thoughts efficiently.</string>
+    <string name="voice_notes_instruction">2. Voice Notes:\n- Record voice notes directly from the app.\n- Convenient for capturing ideas quickly.</string>
+    <string name="pin_notes_instruction">3. Pin Notes:\n- Pin important notes at the top.\n- Quickly access high-priority notes.</string>
+    <string name="sort_notes_instruction">4. Sort Notes:\n- Sort notes by date, title, or priority.\n- Keep your notes organized.</string>
+    <string name="ai_completition_instruction">5. AI Completion:\n- Use AI to auto-complete your notes.\n- Generate ideas or summaries efficiently.</string>
+    <string name="drawing_instruction_note">6. Drawing:\n- Sketch and draw directly within your notes.\n- Add visual elements to your notes.</string>
+    <string name="string_instruction">7. Sketching:\n- Create more detailed sketches or diagrams.\n- Perfect for brainstorming or visual notes.</string>
+
+    <!-- notes policies string-->
+    <string name="notes_ai_policies_line1">The NotesAI policies describe the privacy practices of the Notes AI android application.</string>
+    <string name="notes_ai_policies_line2">NotesAI is a software which enables users to save data and personal information in the form of personalized notes.</string>
+    <string name="notes_ai_policies_line3">A comprehensive guidelines of the way the user information is handled is described below:</string>
+    <string name="information_heading">Information collection and use.</string>
+    <string name="notes_ai_1">While using NotesAI users can store data as well as information to keep intact on one application.</string>
+    <string name="notes_ai_2">In the form of notes the data can be accessed later for future references. </string>
+    <string name="notes_ai_3">The personal information shared by the user will be stored in the users phone and will not be accessible by the NotesAI application or any other third party. </string>
+    <string name="notes_ai_4">Only the user is qualified to use and view his or her information as long as the user doesnt manually share it. </string>
+    <string name="notes_ai_5">The information is safe in the users phone.</string>
+    <string name="notes_ai_6">Our access to your content.</string>
+    <string name="notes_ai_7">While using NotesAI, the user can store data in the form of voice notes as text. </string>
+    <string name="notes_ai_8">For providing the functionality, NotesAI uses a microphone permission from the users phone. </string>
+    <string name="notes_ai_9">The data collected from the microphone is stored in the users phone. </string>
+    <string name="notes_ai_10">The data is secured in the users phone and can be retrieved for future use.</string>
+
+    <!-- trash activity -->
+    <string name="notes_deleted_trash">Note Deleted</string>
+    <string name="notes_restored">Note restored..</string>
+    <string name="note_deleted">Note deleted permanently</string>
+    <string name="all_notes_restored">All notes restored..</string>
+    <string name="trash_emptied">Trash emptied..</string>
+    <string name="trash_heading">Trash</string>
+    <string name="layout_restore">Restore All</string>
+    <string name="adapter_title_name">Note Title</string>
+    <string name="delete_all">Empty Trash</string>
+    <string name="trash_content">Note content goes here...</string>
+    <string name="trash_layout_restore">Restore</string>
+    <string name="trash_delete_button">Delete</string>
+
+
+    <!-- drawing activity text -->
+    <string name="image_failed">Failed to load image.</string>
+    <string name="image_load_text">Image loaded successfully!</string>
+    <string name="drawing_saved">Drawing saved successfully!</string>
+    <string name="save_failed">Failed to save drawing.</string>
+
+    <!-- notepad menu main -->
+    <string name="draw_menu">Draw</string>
+    <string name="save_menu">Save</string>
+    <string name="color_menu">Color</string>
+    <string name="pin_menu">pin</string>
+    <string name="notepad_title">Title</string>
+    <string name="content_text">text notes...</string>
+
+    <!-- notepad activity -->
+    <string name="microphone_permission">Microphone Permission Required</string>
+    <string name="microphone_message">NotesAI needs microphone access to enable voice-to-text functionality. Please grant the permission to use this feature.</string>
+    <string name="permission_denied">Permission Permanently Denied</string>
+    <string name="permission_text">Microphone permission is required for this feature. Please enable it manually in the app settings.</string>
+    <string name="settings_text">Go to Settings</string>
+    <string name="grant_text">Grant</string>
+    <string name="cancel_text">Cancel</string>
+    <string name="listening_text">Listening...</string>
+    <string name="save_note_text">Save Note?</string>
+    <string name="save_note_message">You have unsaved changes. Do you want to save this note?</string>
+    <string name="discard_text">Discard</string>
+    <string name="background_color_choose">Choose Background Color</string>
+    <string name="white_text">White</string>
+    <string name="pink_text">Pink</string>
+    <string name="yellow_text">Yellow</string>
+    <string name="silver_text">Silver</string>
+    <string name="blue_text">Light Blue</string>
+
+    <!-- notes list activity -->
+    <string name="notes_main_message">NotesAI helps you create creative notes. Click on the plus button to get started. Happy noting :)</string>
+    <string name="notes_pinned_heading">Pinned</string>
+    <string name="all_notes_heading">All Notes</string>
+    <string name="option_text_layout">Text</string>
+    <string name="options_draw_layout">Draw</string>
+    <string name="sort_notes_by">Sort notes by</string>
+    <string name="sort_by_date">Sort by Date</string>
+    <string name="sort_by_alpha">Sort Alphabetically</string>
+
+    <!-- drawer menu -->
+    <string name="drawer_menu_instructions">Instructions</string>
+    <string name="drawer_menu_Trash">Trash</string>
+    <string name="drawer_menu_policies">Policies</string>
+    <string name="drawer_feedback_text">Feedback</string>
+    <string name="communicate_text">Communicate</string>
+
+    <!-- menu contextual action bar-->
+    <string name="context_bar_pin">Pin</string>
+    <string name="share_menu">Share</string>
+    <string name="delete_menu">Delete</string>
+    <string name="color_menu1">Color</string>
+    <string name="label_text">Label</string>
 </resources>

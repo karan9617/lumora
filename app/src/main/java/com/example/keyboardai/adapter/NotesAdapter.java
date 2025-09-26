@@ -92,11 +92,11 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         }
         else if(titleArr.length >=2){
             holder.labeltext1.setText(titleArr[1]);
-            holder.labeltext2.setText("general");
+            holder.labeltext2.setText(R.string.general_text);
         }
         else{
-            holder.labeltext1.setText("general");
-            holder.labeltext2.setText("general");
+            holder.labeltext1.setText(R.string.general_text);
+            holder.labeltext2.setText(R.string.general_text);
         }
         holder.noteTitle.setText(titleArr[0]);
         try {

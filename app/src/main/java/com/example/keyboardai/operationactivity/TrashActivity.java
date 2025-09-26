@@ -65,12 +65,12 @@ public class TrashActivity extends AppCompatActivity {
                         NotesListActivity.allNotes.add(selectedNote); // Keep the main list in sync
                         adapter.notifyItemRemoved(position);
                         notesRepository.addNote(selectedNote);
-                        Toast.makeText(TrashActivity.this, "Note Deleted", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(TrashActivity.this, R.string.notes_deleted_trash, Toast.LENGTH_SHORT).show();
                     });
                 }
             }).start();
         }
-        Toast.makeText(getApplicationContext(),"Note restored..",Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(),R.string.notes_restored,Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -84,7 +84,7 @@ public class TrashActivity extends AppCompatActivity {
             notesRepositoryTrash.deleteNote(selectedNote.getId());
             adapter.notifyItemRemoved(position);
         }
-        Toast.makeText(getApplicationContext(),"Note deleted permanently",Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(),R.string.note_deleted,Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -104,7 +104,7 @@ public class TrashActivity extends AppCompatActivity {
             });
 
         }).start();
-        Toast.makeText(getApplicationContext(),"All notes restored..",Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(),R.string.all_notes_restored,Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -118,7 +118,7 @@ public class TrashActivity extends AppCompatActivity {
             allTrashNotesFromDb.clear();
         }).start();
         adapter.notifyDataSetChanged();
-        Toast.makeText(getApplicationContext(),"Trash emptied..",Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(),R.string.trash_emptied,Toast.LENGTH_SHORT).show();
     }
 
     @Override

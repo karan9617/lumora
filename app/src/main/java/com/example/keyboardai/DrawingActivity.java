@@ -87,7 +87,6 @@ public class DrawingActivity extends AppCompatActivity {
                             public void onGlobalLayout() {
                                 if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
                                     drawingView.setBackgroundImage(loadedBitmap);
-                                    Toast.makeText(getApplicationContext(), "Drawing loaded successfully!", Toast.LENGTH_SHORT).show();
                                     drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                                 }
                             }
@@ -163,7 +162,7 @@ public class DrawingActivity extends AppCompatActivity {
                         if (existingNote != null) {
                             existingNote.setImagePath(imagePath);
                             noteRepository.updateNote(existingNote);
-                            Toast.makeText(this, "Drawing updated successfully!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.drawing_saved, Toast.LENGTH_SHORT).show();
                         }
                     } else {
                         // We are saving a new note
@@ -176,22 +175,19 @@ public class DrawingActivity extends AppCompatActivity {
                         drawingNote.setImagePath(imagePath);
                         long newRowId = noteRepository.addNote(drawingNote);
                         if (newRowId != -1) {
-                            Toast.makeText(this, "Drawing saved successfully!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.drawing_saved, Toast.LENGTH_SHORT).show();
                             Log.d("DrawingActivity", "Saved note with ID: " + newRowId);
                         } else {
-                            Toast.makeText(this, "Failed to save drawing.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.save_failed, Toast.LENGTH_SHORT).show();
                         }
                     }
                     isDirty = false; // Reset the dirty flag after saving
                     finish(); // Close the activity after saving
                 } else {
-                    Toast.makeText(this, "Failed to save image file.", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Toast.makeText(this, "Failed to convert drawing to image.", Toast.LENGTH_SHORT).show();
             }
         } else {
-            Toast.makeText(this, "No drawing to save.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -440,10 +436,10 @@ public class DrawingActivity extends AppCompatActivity {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
                 // Set the bitmap as the background in the DrawingView
                 drawingView.setBackgroundImage(bitmap);
-                Toast.makeText(this, "Image loaded successfully!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.image_load_text, Toast.LENGTH_SHORT).show();
             } catch (IOException e) {
                 e.printStackTrace();
-                Toast.makeText(this, "Failed to load image.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.image_failed, Toast.LENGTH_SHORT).show();
             }
         }
     }

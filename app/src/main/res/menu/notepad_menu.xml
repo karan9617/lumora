@@ -3,14 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_draw"
-        android:title="Draw"
+        android:title="@string/draw_menu"
         android:icon="@drawable/baseline_brush_24"
         app:showAsAction="ifRoom"
         />
 
     <item
         android:id="@+id/action_save"
-        android:title="Save"
+        android:title="@string/save_menu"
         android:iconTint="@color/white"
 
         app:showAsAction="ifRoom"
@@ -18,14 +18,14 @@
 
     <item
         android:id="@+id/action_color"
-        android:title="Color"
+        android:title="@string/color_menu"
         android:icon="@drawable/ic_color_lens"
         app:showAsAction="ifRoom" />
 
 
     <item
         android:id="@+id/action_pin_unpin"
-        android:title="pin"
+        android:title="@string/pin_menu"
         android:icon="@drawable/ic_pin"
         />
 </menu>
