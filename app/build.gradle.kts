@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.keyboardai"
+    namespace = "com.noteaiapp.keyboardai"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.keyboardai"
+        applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

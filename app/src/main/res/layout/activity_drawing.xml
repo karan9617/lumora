@@ -10,7 +10,7 @@
     tools:context=".DrawingActivity">
 
     <!-- The custom drawing view will fill the entire screen, from edge to edge -->
-    <com.example.keyboardai.ui.DrawingView
+    <com.noteaiapp.keyboardai.ui.DrawingView
         android:id="@+id/drawing_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
