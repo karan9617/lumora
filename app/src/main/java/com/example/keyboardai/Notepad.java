@@ -50,6 +50,7 @@ import com.example.keyboardai.data.NoteRepository;
 import com.example.keyboardai.data.WordTokenizer;
 import com.example.keyboardai.processor.WordProcessor;
 import com.example.keyboardai.ui.DrawingView;
+import com.example.keyboardai.widget.NotesWidgetProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.io.File;
@@ -615,6 +616,7 @@ public class Notepad extends AppCompatActivity {
     }
 
     public void saveNote() {
+        NotesWidgetProvider.refreshWidget(getApplicationContext());
 
         String content = resultText.getText().toString().trim();
         WordTokenizer tokenizer = new WordTokenizer(content);

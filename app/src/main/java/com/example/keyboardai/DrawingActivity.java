@@ -26,6 +26,7 @@ import com.example.keyboardai.Models.Note;
 import com.example.keyboardai.R;
 import com.example.keyboardai.data.NoteRepository;
 import com.example.keyboardai.ui.DrawingView;
+import com.example.keyboardai.widget.NotesWidgetProvider;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -144,6 +145,7 @@ public class DrawingActivity extends AppCompatActivity {
     private void saveOrUpdateDrawing() {
         // Get the drawing data as a byte array
         byte[] drawingData = drawingView.getDrawingData();
+        NotesWidgetProvider.refreshWidget(getApplicationContext());
 
         if (drawingData != null && drawingData.length > 0) {
             // Convert the byte array to a Bitmap

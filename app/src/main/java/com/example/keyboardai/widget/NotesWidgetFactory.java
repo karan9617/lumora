@@ -28,8 +28,12 @@ public class NotesWidgetFactory implements RemoteViewsService.RemoteViewsFactory
     public void onCreate() {
         // In a real app, you would load data here synchronously.
         // It's called on the main thread, so be careful with long operations.
+        loadNotes();
     }
-
+    private void loadNotes() {
+        NoteRepository repo = new NoteRepository(context);
+        notes = repo.getAllNotes();  // <-- You need to implement this in NoteRepository
+    }
     @Override
     public void onDataSetChanged() {
         // This is called when the data is refreshed.
