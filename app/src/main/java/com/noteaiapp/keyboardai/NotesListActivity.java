@@ -34,6 +34,7 @@ import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTras
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -87,6 +88,7 @@ public class NotesListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notes_list_main);
 
         getWindow().setAllowEnterTransitionOverlap(false);

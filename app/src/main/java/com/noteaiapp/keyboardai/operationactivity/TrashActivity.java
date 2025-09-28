@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,6 +14,7 @@ import com.noteaiapp.keyboardai.adapter.TrashAdapter;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
 import java.util.ArrayList;
+
 import java.util.List;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 
@@ -29,6 +31,7 @@ public class TrashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_trash);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         notesRepository = new NoteRepository(this);

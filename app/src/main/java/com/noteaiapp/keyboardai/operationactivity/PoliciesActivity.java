@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.Html;
 import android.widget.TextView;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.noteaiapp.keyboardai.R;
@@ -15,6 +16,7 @@ public class PoliciesActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_policies);
 
         // Reference the TextView if needed to set policies dynamically

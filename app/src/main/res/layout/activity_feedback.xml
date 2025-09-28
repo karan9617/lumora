@@ -5,6 +5,7 @@
     android:orientation="vertical"
     android:layout_gravity="center"
     android:padding="16dp"
+    android:fitsSystemWindows="true"
     android:background="#F3F3F3">
 
     <TextView
@@ -60,6 +61,8 @@
         android:layout_height="wrap_content"
         android:text="@string/feedback_submit_button"
         android:layout_marginTop="16dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
         android:backgroundTint="#2196F3"
         android:textColor="@android:color/white"/>
 
