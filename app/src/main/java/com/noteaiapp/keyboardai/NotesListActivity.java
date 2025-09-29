@@ -515,7 +515,7 @@ public class NotesListActivity extends AppCompatActivity {
 
         // 3. Add a TextView for the color preview
         TextView colorPreview = new TextView(this);
-        colorPreview.setText("Drag slider or select a fixed color");
+        colorPreview.setText(R.string.sliding_text_dialog);
         colorPreview.setTextColor(Color.BLACK); // Ensure text visibility
         colorPreview.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         colorPreview.setPadding(padding, padding, padding, padding);

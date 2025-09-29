@@ -118,10 +118,6 @@
                     android:contentDescription="save_button_description"
                     android:src="@drawable/ic_save_icon" />
 
-                <View
-                    android:layout_width="16dp"
-                    android:layout_height="1dp"
-                    android:background="@android:color/transparent" />
 
                 <ImageButton
                     android:id="@+id/new_text_btn"
@@ -131,14 +127,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="filter_button_description"
                     android:src="@drawable/ic_text_icon" />
-                <ImageButton
-                    android:id="@+id/new_text_btn2"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_margin="4dp"
-                    android:background="@drawable/button_background_rounded"
-                    android:contentDescription="text_button_description"
-                    android:src="@drawable/ic_shuffle" />
+
             </LinearLayout>
 
         </HorizontalScrollView>

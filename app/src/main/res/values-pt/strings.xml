@@ -142,5 +142,6 @@
     <string name="note_title_widget">Título da nota</string>
     <string name="note_preview">Prévia do conteúdo da nota...</string>
     <string name="select_text">Selecione uma nota para o widget</string>
+    <string name="sliding_text_dialog">Arraste o controle deslizante ou selecione uma cor fixa na parte superior</string>
 
 </resources>

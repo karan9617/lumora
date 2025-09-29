@@ -134,6 +134,7 @@
     <string name="delete_menu">Eliminar</string>
     <string name="color_menu1">Color</string>
     <string name="label_text">Etiqueta</string>
+    <string name="sliding_text_dialog">Arrastra el control deslizante o selecciona un color fijo en la parte superior</string>
 
     <string name="no_notes_text">Aún no hay notas. ¡Toca + para añadir una!</string>
     <string name="no_text_found">Nota no encontrada</string>

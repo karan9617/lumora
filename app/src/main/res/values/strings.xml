@@ -133,7 +133,7 @@
     <string name="sort_notes_by">Sort notes by</string>
     <string name="sort_by_date">Sort by Date</string>
     <string name="sort_by_alpha">Sort Alphabetically</string>
-
+    <string name="sliding_text_dialog">Drag slider or select a fixed color on top</string>
     <!-- drawer menu -->
     <string name="drawer_menu_instructions">Instructions</string>
     <string name="drawer_menu_Trash">Trash</string>

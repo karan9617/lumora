@@ -134,6 +134,7 @@
     <string name="delete_menu">删除</string>
     <string name="color_menu1">颜色</string>
     <string name="label_text">标签</string>
+    <string name="sliding_text_dialog">拖动滑块或在上方选择固定颜色</string>
 
     <string name="no_notes_text">还没有笔记。点击 + 添加一条！</string>
     <string name="no_text_found">未找到笔记</string>

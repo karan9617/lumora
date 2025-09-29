@@ -122,6 +122,7 @@
     <string name="sort_notes_by">Сортировать заметки по</string>
     <string name="sort_by_date">Сортировать по дате</string>
     <string name="sort_by_alpha">Сортировать по алфавиту</string>
+    <string name="sliding_text_dialog">Перетащите ползунок или выберите фиксированный цвет сверху</string>
 
     <string name="drawer_menu_instructions">Инструкции</string>
     <string name="drawer_menu_Trash">Корзина</string>

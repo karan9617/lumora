@@ -134,6 +134,7 @@
     <string name="delete_menu">Löschen</string>
     <string name="color_menu1">Farbe</string>
     <string name="label_text">Etikett</string>
+    <string name="sliding_text_dialog">Ziehen Sie den Schieberegler oder wählen Sie oben eine feste Farbe</string>
 
     <string name="no_notes_text">Noch keine Notizen. Tippe auf +, um eine hinzuzufügen!</string>
     <string name="no_text_found">Notiz nicht gefunden</string>

@@ -134,6 +134,7 @@
     <string name="delete_menu">हटाएँ</string>
     <string name="color_menu1">रंग</string>
     <string name="label_text">लेबल</string>
+    <string name="sliding_text_dialog">स्लाइडर खींचें या ऊपर से एक निश्चित रंग चुनें</string>
 
     <string name="no_notes_text">अभी कोई नोट नहीं है। जोड़ने के लिए + दबाएँ!</string>
     <string name="no_text_found">नोट नहीं मिला</string>
