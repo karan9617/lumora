@@ -135,7 +135,33 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
                 holder.noteContent.setVisibility(View.GONE);
             }
         } else {
-            holder.noteContent.setText(note.getContent());
+            String noteContent = note.getContent();
+            if (noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)) {
+                holder.labeltext1.setText(R.string.list_option_text);
+                // 1. Remove the LIST_NOTE_PREFIX and any preceding whitespace
+                String listContent = noteContent.substring(NotesListActivity.LIST_NOTE_PREFIX.length()).trim();
+
+                // 2. The list content is saved as "[x] Item 1\n[ ] Item 2..."
+                // We only want the first item's text, stripped of its prefix.
+                String[] items = listContent.split("\n", 2); // Split only once to get the first line
+                if (items.length > 0) {
+                    String firstItem = items[0].trim();
+                    if (!firstItem.isEmpty()) {
+                        // Remove the "[x] " or "[ ] " prefix (which is 4 characters long)
+                        if (firstItem.length() >= 4 && (firstItem.startsWith("[x] ") || firstItem.startsWith("[ ] "))) {
+                            firstItem = firstItem.substring(4).trim();
+                        }
+                    }
+                    // Set the cleaned first item as the content preview
+                    holder.noteContent.setText(firstItem);
+                } else {
+                    // If the list is empty after prefixes are removed, set content as empty string
+                    holder.noteContent.setText("");
+                }
+            } else {
+                // Standard note, use content as is
+                holder.noteContent.setText(noteContent);
+            }
             holder.noteContent.setVisibility(View.VISIBLE);
             holder.noteDrawing.setVisibility(View.GONE);
         }

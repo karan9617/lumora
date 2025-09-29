@@ -21,6 +21,7 @@
         android:layout_weight="1"
         android:soundEffectsEnabled="true"
         android:hint="List item"
+
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         android:background="@android:color/transparent"
@@ -30,6 +31,7 @@
         android:inputType="textCapSentences|textMultiLine"
         android:buttonTint="@color/purple_500"
         android:checked="false"
+        android:paddingLeft="21dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
         tools:ignore="RtlSymmetry" />
