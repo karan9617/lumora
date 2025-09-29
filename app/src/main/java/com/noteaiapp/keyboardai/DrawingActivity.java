@@ -1,6 +1,8 @@
 package com.noteaiapp.keyboardai;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -13,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
@@ -41,13 +44,13 @@ public class DrawingActivity extends AppCompatActivity {
 
     private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen, sprayPaintBtn, rectangleBtn,
             color_blue, color_green, color_yellow, color_orange, color_purple, color_teal, color_pink, color_maroon, color_color1,
-            uploadImageBtn,color_grey;
+            uploadImageBtn,color_grey,new_text_btn;
     private TextView dialog_discard_btn, dialog_cancel_btn, dialog_save_btn;
     ImageButton button_save;
     private SeekBar strokeWidthSeekBar;
     private NoteRepository noteRepository;
     private long currentNoteId = -1;
-    private boolean isDirty = false, isSpray = false, isRectangle = false,isErasing = false; // Flag to track unsaved changes
+    private boolean isDirty = false, isSpray = false, isRectangle = false,isErasing = false,isTextMode = false; // Flag to track unsaved changes
 
 
     // This static class will temporarily hold the drawing data to bypass the Intent size limit
@@ -128,6 +131,7 @@ public class DrawingActivity extends AppCompatActivity {
         color_green = findViewById(R.id.color_green);
         color_teal = findViewById(R.id.color_teal);
         color_orange = findViewById(R.id.color_orange);
+        new_text_btn = findViewById(R.id.new_text_btn);
         color_maroon = findViewById(R.id.color_maroon);
         color_color1 = findViewById(R.id.color_color1);
         color_grey = findViewById(R.id.color_grey);
@@ -218,6 +222,7 @@ public class DrawingActivity extends AppCompatActivity {
     private void resetToolButtons() {
         sprayPaintBtn.getBackground().clearColorFilter();
         rectangleBtn.getBackground().clearColorFilter();
+        new_text_btn.getBackground().clearColorFilter(); // NEW
     }
 
     public void listeners() {
@@ -323,7 +328,18 @@ public class DrawingActivity extends AppCompatActivity {
                 drawingView.setColor(Color.BLUE);
             }
         });
+        new_text_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                isTextMode = true;
+                resetToolButtons(); // Reset other tool highlights
+                // Highlight the text button
+                new_text_btn.getBackground().setColorFilter(Color.parseColor("#CCCCCC"), PorterDuff.Mode.SRC_ATOP);
 
+                // Show the input dialog
+                showTextInputDialog();
+            }
+        });
         // Set up click listeners for the pen size buttons
         smallPen.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -424,6 +440,47 @@ public class DrawingActivity extends AppCompatActivity {
             }
         });
     }
+    /**
+     * Shows a dialog to get text input from the user.
+     */
+    private void showTextInputDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Enter Text");
+
+        // Set up the input
+        final EditText input = new EditText(this);
+        input.setHint("Type your text here");
+        builder.setView(input);
+
+        // Set up the buttons
+        builder.setPositiveButton("ADD", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String text = input.getText().toString();
+                if (!text.isEmpty()) {
+                    // Pass the text to the DrawingView to be drawn
+                    drawingView.addText(text, Color.BLACK,10);
+                    isDirty = true; // Mark as dirty since a change was made
+                }
+                // Reset the state after adding text
+                isTextMode = false;
+                new_text_btn.getBackground().clearColorFilter();
+            }
+        });
+        builder.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                // Reset the state if cancelled
+                isTextMode = false;
+                new_text_btn.getBackground().clearColorFilter();
+            }
+        });
+
+        builder.show();
+    }
+
+    // Update resetToolButtons() to include the new button
 
     /**
      * Handles the result of the Intent to pick an image from the gallery.

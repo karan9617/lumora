@@ -10,7 +10,6 @@
     android:layout_height="match_parent"
     tools:context=".DrawingActivity">
 
-    <!-- The custom drawing view will fill the entire screen, from edge to edge -->
     <com.noteaiapp.keyboardai.ui.DrawingView
         android:id="@+id/drawing_view"
         android:layout_width="0dp"
@@ -20,7 +19,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- A sleek container for all the drawing controls at the bottom of the screen -->
     <androidx.cardview.widget.CardView
         android:id="@+id/bottom_controls_card"
         android:layout_width="0dp"
@@ -35,31 +33,31 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <HorizontalScrollView
+            android:id="@+id/tools_scroll_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="8dp">
+            android:scrollbars="none"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="#5E5C5C"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
 
-            <!-- Pen/Brush size options -->
             <LinearLayout
-                android:id="@+id/pen_size_group"
+                android:id="@+id/tool_group_slider"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
                 android:orientation="horizontal"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/color_group"
-                app:layout_constraintHorizontal_chainStyle="packed"
-                >
+                android:gravity="center_vertical">
+
                 <ImageButton
                     android:id="@+id/eraser"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/button_background_rounded"
-                    android:contentDescription="medium_pen_button_description"
+                    android:contentDescription="eraser_button_description"
                     android:src="@drawable/ic_eraser"
                     android:soundEffectsEnabled="true"
                     />
@@ -99,11 +97,10 @@
                     android:layout_height="40dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/ic_rectangle_vector"
-                    android:contentDescription="spray_paint_button_description"
+                    android:contentDescription="rectangle_button_description"
                     android:src="@drawable/ic_rectangle_vector"
                     android:soundEffectsEnabled="true"
                     />
-                <!-- New button for uploading an image -->
                 <ImageButton
                     android:id="@+id/uploadImageBtn"
                     android:layout_width="40dp"
@@ -118,30 +115,36 @@
                     android:layout_height="40dp"
                     android:layout_margin="4dp"
                     android:background="@drawable/button_background_rounded"
-                    android:contentDescription="upload_image_button_description"
+                    android:contentDescription="save_button_description"
                     android:src="@drawable/ic_save_icon" />
 
-            </LinearLayout>
+                <View
+                    android:layout_width="16dp"
+                    android:layout_height="1dp"
+                    android:background="@android:color/transparent" />
 
-            <!-- Color options -->
-            <LinearLayout
-                android:id="@+id/color_group"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toEndOf="@id/pen_size_group"
-                app:layout_constraintHorizontal_chainStyle="packed">
+                <ImageButton
+                    android:id="@+id/new_text_btn"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/button_background_rounded"
+                    android:contentDescription="filter_button_description"
+                    android:src="@drawable/ic_text_icon" />
+                <ImageButton
+                    android:id="@+id/new_text_btn2"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/button_background_rounded"
+                    android:contentDescription="text_button_description"
+                    android:src="@drawable/ic_shuffle" />
+                </LinearLayout>
 
-            </LinearLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </HorizontalScrollView>
 
     </androidx.cardview.widget.CardView>
 
-    <!-- This SeekBar is now more prominent and styled, placed above the control card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/stroke_width_card"
         android:layout_width="0dp"
@@ -166,7 +169,6 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- New Sliding Color Picker Layout -->
     <androidx.cardview.widget.CardView
         android:id="@+id/color_slider_card"
         android:layout_width="match_parent"
@@ -194,7 +196,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <!-- A variety of color buttons to choose from -->
                 <ImageButton
                     android:id="@+id/color_grey"
                     android:layout_width="32dp"
@@ -306,7 +307,6 @@
         </HorizontalScrollView>
 
     </androidx.cardview.widget.CardView>
-    <!-- Custom Dialog for Save/Discard functionality -->
     <RelativeLayout
         android:id="@+id/save_discard_dialog"
         android:layout_width="match_parent"

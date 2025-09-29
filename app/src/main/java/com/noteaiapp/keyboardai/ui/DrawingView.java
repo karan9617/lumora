@@ -11,6 +11,7 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,10 +19,29 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
-public class DrawingView extends View {
 
+public class DrawingView extends View {
+    private class TextObject {
+        String text;
+        float x; // Center X where text should be drawn
+        float y; // Center Y where text should be drawn
+        int color;
+        float size;
+        RectF bounds; // Used for touch detection
+        float defaultSize; // To calculate scaling
+    }
+    private List<TextObject> textObjects = new ArrayList<>();
+    private TextObject selectedText = null;
+    private static final int TEXT_HIT_SLOP = 40; // Pixels for easier text selection
+    private Mode currentMode = Mode.DRAW; // New mode tracking for better touch handling
+
+    private enum Mode {
+        DRAW, RECTANGLE, SPRAY, ERASER, TEXT_DRAG, TEXT_RESIZE
+    }
     private Bitmap mBitmap;
     private Canvas mCanvas;
     private Path mPath;
@@ -42,6 +62,10 @@ public class DrawingView extends View {
     private float startX, startY, endX, endY;
     private Rect currentRect;
     private Bitmap backgroundImage;
+
+    private float lastTouchX;
+    private float lastTouchY;
+    private float originalTextSize;
 
     public DrawingView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -133,9 +157,61 @@ public class DrawingView extends View {
         if (isRectangleMode && currentRect != null) {
             canvas.drawRect(currentRect, mPaint);
         }
+
+        // Draw all stored text objects
+        Paint textPaint = new Paint();
+        textPaint.setTextAlign(Paint.Align.CENTER);
+
+        Paint selectionPaint = new Paint();
+        selectionPaint.setStyle(Paint.Style.STROKE);
+        selectionPaint.setStrokeWidth(3f);
+        selectionPaint.setColor(Color.RED);
+        selectionPaint.setPathEffect(new android.graphics.DashPathEffect(new float[]{10, 5}, 0));
+
+        for (TextObject textObj : textObjects) {
+            textPaint.setColor(textObj.color);
+            textPaint.setTextSize(textObj.size);
+            canvas.drawText(textObj.text, textObj.x, textObj.y, textPaint);
+
+            // Draw selection box and handle if selected
+            if (textObj == selectedText) {
+                // Calculate text bounds for selection/interaction
+                Rect textBounds = new Rect();
+                textPaint.getTextBounds(textObj.text, 0, textObj.text.length(), textBounds);
+
+                // Create a padded RectF for better touch area
+                float left = textObj.x + textBounds.left - TEXT_HIT_SLOP;
+                float top = textObj.y + textBounds.top - TEXT_HIT_SLOP;
+                float right = textObj.x + textBounds.right + TEXT_HIT_SLOP;
+                float bottom = textObj.y + textBounds.bottom + TEXT_HIT_SLOP;
+                textObj.bounds = new RectF(left, top, right, bottom);
+
+                // Draw the dashed selection box
+                canvas.drawRect(textObj.bounds, selectionPaint);
+            }
+        }
     }
 
     private void touch_start(float x, float y) {
+        lastTouchX = x;
+        lastTouchY = y;
+        selectedText = null; // Deselect by default
+
+        // 1. Check for text selection
+        for (TextObject textObj : textObjects) {
+            if (textObj.bounds != null && textObj.bounds.contains(x, y)) {
+                selectedText = textObj;
+                originalTextSize = textObj.size; // Save original size for scaling
+                // Set the mode based on where the touch occurred (e.g., top-right corner for resize)
+                if (isNearResizeCorner(x, y, textObj.bounds)) {
+                    currentMode = Mode.TEXT_RESIZE;
+                } else {
+                    currentMode = Mode.TEXT_DRAG;
+                }
+                invalidate();
+                return; // Consume touch for text
+            }
+        }
         if (isRectangleMode) {
             startX = x;
             startY = y;
@@ -149,6 +225,36 @@ public class DrawingView extends View {
     }
 
     private void touch_move(float x, float y) {
+        float dx = x - lastTouchX;
+        float dy = y - lastTouchY;
+
+        if (selectedText != null) {
+            if (currentMode == Mode.TEXT_DRAG) {
+                // Dragging: Update coordinates
+                selectedText.x += dx;
+                selectedText.y += dy;
+            } else if (currentMode == Mode.TEXT_RESIZE) {
+                // Resizing: Change size based on distance from the center
+                float deltaDist = (float) Math.sqrt(dx * dx + dy * dy);
+
+                // Get vector from center to current touch point
+                float vecX = x - selectedText.x;
+                float vecY = y - selectedText.y;
+                float angle = (float) Math.atan2(vecY, vecX);
+
+                // Use the horizontal movement for scaling (a simple approach)
+                float scaleFactor = (x - lastTouchX) / 100f;
+
+                // Simple scaling:
+                selectedText.size = Math.max(10f, selectedText.size + scaleFactor * 50); // Ensure min size of 10
+
+            }
+            lastTouchX = x;
+            lastTouchY = y;
+            invalidate();
+            return;
+        }
+
         if (isRectangleMode) {
             endX = x;
             endY = y;
@@ -161,14 +267,14 @@ public class DrawingView extends View {
             for (int i = 0; i < sprayDensity; i++) {
                 double angle = random.nextDouble() * 2 * Math.PI;
                 double distance = random.nextDouble() * sprayRadius;
-                float dx = (float) (distance * Math.cos(angle));
-                float dy = (float) (distance * Math.sin(angle));
-                mCanvas.drawCircle(x + dx, y + dy, defaultStrokeWidth / 4, mPaint);
+                float dx2 = (float) (distance * Math.cos(angle));
+                float dy2 = (float) (distance * Math.sin(angle));
+                mCanvas.drawCircle(x + dx2, y + dy2, defaultStrokeWidth / 4, mPaint);
             }
         } else {
-            float dx = Math.abs(x - mX);
-            float dy = Math.abs(y - mY);
-            if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
+            float dx1 = Math.abs(x - mX);
+            float dy1 = Math.abs(y - mY);
+            if (dx1 >= TOUCH_TOLERANCE || dy1 >= TOUCH_TOLERANCE) {
                 mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
                 mX = x;
                 mY = y;
@@ -176,7 +282,51 @@ public class DrawingView extends View {
         }
     }
 
+    // Method inside DrawingView
+    public void addText(String text, int color, float size) {
+        // Find the center of the view
+        float centerX = getWidth() / 2f;
+        float centerY = getHeight() / 2f;
+
+        TextObject newText = new TextObject();
+        newText.text = text;
+        newText.color = color;
+        newText.defaultSize = size * 2;
+        newText.size = newText.defaultSize; // Initial size
+        newText.x = centerX;
+        newText.y = centerY;
+
+        textObjects.add(newText);
+        selectedText = newText; // Select the new text for positioning
+        currentMode = Mode.TEXT_DRAG; // Immediately enter drag mode
+
+        // Notify listener since a permanent object was added
+        if (mListener != null) {
+            mListener.onDrawFinished();
+        }
+
+        textObjects.add(newText);
+        invalidate(); // Redraw the canvas to show the new text
+    }
+    private boolean isNearResizeCorner(float x, float y, RectF bounds) {
+        if (bounds == null) return false;
+
+        // Define a generous corner area (e.g., 50x50 at the top right)
+        return x > bounds.right - TEXT_HIT_SLOP && y < bounds.top + TEXT_HIT_SLOP;
+    }
+
     private void touch_up() {
+        if (selectedText != null) {
+            // Text interaction is finished, mark as dirty
+            if (mListener != null) {
+                mListener.onDrawFinished();
+            }
+            selectedText = null; // Keep text on screen, but deselect for drawing
+            currentMode = Mode.DRAW; // Reset mode
+            invalidate();
+            return;
+        }
+
         if (isRectangleMode) {
             // Draw the final rectangle onto the canvas bitmap
             if (currentRect != null) {
@@ -245,8 +395,25 @@ public class DrawingView extends View {
         if (mBitmap == null) {
             return null;
         }
+
+        // 1. Create a copy of the main bitmap to draw text on
+        // This ensures the live drawing isn't affected until saved.
+        Bitmap finalBitmap = mBitmap.copy(mBitmap.getConfig(), true);
+        Canvas finalCanvas = new Canvas(finalBitmap);
+
+        // 2. Render all TextObjects onto the final canvas
+        Paint textPaint = new Paint();
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        for (TextObject textObj : textObjects) {
+            textPaint.setColor(textObj.color);
+            textPaint.setTextSize(textObj.size);
+            finalCanvas.drawText(textObj.text, textObj.x, textObj.y, textPaint);
+        }
+
+        // 3. Compress the final bitmap
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        mBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        finalBitmap.recycle(); // Free the temporary bitmap
         return stream.toByteArray();
     }
 
