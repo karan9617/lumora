@@ -139,7 +139,7 @@
                     android:background="@drawable/button_background_rounded"
                     android:contentDescription="text_button_description"
                     android:src="@drawable/ic_shuffle" />
-                </LinearLayout>
+            </LinearLayout>
 
         </HorizontalScrollView>
 

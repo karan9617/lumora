@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -17,8 +18,10 @@ import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -83,7 +86,7 @@ public class NotesListActivity extends AppCompatActivity {
     private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
-    ImageButton shuffle;
+    ImageButton shuffle,themeColor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,6 +112,7 @@ public class NotesListActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         initialtext = findViewById(R.id.initialtext);
         option_drawings_layout = findViewById(R.id.option_drawings_layout);
+        themeColor = findViewById(R.id.themeColor);
         option_text_layout = findViewById(R.id.option_text_layout);
         shuffle = findViewById(R.id.shuffle);
         pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
@@ -116,7 +120,7 @@ public class NotesListActivity extends AppCompatActivity {
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
         notesRecyclerViewPinned = findViewById(R.id.notesRecyclerViewPinned);
-
+        loadAndApplyBackgroundColor();
         final Animation slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         final Animation slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
 
@@ -149,6 +153,12 @@ public class NotesListActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 showSortDialog();
+            }
+        });
+        themeColor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showThemeColorDialog();
             }
         });
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -438,6 +448,193 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
 
+    }
+    private int getCurrentBackgroundColor() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getInt(BACKGROUND_COLOR_KEY, DEFAULT_BACKGROUND_COLOR);
+    }
+    private void showThemeColorDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Background Color");
+
+        // 1. Create the custom view layout for the dialog
+        LinearLayout dialogLayout = new LinearLayout(this);
+        dialogLayout.setOrientation(LinearLayout.VERTICAL);
+        // Use density-independent units (dp) for padding via multiplication
+        int padding = (int) (getResources().getDisplayMetrics().density * 16);
+        dialogLayout.setPadding(padding * 2, padding * 2, padding * 2, padding * 2);
+
+        // --- Fixed Major Colors ---
+        final int COLOR_BLACK = Color.BLACK;
+        final int COLOR_WHITE = Color.WHITE;
+        final int COLOR_BROWN = Color.rgb(139, 69, 19);
+        final int COLOR_MAROON = Color.rgb(128, 0, 0);
+        final int[] fixedColors = {COLOR_BLACK, COLOR_WHITE, COLOR_BROWN, COLOR_MAROON};
+
+        // 2. Add a horizontal layout for major colors
+        LinearLayout majorColorsLayout = new LinearLayout(this);
+        majorColorsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        majorColorsLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+        majorColorsLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        int colorSize = (int) (getResources().getDisplayMetrics().density * 40);
+        int colorMargin = (int) (getResources().getDisplayMetrics().density * 12);
+
+        for (int color : fixedColors) {
+            View colorView = new View(this);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(colorSize, colorSize);
+            params.setMargins(colorMargin, colorMargin / 2, colorMargin, colorMargin / 2);
+            colorView.setLayoutParams(params);
+
+            colorView.setBackgroundColor(color);
+            colorView.setTag(color); // Store the color in the tag for retrieval in the listener
+
+            // Add a temporary border for white color visibility against a white dialog background
+            if (color == Color.WHITE) {
+                // A simple trick to show a slight border using padding/background if custom drawables are unavailable
+                colorView.setPadding(1, 1, 1, 1);
+                // Cannot easily draw border without custom drawable or new view, rely on visual.
+            }
+
+            majorColorsLayout.addView(colorView);
+        }
+
+        dialogLayout.addView(majorColorsLayout);
+
+        // Add a separator space
+        View separator = new View(this);
+        LinearLayout.LayoutParams separatorParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                padding / 2
+        );
+        separator.setLayoutParams(separatorParams);
+        dialogLayout.addView(separator);
+
+        // 3. Add a TextView for the color preview
+        TextView colorPreview = new TextView(this);
+        colorPreview.setText("Drag slider or select a fixed color");
+        colorPreview.setTextColor(Color.BLACK); // Ensure text visibility
+        colorPreview.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        colorPreview.setPadding(padding, padding, padding, padding);
+        LinearLayout.LayoutParams previewParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (int) (getResources().getDisplayMetrics().density * 60) // Slightly smaller height
+        );
+        previewParams.setMargins(0, 0, 0, padding); // 16dp margin bottom
+        colorPreview.setLayoutParams(previewParams);
+        colorPreview.setBackgroundColor(getCurrentBackgroundColor());
+        dialogLayout.addView(colorPreview);
+
+
+        // 4. Add a SeekBar for Hue selection (0 to 360 degrees)
+        SeekBar hueSeekBar = new SeekBar(this);
+        // Max progress of 360 to represent 360 degrees of hue
+        hueSeekBar.setMax(360);
+        // Set initial progress to current background color's hue
+        float[] hsv = new float[3];
+        Color.colorToHSV(getCurrentBackgroundColor(), hsv);
+        hueSeekBar.setProgress((int) hsv[0]);
+
+        LinearLayout.LayoutParams seekBarParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        hueSeekBar.setLayoutParams(seekBarParams);
+        dialogLayout.addView(hueSeekBar);
+
+
+        // 5. Build the dialog
+        builder.setView(dialogLayout);
+
+        // Add a CLOSE button that also resets the color if the user closed it mid-drag without stopping the touch
+        builder.setNeutralButton("CLOSE", (dialog, which) -> {
+            dialog.dismiss();
+            // Re-apply the last permanently saved color
+            loadAndApplyBackgroundColor();
+        });
+
+        final AlertDialog dialog = builder.create();
+
+        // 6. Set click listeners for the fixed color views now that 'dialog' is defined
+        for (int i = 0; i < majorColorsLayout.getChildCount(); i++) {
+            View colorView = majorColorsLayout.getChildAt(i);
+            colorView.setOnClickListener(v -> {
+                int selectedColor = (int) v.getTag();
+                saveAndApplyBackgroundColor(selectedColor);
+                dialog.dismiss();
+                Toast.makeText(NotesListActivity.this, "Background color saved!", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        // 7. Set the listener for real-time updates for the SeekBar
+        hueSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            private int currentColor = getCurrentBackgroundColor();
+            // Fixed Saturation and Value to ensure the colors are soft/pastel, not neon
+            private final float SATURATION = 0.2f;
+            private final float VALUE = 1.0f;
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    float hue = (float) progress;
+                    // Generate color using HSV
+                    float[] hsv = {hue, SATURATION, VALUE};
+                    currentColor = Color.HSVToColor(hsv);
+
+                    // Update the preview in the dialog
+                    colorPreview.setBackgroundColor(currentColor);
+
+                    // Temporarily apply to activity background for real-time feedback
+                    if (drawerLayout != null) {
+                        drawerLayout.setBackgroundColor(currentColor);
+                    }
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Not saving here, just tracking the start of the interaction
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // User finished selecting the color, save it permanently
+                saveAndApplyBackgroundColor(currentColor);
+                Toast.makeText(NotesListActivity.this, "Background color saved!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // 8. Show the dialog
+        dialog.show();
+    }
+    // --- Background Color Persistence Variables ---
+    private static final String PREFS_NAME = "NotesPrefs";
+    private static final String BACKGROUND_COLOR_KEY = "BackgroundColor";
+    private static final int DEFAULT_BACKGROUND_COLOR = Color.BLACK;
+    private void saveAndApplyBackgroundColor(int color) {
+        // 1. Save color
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit()
+                .putInt(BACKGROUND_COLOR_KEY, color)
+                .apply();
+
+        // 2. Apply color
+        if (drawerLayout != null) {
+            drawerLayout.setBackgroundColor(color);
+        }
+    }
+    /**
+     * Loads the saved background color from SharedPreferences and applies it to the drawerLayout.
+     */
+    private void loadAndApplyBackgroundColor() {
+        int color = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getInt(BACKGROUND_COLOR_KEY, DEFAULT_BACKGROUND_COLOR);
+        if (drawerLayout != null) {
+            drawerLayout.setBackgroundColor(color);
+        }
     }
     private void showSortDialog() {
         final String[] options = {getApplicationContext().getString(R.string.sort_by_date), getApplicationContext().getString(R.string.sort_by_alpha)};
