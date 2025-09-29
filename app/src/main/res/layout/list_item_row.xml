@@ -20,8 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:soundEffectsEnabled="true"
-        android:hint="List item".
-
+        android:hint="List item"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         android:background="@android:color/transparent"

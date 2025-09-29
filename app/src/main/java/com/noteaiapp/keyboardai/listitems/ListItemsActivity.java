@@ -1,5 +1,6 @@
 package com.noteaiapp.keyboardai.listitems;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -12,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -30,12 +32,14 @@ import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.NotesListActivity; // Import to access the LIST_NOTE_PREFIX
+import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Executors;
 
 public class ListItemsActivity extends AppCompatActivity {
 
@@ -43,6 +47,7 @@ public class ListItemsActivity extends AppCompatActivity {
     private RecyclerView recyclerViewList;
     private Toolbar toolbar;
     private NoteRepository noteRepository;
+    NotesRepositoryTrash notesRepositoryTrash;
 
     private List<ListItem> listItems = new ArrayList<>();
     private ListAdapter listAdapter;
@@ -83,7 +88,7 @@ public class ListItemsActivity extends AppCompatActivity {
         // Assuming you have an ic_close drawable
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close);
         getSupportActionBar().setTitle("");
-
+        notesRepositoryTrash = new NotesRepositoryTrash(this);
         noteTitleEditText = findViewById(R.id.noteTitleEditText);
         recyclerViewList = findViewById(R.id.recyclerViewList);
         ImageButton addItemButton = findViewById(R.id.addItemButton);
@@ -110,10 +115,28 @@ public class ListItemsActivity extends AppCompatActivity {
      * @param content Initial content for the new item.
      */
     private void addNewListItem(String content) {
+        int newPosition = listItems.size();
         listItems.add(new ListItem(content, false));
-        listAdapter.notifyItemInserted(listItems.size() - 1);
+        listAdapter.notifyItemInserted(newPosition);
         // Scroll to the new item so it's visible
-        recyclerViewList.scrollToPosition(listItems.size() - 1);
+        recyclerViewList.scrollToPosition(newPosition);
+
+        // Post the action to the RecyclerView's message queue to ensure the new view has been created and bound
+        recyclerViewList.post(() -> {
+            RecyclerView.ViewHolder holder = recyclerViewList.findViewHolderForAdapterPosition(newPosition);
+            if (holder instanceof ListAdapter.ViewHolder) {
+                ListAdapter.ViewHolder listHolder = (ListAdapter.ViewHolder) holder;
+
+                // Request focus on the item's content field
+                listHolder.itemContent.requestFocus();
+
+                // Manually show the keyboard for the focused view
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(listHolder.itemContent, InputMethodManager.SHOW_IMPLICIT);
+                }
+            }
+        });
     }
 
     /**
@@ -291,9 +314,7 @@ public class ListItemsActivity extends AppCompatActivity {
         } else if (id == R.id.action_delete) {
             // Implement deletion logic (moving note to trash)
             if (noteId != -1) {
-                noteRepository.deleteNote(noteId);
-                Toast.makeText(this, "List note moved to trash.", Toast.LENGTH_SHORT).show();
-                finish();
+                showDeleteConfirmationDialog();
             } else {
                 Toast.makeText(this, "Note discarded.", Toast.LENGTH_SHORT).show();
                 finish();
@@ -302,7 +323,34 @@ public class ListItemsActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-
+    private void showDeleteConfirmationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Checklist?")
+                .setMessage("Are you sure you want to move this checklist to the trash?")
+                .setPositiveButton("DELETE", (dialog, which) -> {
+                    // User confirmed deletion
+                    if (noteId != -1) {
+                        // Assuming you have access to a background thread mechanism if needed,
+                        // but sticking to the synchronous call for simplicity in this context.
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            // Delete notes from the main list
+                            Note deletedNote = noteRepository.getNoteById(noteId);
+                            noteRepository.deleteNote(noteId);
+                            notesRepositoryTrash.addNote(deletedNote);
+                        });
+                        Toast.makeText(this, "List note moved to trash.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // This case is handled in onOptionsItemSelected, but is here for robustness
+                        Toast.makeText(this, "Note discarded.", Toast.LENGTH_SHORT).show();
+                    }
+                    finish();
+                })
+                .setNegativeButton("CANCEL", (dialog, which) -> {
+                    // User cancelled, dismiss the dialog
+                    dialog.dismiss();
+                })
+                .show();
+    }
     @Override
     public void onBackPressed() {
         // Auto-save on back press
