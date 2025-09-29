@@ -135,6 +135,9 @@
     <string name="color_menu1">Couleur</string>
     <string name="label_text">Étiquette</string>
     <string name="sliding_text_dialog">Faites glisser le curseur ou sélectionnez une couleur fixe en haut</string>
+    <string name="close_dialog">FERMER</string>
+    <string name="successful_save_theme_color">Couleur d’arrière-plan enregistrée !</string>
+
 
     <string name="no_notes_text">Aucune note pour l’instant. Appuyez sur + pour en ajouter une !</string>
     <string name="no_text_found">Note introuvable</string>

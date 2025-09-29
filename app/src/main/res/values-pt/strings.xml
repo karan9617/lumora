@@ -128,6 +128,8 @@
     <string name="drawer_menu_policies">Políticas</string>
     <string name="drawer_feedback_text">Feedback</string>
     <string name="communicate_text">Comunicar</string>
+    <string name="close_dialog">FECHAR</string>
+    <string name="successful_save_theme_color">Cor de fundo salva!</string>
 
     <string name="context_bar_pin">Fixar</string>
     <string name="share_menu">Compartilhar</string>

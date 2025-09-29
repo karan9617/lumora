@@ -123,6 +123,8 @@
     <string name="sort_by_date">Сортировать по дате</string>
     <string name="sort_by_alpha">Сортировать по алфавиту</string>
     <string name="sliding_text_dialog">Перетащите ползунок или выберите фиксированный цвет сверху</string>
+    <string name="close_dialog">ЗАКРЫТЬ</string>
+    <string name="successful_save_theme_color">Цвет фона сохранён!</string>
 
     <string name="drawer_menu_instructions">Инструкции</string>
     <string name="drawer_menu_Trash">Корзина</string>

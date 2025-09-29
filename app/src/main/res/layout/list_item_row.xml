@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="#333333"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:paddingEnd="8dp">
+
+    <!-- The list item content using a CheckBox.
+         CRITICAL FIX: Changed width to 0dp and added layout_weight="1".
+         This forces the CheckBox to take up all available space, pushing
+         the next element (the delete button) to the far right. -->
+    <CheckBox
+        android:id="@+id/itemContent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:soundEffectsEnabled="true"
+        android:hint="List item".
+
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:background="@android:color/transparent"
+        android:textColor="@color/white"
+        android:textColorHint="#B8B6B6"
+        android:textSize="16sp"
+        android:inputType="textCapSentences|textMultiLine"
+        android:buttonTint="@color/purple_500"
+        android:checked="false"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        tools:ignore="RtlSymmetry" />
+
+    <!-- Delete button for the list item. Now correctly aligned to the right. -->
+    <ImageButton
+        android:id="@+id/deleteItemButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_close"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:tint="#ffffff"
+        android:contentDescription="Delete item"
+        android:layout_marginStart="8dp" />
+
+</LinearLayout>

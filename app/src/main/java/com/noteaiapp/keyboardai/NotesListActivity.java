@@ -29,6 +29,7 @@ import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.noteaiapp.keyboardai.operationactivity.Feedback;
 import com.noteaiapp.keyboardai.operationactivity.InstructionsActivity;
 import com.noteaiapp.keyboardai.operationactivity.PoliciesActivity;
@@ -74,7 +75,7 @@ public class NotesListActivity extends AppCompatActivity {
     private NoteRepository noteRepository;
     TextView initialtext;
     FloatingActionButton fabAddNote;
-    LinearLayout option_text_layout, option_drawings_layout;
+    LinearLayout option_text_layout, option_drawings_layout,option_list_layout;
     private DrawerLayout drawerLayout;
     ItemTouchHelper itemTouchHelper,itemTouchHelperPinned;
     private SearchView searchView;
@@ -82,7 +83,7 @@ public class NotesListActivity extends AppCompatActivity {
     private ActionMode actionMode;
     private Note selectedNote;
     TextView pinnedNotesHeader;
-
+    public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
     private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
@@ -108,6 +109,7 @@ public class NotesListActivity extends AppCompatActivity {
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
+        option_list_layout = findViewById(R.id.option_list_layout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         initialtext = findViewById(R.id.initialtext);
@@ -214,6 +216,14 @@ public class NotesListActivity extends AppCompatActivity {
             startActivity(intent);
             hideOptions();
         });
+        option_list_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
         option_drawings_layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -302,7 +312,12 @@ public class NotesListActivity extends AppCompatActivity {
                     return;
                 }
                 Intent intent;
-                if (note.getContent() != null && !note.getContent().isEmpty()) {
+                String noteContent = note.getContent();
+                boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
+                if(isListNote){
+                    intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
+                }
+                else if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
                 } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
@@ -396,7 +411,12 @@ public class NotesListActivity extends AppCompatActivity {
                     return;
                 }
                 Intent intent;
-                if (note.getContent() != null && !note.getContent().isEmpty()) {
+                String noteContent = note.getContent();
+                boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
+                if(isListNote){
+                    intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
+                }
+                else if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
                 } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
@@ -550,7 +570,7 @@ public class NotesListActivity extends AppCompatActivity {
         builder.setView(dialogLayout);
 
         // Add a CLOSE button that also resets the color if the user closed it mid-drag without stopping the touch
-        builder.setNeutralButton("CLOSE", (dialog, which) -> {
+        builder.setNeutralButton(R.string.close_dialog, (dialog, which) -> {
             dialog.dismiss();
             // Re-apply the last permanently saved color
             loadAndApplyBackgroundColor();
@@ -565,7 +585,7 @@ public class NotesListActivity extends AppCompatActivity {
                 int selectedColor = (int) v.getTag();
                 saveAndApplyBackgroundColor(selectedColor);
                 dialog.dismiss();
-                Toast.makeText(NotesListActivity.this, "Background color saved!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(NotesListActivity.this, R.string.successful_save_theme_color, Toast.LENGTH_SHORT).show();
             });
         }
 
@@ -603,7 +623,7 @@ public class NotesListActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {
                 // User finished selecting the color, save it permanently
                 saveAndApplyBackgroundColor(currentColor);
-                Toast.makeText(NotesListActivity.this, "Background color saved!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(NotesListActivity.this, R.string.successful_save_theme_color, Toast.LENGTH_SHORT).show();
             }
         });
 

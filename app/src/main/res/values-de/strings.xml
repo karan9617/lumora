@@ -122,6 +122,8 @@
     <string name="sort_notes_by">Notizen sortieren nach</string>
     <string name="sort_by_date">Nach Datum sortieren</string>
     <string name="sort_by_alpha">Alphabetisch sortieren</string>
+    <string name="close_dialog">SCHLIESSEN</string>
+    <string name="successful_save_theme_color">Hintergrundfarbe gespeichert!</string>
 
     <string name="drawer_menu_instructions">Anweisungen</string>
     <string name="drawer_menu_Trash">Papierkorb</string>

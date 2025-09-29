@@ -122,6 +122,8 @@
     <string name="sort_notes_by">Ordenar notas por</string>
     <string name="sort_by_date">Ordenar por Fecha</string>
     <string name="sort_by_alpha">Ordenar Alfabéticamente</string>
+    <string name="close_dialog">CERRAR</string>
+    <string name="successful_save_theme_color">¡Color de fondo guardado!</string>
 
     <string name="drawer_menu_instructions">Instrucciones</string>
     <string name="drawer_menu_Trash">Papelera</string>

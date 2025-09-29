@@ -65,6 +65,7 @@
             android:exported="true"
 
             android:theme="@style/Theme.KeyboardAi"></activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -94,6 +95,12 @@
         <activity
             android:name=".operationactivity.Feedback"
             android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".listitems.ListItemsActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
             android:label="@string/app_name"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
         <activity
