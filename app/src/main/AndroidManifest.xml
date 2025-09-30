@@ -118,6 +118,11 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".calendar.CalendarActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
     </application>
 
 </manifest>

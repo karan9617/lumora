@@ -137,27 +137,46 @@ public class NotesAdapterPinned extends RecyclerView.Adapter<NotesAdapterPinned.
         } else {
             String noteContent = note.getContent();
             if (noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)) {
-                holder.labeltext1.setText(R.string.list_option_text);
                 // 1. Remove the LIST_NOTE_PREFIX and any preceding whitespace
                 String listContent = noteContent.substring(NotesListActivity.LIST_NOTE_PREFIX.length()).trim();
 
-                // 2. The list content is saved as "[x] Item 1\n[ ] Item 2..."
-                // We only want the first item's text, stripped of its prefix.
-                String[] items = listContent.split("\n", 2); // Split only once to get the first line
-                if (items.length > 0) {
-                    String firstItem = items[0].trim();
-                    if (!firstItem.isEmpty()) {
-                        // Remove the "[x] " or "[ ] " prefix (which is 4 characters long)
-                        if (firstItem.length() >= 4 && (firstItem.startsWith("[x] ") || firstItem.startsWith("[ ] "))) {
-                            firstItem = firstItem.substring(4).trim();
-                        }
+                // 2. Split the list content into individual lines
+                String[] items = listContent.split("\n");
+                StringBuilder previewBuilder = new StringBuilder();
+                int itemCount = 0;
+                final int MAX_PREVIEW_ITEMS = 5; // Set the maximum number of items to show
+
+                for (String item : items) {
+                    if (itemCount >= MAX_PREVIEW_ITEMS) {
+                        break; // Stop after collecting MAX_PREVIEW_ITEMS
                     }
-                    // Set the cleaned first item as the content preview
-                    holder.noteContent.setText(firstItem);
-                } else {
-                    // If the list is empty after prefixes are removed, set content as empty string
-                    holder.noteContent.setText("");
+
+                    String cleanedItem = item.trim();
+                    if (cleanedItem.isEmpty()) {
+                        continue; // Skip empty lines
+                    }
+
+                    // 3. Remove the "[x] " or "[ ] " prefix (which is 4 characters long)
+                    if (cleanedItem.length() >= 4 && (cleanedItem.startsWith("[x] ") || cleanedItem.startsWith("[ ] "))) {
+                        cleanedItem = cleanedItem.substring(4).trim();
+                    }
+
+                    if (cleanedItem.isEmpty()) {
+                        continue; // Skip items that become empty after cleaning
+                    }
+
+                    // 4. Append the cleaned item to the preview string, separating by a newline character
+                    if (previewBuilder.length() > 0) {
+                        // *** CHANGED: Use newline (\n) instead of ", " ***
+                        previewBuilder.append("\n");
+                    }
+                    previewBuilder.append(cleanedItem);
+                    itemCount++;
                 }
+
+                // Set the cleaned content preview
+                holder.noteContent.setText(previewBuilder.toString());
+
             } else {
                 // Standard note, use content as is
                 holder.noteContent.setText(noteContent);

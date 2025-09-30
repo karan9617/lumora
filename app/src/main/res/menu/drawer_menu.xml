@@ -10,6 +10,10 @@
             android:icon="@drawable/ic_menu_settings"
             android:title="@string/drawer_menu_instructions" />
         <item
+            android:id="@+id/calendar_option"
+            android:icon="@drawable/calendar_24"
+            android:title="@string/calendar" />
+        <item
             android:id="@+id/nav_trash"
             android:icon="@drawable/baseline_auto_delete_24"
             android:title="@string/drawer_menu_Trash" />

@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="#B4000000"
-
+    tools:openDrawer="left"
     >
    <!-- tools:openDrawer="left"
     <TextView
@@ -216,39 +216,16 @@
                     android:contentDescription="Image note icon" />
             </LinearLayout>
 
-            <!--  <TextView
-                  android:id="@+id/option_images"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:layout_marginBottom="16dp"
-                  android:text="Images"
-                  android:background="@drawable/rounded_background"
-                  android:padding="12dp"
-                  android:elevation="4dp"
-                  android:textColor="@android:color/white"
-                  android:textSize="16sp" />
-
-              <TextView
-                  android:id="@+id/option_drawings"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:layout_marginBottom="16dp"
-                  android:text="Draw"
-                  android:background="@drawable/rounded_background"
-                  android:padding="12dp"
-                  android:elevation="4dp"
-                  android:textColor="@android:color/white"
-                  android:textSize="16sp" />
--->
             <LinearLayout
                 android:id="@+id/option_drawings_layout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="1dp"
+                android:layout_marginBottom="7dp"
                 android:background="@drawable/rounded_background"
                 android:padding="12dp"
+
                 android:elevation="4dp">
                 <TextView
                     android:id="@+id/option_drawings"
@@ -273,7 +250,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="7dp"
+                android:layout_marginBottom="1dp"
                 android:background="@drawable/rounded_background"
                 android:padding="12dp"
                 android:elevation="4dp">
@@ -288,7 +265,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
-                    android:src="@drawable/ic_text_icon"
+                    android:src="@drawable/list_icon"
                     app:tint="@android:color/white"
                     android:contentDescription="Image note icon" />
             </LinearLayout>

@@ -28,6 +28,7 @@ import android.widget.Toast;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
+import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.noteaiapp.keyboardai.operationactivity.Feedback;
@@ -147,6 +148,11 @@ public class NotesListActivity extends AppCompatActivity {
             } else if (id == R.id.nav_feedback) {
                 startActivity(new Intent(this, Feedback.class));
             }
+            else if(id == R.id.calendar_option){
+                Intent intent = new Intent(NotesListActivity.this, CalendarActivity.class);
+                startActivity(intent);
+            }
+
 
             drawerLayout.closeDrawers();
             return true;
@@ -1050,6 +1056,7 @@ public class NotesListActivity extends AppCompatActivity {
                 });
                 return true;
             }
+
             return false;
         }
 
