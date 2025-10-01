@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CalendarView;
@@ -207,20 +208,22 @@ public class CalendarActivity extends AppCompatActivity {
                 holder.noteContent.setVisibility(View.VISIBLE);
                 holder.noteDrawing.setVisibility(View.GONE);
 
-                holder.itemView.setOnClickListener(v -> {
-                    int currentPosition = holder.getAdapterPosition();
-                    if (currentPosition != RecyclerView.NO_POSITION) {
-                        // If we are in multi-selection mode, a click should toggle the selection.
-                        if (selectedPositions.size() > 0) {
-                            toggleSelection(currentPosition);
-                        } else {
-                            // Otherwise, a normal click should open the note.
-                            Note clickedNote = notes.get(currentPosition);
-                            listener.onNoteClick(clickedNote, holder.noteCard);
-                        }
-                    }
-                });
+
             }
+            holder.itemView.setOnClickListener(v -> {
+                int currentPosition = holder.getAdapterPosition();
+                Log.d("com.noteaiapp.keyboardai","position:"+currentPosition);
+                if (currentPosition != RecyclerView.NO_POSITION) {
+                    // If we are in multi-selection mode, a click should toggle the selection.
+                    if (selectedPositions.size() > 0) {
+                        toggleSelection(currentPosition);
+                    } else {
+                        // Otherwise, a normal click should open the note.
+                        Note clickedNote = notes.get(currentPosition);
+                        listener.onNoteClick(clickedNote, holder.noteCard);
+                    }
+                }
+            });
         }
         public void toggleSelection(int position) {
             if (selectedPositions.contains(position)) {
@@ -346,17 +349,23 @@ public class CalendarActivity extends AppCompatActivity {
             public void onNoteClick(Note note, View sharedView) {
                 Intent intent;
                 String noteContent = note.getContent();
+                Log.d("com.noteaiapp.keyboardai","path:"+note.getImagePath());
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
                 if(isListNote){
                     intent = new Intent(CalendarActivity.this, ListItemsActivity.class);
+                    Log.d("com.noteaiapp.keyboardai","clicked1");
                 }
                 else if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(CalendarActivity.this, Notepad.class);
+                    Log.d("com.noteaiapp.keyboardai","clicked2");
                 } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                     intent = new Intent(CalendarActivity.this, DrawingActivity.class);
+                    Log.d("com.noteaiapp.keyboardai","clicked3");
                 } else {
                     intent = new Intent(CalendarActivity.this, Notepad.class);
+                    Log.d("com.noteaiapp.keyboardai","clicked4");
                 }
+                Log.d("com.noteaiapp.keyboardai","clicked");
                 intent.putExtra("note_id", note.getId());
                 intent.putExtra("note_title", note.getTitle());
                 intent.putExtra("note_content", note.getContent());

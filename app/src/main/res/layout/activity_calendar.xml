@@ -31,7 +31,7 @@
         app:mcv_calendarMode="month"
         app:mcv_dateTextAppearance="@style/CalendarDateText"
 
-
+        
         app:mcv_headerTextAppearance="@style/CalendarHeaderText"
         app:mcv_weekDayTextAppearance="@style/CalendarWeekDayText"
 

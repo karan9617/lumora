@@ -1,5 +1,7 @@
 package com.noteaiapp.keyboardai.operationactivity;
 import com.noteaiapp.keyboardai.R;
+
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
@@ -17,6 +19,8 @@ import java.util.ArrayList;
 
 import java.util.List;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+
+import okhttp3.internal.concurrent.Task;
 
 public class TrashActivity extends AppCompatActivity {
 
@@ -93,20 +97,28 @@ public class TrashActivity extends AppCompatActivity {
      * Restores all notes from the trash.
      */
     private void restoreAllNotes() {
-        new Thread(() -> {
-            for(Note currentNote: allTrashNotesFromDb){
-                notesRepository.addNote(currentNote);
-                notesRepositoryTrash.deleteNote(currentNote.getId());
-            }
-            allTrashNotesFromDb.clear();
-            NotesListActivity.allNotes.addAll(allTrashNotesFromDb);
+        if(allTrashNotesFromDb.size() > 0){
+            new Thread(() -> {
+                for(Note currentNote: allTrashNotesFromDb){
+                    notesRepository.addNote(currentNote);
+                    notesRepositoryTrash.deleteNote(currentNote.getId());
+                }
+                allTrashNotesFromDb.clear();
+                NotesListActivity.allNotes.addAll(allTrashNotesFromDb);
 
-            runOnUiThread(() -> {
-                adapter.notifyDataSetChanged();
-            });
+                runOnUiThread(() -> {
+                    adapter.notifyDataSetChanged();
+                });
 
-        }).start();
-        Toast.makeText(getApplicationContext(),R.string.all_notes_restored,Toast.LENGTH_SHORT).show();
+            }).start();
+            Toast.makeText(getApplicationContext(),R.string.all_notes_restored,Toast.LENGTH_SHORT).show();
+        }
+        else{
+            Toast.makeText(getApplicationContext(),R.string.restore_note_trash,Toast.LENGTH_SHORT).show();
+            Intent i =new Intent(TrashActivity.this, NotesListActivity.class);
+            startActivity(i);
+        }
+
     }
 
     /**

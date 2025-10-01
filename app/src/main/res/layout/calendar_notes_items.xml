@@ -40,7 +40,6 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_alignParentEnd="true"
-                android:src="@drawable/baseline_pin_red"
                 android:contentDescription="@string/pinned_note_icon" />
 
         </RelativeLayout>
