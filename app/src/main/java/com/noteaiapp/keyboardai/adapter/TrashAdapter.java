@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.noteaiapp.keyboardai.Models.Note;
+import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.FileUtils;
 
@@ -54,9 +55,54 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashNoteVie
         holder.titleTextView.setText(note.getTitle().split(";")[0]);
 
 
+        String noteContent = note.getContent();
 
         holder.contentTextView.setText(note.getContent());
+        if (noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)) {
+            // 1. Remove the LIST_NOTE_PREFIX and any preceding whitespace
+            String listContent = noteContent.substring(NotesListActivity.LIST_NOTE_PREFIX.length()).trim();
 
+            // 2. Split the list content into individual lines
+            String[] items = listContent.split("\n");
+            StringBuilder previewBuilder = new StringBuilder();
+            int itemCount = 0;
+            final int MAX_PREVIEW_ITEMS = 5; // Set the maximum number of items to show
+
+            for (String item : items) {
+                if (itemCount >= MAX_PREVIEW_ITEMS) {
+                    break; // Stop after collecting MAX_PREVIEW_ITEMS
+                }
+
+                String cleanedItem = item.trim();
+                if (cleanedItem.isEmpty()) {
+                    continue; // Skip empty lines
+                }
+
+                // 3. Remove the "[x] " or "[ ] " prefix (which is 4 characters long)
+                if (cleanedItem.length() >= 4 && (cleanedItem.startsWith("[x] ") || cleanedItem.startsWith("[ ] "))) {
+                    cleanedItem = cleanedItem.substring(4).trim();
+                }
+
+                if (cleanedItem.isEmpty()) {
+                    continue; // Skip items that become empty after cleaning
+                }
+
+                // 4. Append the cleaned item to the preview string, separating by a newline character
+                if (previewBuilder.length() > 0) {
+                    // *** CHANGED: Use newline (\n) instead of ", " ***
+                    previewBuilder.append("\n");
+                }
+                previewBuilder.append(cleanedItem);
+                itemCount++;
+            }
+
+            // Set the cleaned content preview
+            holder.contentTextView.setText(previewBuilder.toString());
+
+        } else {
+            // Standard note, use content as is
+            holder.contentTextView.setText(noteContent);
+        }
 
 
         holder.restoreButton.setOnClickListener(v -> restoreListener.onNoteRestore(position));

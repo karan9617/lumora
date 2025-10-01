@@ -1,7 +1,9 @@
 package com.noteaiapp.keyboardai.calendar;
 
 
+import android.app.ActivityOptions;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -19,17 +21,22 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.google.android.material.card.MaterialCardView;
+import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
+import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
+import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.DayViewDecorator;
 import com.prolificinteractive.materialcalendarview.DayViewFacade;
@@ -66,10 +73,15 @@ public class CalendarActivity extends AppCompatActivity {
     private static class NotesCalendarAdapter extends RecyclerView.Adapter<NotesCalendarAdapter.ViewHolder> {
         Context context;
         List<Note> notes;
-
-        NotesCalendarAdapter(Context context, List<Note> notes){
+        OnNoteClickListener listener;
+        private final Set<Integer> selectedPositions = new HashSet<>();
+        public interface OnNoteClickListener {
+            void onNoteClick(Note note, View sharedView);
+        }
+        NotesCalendarAdapter(Context context, List<Note> notes, OnNoteClickListener listener){
             this.context = context;
             this.notes = notes;
+            this.listener = listener;
         }
 
         /**
@@ -194,9 +206,30 @@ public class CalendarActivity extends AppCompatActivity {
                 }
                 holder.noteContent.setVisibility(View.VISIBLE);
                 holder.noteDrawing.setVisibility(View.GONE);
+
+                holder.itemView.setOnClickListener(v -> {
+                    int currentPosition = holder.getAdapterPosition();
+                    if (currentPosition != RecyclerView.NO_POSITION) {
+                        // If we are in multi-selection mode, a click should toggle the selection.
+                        if (selectedPositions.size() > 0) {
+                            toggleSelection(currentPosition);
+                        } else {
+                            // Otherwise, a normal click should open the note.
+                            Note clickedNote = notes.get(currentPosition);
+                            listener.onNoteClick(clickedNote, holder.noteCard);
+                        }
+                    }
+                });
             }
         }
-
+        public void toggleSelection(int position) {
+            if (selectedPositions.contains(position)) {
+                selectedPositions.remove(position);
+            } else {
+                selectedPositions.add(position);
+            }
+            notifyItemChanged(position);
+        }
         @Override
         public int getItemCount() {
             return notes.size();
@@ -225,7 +258,7 @@ public class CalendarActivity extends AppCompatActivity {
         }
     }
 
-
+    public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -308,7 +341,43 @@ public class CalendarActivity extends AppCompatActivity {
 
         // 3. Setup RecyclerView
         // Initialize adapter with the empty displayedNotes list
-        notesAdapter = new NotesCalendarAdapter(getApplicationContext(), displayedNotes);
+        notesAdapter = new NotesCalendarAdapter(getApplicationContext(), displayedNotes, new NotesCalendarAdapter.OnNoteClickListener() {
+            @Override
+            public void onNoteClick(Note note, View sharedView) {
+                Intent intent;
+                String noteContent = note.getContent();
+                boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
+                if(isListNote){
+                    intent = new Intent(CalendarActivity.this, ListItemsActivity.class);
+                }
+                else if (note.getContent() != null && !note.getContent().isEmpty()) {
+                    intent = new Intent(CalendarActivity.this, Notepad.class);
+                } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
+                    intent = new Intent(CalendarActivity.this, DrawingActivity.class);
+                } else {
+                    intent = new Intent(CalendarActivity.this, Notepad.class);
+                }
+                intent.putExtra("note_id", note.getId());
+                intent.putExtra("note_title", note.getTitle());
+                intent.putExtra("note_content", note.getContent());
+                intent.putExtra("note_date", note.getDate());
+                intent.putExtra("note_color", note.getColor());
+                intent.putExtra("note_image_path",note.getImagePath());
+
+                String transitionName = ViewCompat.getTransitionName(sharedView);
+                if (transitionName != null) {
+                    intent.putExtra("TRANSITION_NAME", transitionName);
+                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
+                            CalendarActivity.this,
+                            sharedView,
+                            transitionName
+                    );
+                    startActivity(intent, options.toBundle());
+                } else {
+                    startActivity(intent);
+                }
+            }
+        });
         recyclerViewNotes.setAdapter(notesAdapter);
 
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
