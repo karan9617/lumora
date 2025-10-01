@@ -4,6 +4,7 @@ package com.noteaiapp.keyboardai.calendar;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +21,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.google.android.material.card.MaterialCardView;
 import com.noteaiapp.keyboardai.Models.Note;
@@ -28,47 +30,69 @@ import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.prolificinteractive.materialcalendarview.CalendarDay;
+import com.prolificinteractive.materialcalendarview.DayViewDecorator;
+import com.prolificinteractive.materialcalendarview.DayViewFacade;
+import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public class CalendarActivity extends AppCompatActivity {
 
-    private CalendarView calendarView;
+    private MaterialCalendarView calendarView;
     private TextView selectedDateLabel;
     NoteRepository notesRepository;
     private RecyclerView recyclerViewNotes;
     List<Note> allNotes;
+    // New list to hold the notes filtered by the selected date for display
+    private List<Note> displayedNotes;
+    // Adapter instance
+    private NotesCalendarAdapter notesAdapter;
     private Toolbar toolbar;
+    // Formatter to compare dates (ignoring time component: "yyyy-MM-dd")
+    private final SimpleDateFormat DATE_KEY_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
-    // A simple adapter for placeholder content (to be replaced with Note objects later)
-    // NOTE: You would normally define this in a separate file, but we keep it here for now.
-    private static class PlaceholderAdapter extends RecyclerView.Adapter<PlaceholderAdapter.ViewHolder> {
-        // ... Placeholder Adapter implementation goes here ...
-        // For simplicity, we'll skip the full adapter implementation for now,
-        // as the focus is on the Calendar UI.
+    // Renamed for clarity and added updateData method
+    private static class NotesCalendarAdapter extends RecyclerView.Adapter<NotesCalendarAdapter.ViewHolder> {
         Context context;
-        List<Note> allnotes;
-        PlaceholderAdapter(Context context, List<Note> allnotes){
+        List<Note> notes;
+
+        NotesCalendarAdapter(Context context, List<Note> notes){
             this.context = context;
-            this.allnotes = allnotes;
+            this.notes = notes;
         }
+
+        /**
+         * Updates the RecyclerView data set with a new list of filtered notes.
+         * @param newNotes The list of notes for the currently selected date.
+         */
+        public void updateData(List<Note> newNotes) {
+            this.notes = newNotes;
+            notifyDataSetChanged();
+        }
+
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull android.view.ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(context).inflate(R.layout.calendar_notes_items, parent, false);
-            return new PlaceholderAdapter.ViewHolder(view);
+            return new NotesCalendarAdapter.ViewHolder(view);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            Note note = allnotes.get(position);
+            Note note = notes.get(position); // Use 'notes'
             String[] titleArr = note.getTitle().split(";");
+
             if(titleArr.length >= 3){
                 holder.labeltext1.setText(titleArr[1]);
                 holder.labeltext2.setText(titleArr[2]);
@@ -175,8 +199,7 @@ public class CalendarActivity extends AppCompatActivity {
 
         @Override
         public int getItemCount() {
-            // Placeholder returns 1 item to show the "No notes" message
-            return 1;
+            return notes.size();
         }
 
         public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -220,43 +243,137 @@ public class CalendarActivity extends AppCompatActivity {
         }
         // Handle back button click
         toolbar.setNavigationOnClickListener(v -> finish());
+
+        // Initialize lists and repository
         allNotes = new ArrayList<>();
+        displayedNotes = new ArrayList<>();
         notesRepository = new NoteRepository(this);
-        allNotes = notesRepository.getAllNotes();
+
+        // Load all notes once (unfiltered source)
+        allNotes.addAll(notesRepository.getAllNotes());
         allNotes.addAll(notesRepository.getAllPinnedNotes());
+
         // 2. Find Views
         calendarView = findViewById(R.id.calendarView);
+
+        Set<CalendarDay> noteDates = new HashSet<>();
+
+        for (Note note : allNotes) {
+            try {
+                Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(note.getDate());
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                noteDates.add(CalendarDay.from(cal));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
+// Add the decorator with flag markers
+
+        HashMap<CalendarDay, Integer> noteCountMap = new HashMap<>();
+
+        for (Note note : allNotes) {
+            try {
+                Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(note.getDate());
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                CalendarDay day = CalendarDay.from(cal);
+
+                int currentCount = noteCountMap.getOrDefault(day, 0);
+                noteCountMap.put(day, currentCount + 1);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
+        for (Map.Entry<CalendarDay, Integer> entry : noteCountMap.entrySet()) {
+            calendarView.addDecorator(new MultiNoteDayDecorator(this, entry.getKey(), entry.getValue()));
+        }
+
+
+        calendarView.addDecorator(new NoteDayDecorator(this, noteDates));
         selectedDateLabel = findViewById(R.id.tv_selected_date_label);
         recyclerViewNotes = findViewById(R.id.recyclerViewNotes);
+        calendarView.setOnDateChangedListener((widget, date, selected) -> {
+            // FIX: Do NOT subtract 1 — MaterialCalendarView months are already 0-indexed internally
+            Calendar cal = Calendar.getInstance();
+            cal.set(date.getYear(), date.getMonth(), date.getDay()); // ✅ Fix applied here
+
+            long selectedDateMillis = cal.getTimeInMillis();
+
+            updateSelectedDateLabel(selectedDateMillis);
+            filterAndDisplayNotes(selectedDateMillis);
+        });
 
         // 3. Setup RecyclerView
-        recyclerViewNotes.setLayoutManager(new LinearLayoutManager(this));
-        // You will replace PlaceholderAdapter with an adapter that loads your Note objects
-        recyclerViewNotes.setAdapter(new PlaceholderAdapter(getApplicationContext(), allNotes));
+        // Initialize adapter with the empty displayedNotes list
+        notesAdapter = new NotesCalendarAdapter(getApplicationContext(), displayedNotes);
+        recyclerViewNotes.setAdapter(notesAdapter);
+
+        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+        recyclerViewNotes.setLayoutManager(layoutManager);
 
         // 4. Handle Date Selection
-        // Initialize the label with today's date
-        updateSelectedDateLabel(System.currentTimeMillis());
+        // Initialize the label and filter the notes with today's date
+        long todayMillis = System.currentTimeMillis();
+        updateSelectedDateLabel(todayMillis);
+        filterAndDisplayNotes(todayMillis); // <--- Initial filter applied here
 
-        calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
-            // Calendar month is 0-indexed (0=Jan, 11=Dec)
-            Calendar calendar = Calendar.getInstance();
-            calendar.set(year, month, dayOfMonth);
-
-            // Update the label when a new date is selected
-            updateSelectedDateLabel(calendar.getTimeInMillis());
-
-            // TODO: In the future, this is where you will call a method to load
-            // notes from your NoteRepository for the selected 'calendar.getTimeInMillis()' date.
-            Toast.makeText(CalendarActivity.this,
-                    "Selected date: " + (month + 1) + "/" + dayOfMonth + "/" + year,
-                    Toast.LENGTH_SHORT).show();
-        });
     }
 
+    /**
+     * Updates the label above the notes list to show the currently selected date.
+     * @param timeInMillis The timestamp of the selected date.
+     */
     private void updateSelectedDateLabel(long timeInMillis) {
         SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault());
         String dateString = sdf.format(timeInMillis);
         selectedDateLabel.setText("Notes for " + dateString);
+        selectedDateLabel.setTextColor(Color.WHITE);
+    }
+
+    /**
+     * Filters the master list of notes (allNotes) to only include those created on the selected date
+     * and updates the RecyclerView adapter with the results.
+     * @param targetTimeInMillis The timestamp of the selected date (time part is ignored).
+     */
+    private void filterAndDisplayNotes(long targetTimeInMillis) {
+        // Clear previous results
+        displayedNotes.clear();
+
+        // Format the selected timestamp into a date key (e.g., "2024-03-10")
+        String targetDateKey = DATE_KEY_FORMAT.format(new Date(targetTimeInMillis));
+
+        // Iterate through all notes and find matches
+        for (Note note : allNotes) {
+            if (isSameDay(note.getDate(), targetDateKey)) {
+                displayedNotes.add(note);
+            }
+        }
+
+        // Update the adapter with the new filtered list
+        notesAdapter.updateData(displayedNotes);
+
+        // Optionally show a message if no notes are found
+        if (displayedNotes.isEmpty()) {
+            // Note: Use a better method for showing "No Notes" than just a Toast in a real app
+            Toast.makeText(this, "No notes found for " + targetDateKey, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Checks if a note's full date string (e.g., "2024-03-10 15:30:00") matches the target date key (e.g., "2024-03-10").
+     * @param noteDateString The date string from the Note object (full format).
+     * @param targetDateKey The date string representing the target day (date-only format).
+     * @return true if the dates match, false otherwise.
+     */
+    private boolean isSameDay(String noteDateString, String targetDateKey) {
+        // The Note's date string is "yyyy-MM-dd HH:mm:ss".
+        // We only need the first 10 characters ("yyyy-MM-dd") for comparison.
+        if (noteDateString != null && noteDateString.length() >= 10) {
+            return noteDateString.substring(0, 10).equals(targetDateKey);
+        }
+        return false;
     }
 }

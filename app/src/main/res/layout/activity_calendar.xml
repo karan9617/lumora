@@ -8,8 +8,8 @@
     android:fitsSystemWindows="true"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white"
-    tools:context=".CalendarActivity">
+    android:background="#2B2B2B"
+    tools:context=".calendar.CalendarActivity">
 
     <!-- Toolbar for title and navigation -->
     <androidx.appcompat.widget.Toolbar
@@ -17,22 +17,29 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/purple_500"
-        app:title="Calendar"
+        app:title="AI Calendar"
         app:titleTextColor="@android:color/white"
         android:elevation="4dp"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
-    <!-- The Calendar View -->
-    <CalendarView
+    <!-- The Calendar View-->
+    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/calendarView"
+        android:background="@drawable/calendar_background"
+        app:mcv_calendarMode="month"
+        app:mcv_dateTextAppearance="@style/CalendarDateText"
+
+
+        app:mcv_headerTextAppearance="@style/CalendarHeaderText"
+        app:mcv_weekDayTextAppearance="@style/CalendarWeekDayText"
+
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:dateTextAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:weekDayTextAppearance="@style/TextAppearance.AppCompat.Small"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp"/>
+        app:mcv_showOtherDates="all"
+        app:mcv_selectionColor="#00F"
+        />
 
     <!-- Divider -->
     <View

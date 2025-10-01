@@ -52,7 +52,13 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashNoteVie
     public void onBindViewHolder(@NonNull TrashNoteViewHolder holder, int position) {
         Note note = trashList.get(position);
         holder.titleTextView.setText(note.getTitle().split(";")[0]);
+
+
+
         holder.contentTextView.setText(note.getContent());
+
+
+
         holder.restoreButton.setOnClickListener(v -> restoreListener.onNoteRestore(position));
         holder.deleteButton.setOnClickListener(v -> deleteListener.onNoteDelete(position));
         byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
