@@ -112,7 +112,9 @@ public class Notepad extends AppCompatActivity {
     private static final String API_KEY = "AIzaSyCes8zNYgUuYAfpKGLGYmG5r0oQW5cx_2o";
    // private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
-
+    private static final String DATE_EXTRA_KEY = "date_specific_notes";
+    private boolean dateReceived = false;
+    private String receivedDateFromActivities = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -128,6 +130,14 @@ public class Notepad extends AppCompatActivity {
 
         noteId = getIntent().getLongExtra("note_id", -1);
         Note currentNode = noteRepository.getNoteById(noteId);
+        String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
+        if(receivedDate != null && !receivedDate.isEmpty()){
+            dateReceived = true;
+            this.receivedDateFromActivities = receivedDate;
+        }
+        else{
+            receivedDateFromActivities = getCurrentDate();
+        }
         /*
         String noteTitle = getIntent().getStringExtra("note_title");
         String noteContent = getIntent().getStringExtra("note_content");
@@ -675,7 +685,7 @@ public class Notepad extends AppCompatActivity {
         Executors.newSingleThreadExecutor().execute(() -> {
             if (noteId != -1) {
                 // Update existing note with the new imagePath
-                Note existingNote = new Note(noteId, title, content, getCurrentDate(), finalColorToSave, noteOrder, isPinned, imagepathfinal);
+                Note existingNote = new Note(noteId, title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
                 noteRepository.updateNote(existingNote);
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show();
@@ -684,7 +694,7 @@ public class Notepad extends AppCompatActivity {
                 });
             } else {
                 // Create a new note with the new imagePath
-                Note newNote = new Note(title, content, getCurrentDate(), finalColorToSave, 0, isPinned, imagepathfinal);
+                Note newNote = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
                 noteRepository.addNote(newNote);
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show();

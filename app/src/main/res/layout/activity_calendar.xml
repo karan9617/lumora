@@ -1,81 +1,224 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/calendar_layout"
+    android:id="@+id/calendar_layout_root"
     android:layout_width="match_parent"
     android:fitsSystemWindows="true"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#2B2B2B"
     tools:context=".calendar.CalendarActivity">
 
-    <!-- Toolbar for title and navigation -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/calendar_toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="#191919"
-        app:title="AI Calendar"
-        app:titleTextColor="@android:color/white"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
-
-    <!-- The Calendar View-->
-    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/calendarView"
-        android:background="@drawable/calendar_background"
-        app:mcv_calendarMode="month"
-        app:mcv_dateTextAppearance="@style/CalendarDateText"
-
-        
-        app:mcv_headerTextAppearance="@style/CalendarHeaderText"
-        app:mcv_weekDayTextAppearance="@style/CalendarWeekDayText"
-
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:mcv_showOtherDates="all"
-        app:mcv_selectionColor="#00F"
-        />
-
-    <!-- Divider -->
+    <!-- Transparent Overlay (to dim background when menu is open) -->
     <View
+        android:id="@+id/transparent_overlay"
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#CCCCCC"/>
 
-    <!-- Notes List Section -->
-    <TextView
-        android:id="@+id/tv_selected_date_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:textSize="16sp"
-        android:textColor="@android:color/black"
-        android:textStyle="bold"
-        android:text="Notes for Today"/>
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone" />
 
-    <androidx.core.widget.NestedScrollView
+    <!-- Content Stack: This LinearLayout maintains the vertical flow of your components -->
+    <LinearLayout
+        android:id="@+id/vertical_content_stack"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/nestedLayoutView"
-        android:layout_below="@id/toolbar">
+        android:orientation="vertical">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewNotes"
+        <!-- Toolbar for title and navigation -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/calendar_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#191919"
+            app:title="AI Calendar"
+            app:titleTextColor="@android:color/white"
+            android:elevation="4dp"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
+
+        <!-- The Calendar View-->
+        <com.prolificinteractive.materialcalendarview.MaterialCalendarView
+            android:id="@+id/calendarView"
+            android:background="@drawable/calendar_background"
+            app:mcv_calendarMode="month"
+            app:mcv_dateTextAppearance="@style/CalendarDateText"
+            app:mcv_headerTextAppearance="@style/CalendarHeaderText"
+            app:mcv_weekDayTextAppearance="@style/CalendarWeekDayText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:mcv_showOtherDates="all"
+            app:mcv_selectionColor="#00F"
+            />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"/>
+
+        <!-- Notes List Section -->
+        <TextView
+            android:id="@+id/tv_selected_date_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:textSize="16sp"
+            android:textColor="@android:color/black"
+            android:textStyle="bold"
+            android:text="Notes for Today"/>
+
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:clipToPadding="false"
-            tools:listitem="@layout/list_item_note_placeholder"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+            android:id="@+id/nestedLayoutView">
 
-    </androidx.core.widget.NestedScrollView>
-</LinearLayout>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewNotes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:clipToPadding="false"
+                tools:listitem="@layout/list_item_note_placeholder"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+
+        </androidx.core.widget.NestedScrollView>
+
+    </LinearLayout>
+
+    <!-- Floating Action Button - Positioned in the bottom right of the RelativeLayout -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="20dp"
+        android:contentDescription="Add Note"
+        app:srcCompat="@android:drawable/ic_input_add"
+        app:backgroundTint="@color/purple_500"
+        app:tint="@android:color/white"/>
+
+    <!-- Options Layout - Positioned right-aligned and 16dp above the FAB -->
+    <LinearLayout
+        android:id="@+id/options_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end"
+        android:layout_alignParentEnd="true"
+        android:layout_above="@+id/fabAddNote"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone">
+        <!--
+                <TextView
+                    android:id="@+id/option_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Text"
+                    android:background="@drawable/rounded_background"
+                    android:padding="12dp"
+                    android:elevation="4dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+                -->
+        <LinearLayout
+            android:id="@+id/option_text_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="7dp"
+            android:background="@drawable/rounded_background"
+            android:padding="12dp"
+            android:elevation="4dp">
+            <TextView
+                android:id="@+id/option_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/option_text_layout"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_text_icon"
+                app:tint="@android:color/white"
+                android:contentDescription="Image note icon" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/option_drawings_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="7dp"
+            android:background="@drawable/rounded_background"
+            android:padding="12dp"
+            android:elevation="4dp">
+            <TextView
+                android:id="@+id/option_drawings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/options_draw_layout"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/baseline_brush_24"
+                android:id="@+id/draw_icon"
+                app:tint="@android:color/white"
+                android:contentDescription="Draw note icon" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/option_list_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="1dp"
+            android:background="@drawable/rounded_background"
+            android:padding="12dp"
+            android:elevation="4dp">
+            <TextView
+                android:id="@+id/option_list"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/list_option_text"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/list_icon"
+                app:tint="@android:color/white"
+                android:contentDescription="Image note icon" />
+        </LinearLayout>
+
+        <!--<TextView
+            android:id="@+id/option_excel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Excel"
+            android:background="@drawable/rounded_background"
+            android:padding="12dp"
+            android:elevation="4dp"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />-->
+    </LinearLayout>
+
+</RelativeLayout>

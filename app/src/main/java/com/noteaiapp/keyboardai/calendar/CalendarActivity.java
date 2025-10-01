@@ -11,6 +11,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.CalendarView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -28,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
@@ -45,6 +49,8 @@ import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -262,13 +268,39 @@ public class CalendarActivity extends AppCompatActivity {
     }
 
     public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
+    FloatingActionButton fabAddNote;
+    LinearLayout optionsLayout;
+    private boolean isOptionsVisible = false;
+    LinearLayout option_text_layout, option_drawings_layout,option_list_layout;
+    private static final String DATE_EXTRA_KEY = "date_specific_notes";
+
+    Animation slideUpAnimation;
+    Animation slideDownAnimation;
+    View transparent_overlay;
+    private final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault());
+
+    HashMap<Integer,String> mappingForMonth = new HashMap<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Assuming R.layout.activity_calendar is available
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_calendar);
+        fabAddNote = findViewById(R.id.fabAddNote);
+        optionsLayout = findViewById(R.id.options_layout);
+        transparent_overlay = findViewById(R.id.transparent_overlay);
 
+        option_text_layout = findViewById(R.id.option_text_layout);
+        option_drawings_layout = findViewById(R.id.option_drawings_layout);
+        option_list_layout = findViewById(R.id.option_list_layout);
+
+        transparent_overlay.setOnClickListener(v -> {
+            if (isOptionsVisible) {
+                hideOptions();
+            }
+        });
+        slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+        slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
         // 1. Setup Toolbar
         toolbar = findViewById(R.id.calendar_toolbar);
         setSupportActionBar(toolbar);
@@ -349,23 +381,17 @@ public class CalendarActivity extends AppCompatActivity {
             public void onNoteClick(Note note, View sharedView) {
                 Intent intent;
                 String noteContent = note.getContent();
-                Log.d("com.noteaiapp.keyboardai","path:"+note.getImagePath());
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
                 if(isListNote){
                     intent = new Intent(CalendarActivity.this, ListItemsActivity.class);
-                    Log.d("com.noteaiapp.keyboardai","clicked1");
                 }
                 else if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(CalendarActivity.this, Notepad.class);
-                    Log.d("com.noteaiapp.keyboardai","clicked2");
                 } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                     intent = new Intent(CalendarActivity.this, DrawingActivity.class);
-                    Log.d("com.noteaiapp.keyboardai","clicked3");
                 } else {
                     intent = new Intent(CalendarActivity.this, Notepad.class);
-                    Log.d("com.noteaiapp.keyboardai","clicked4");
                 }
-                Log.d("com.noteaiapp.keyboardai","clicked");
                 intent.putExtra("note_id", note.getId());
                 intent.putExtra("note_title", note.getTitle());
                 intent.putExtra("note_content", note.getContent());
@@ -397,9 +423,130 @@ public class CalendarActivity extends AppCompatActivity {
         long todayMillis = System.currentTimeMillis();
         updateSelectedDateLabel(todayMillis);
         filterAndDisplayNotes(todayMillis); // <--- Initial filter applied here
+        listener();
+    }
+    public void listener(){
+        option_list_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(CalendarActivity.this, ListItemsActivity.class);
+                CalendarDay selectedDay = calendarView.getSelectedDate();
 
+                if (selectedDay == null) {
+                    selectedDay = CalendarDay.today();
+                }
+
+                String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
+                intent.putExtra(DATE_EXTRA_KEY, dateString);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
+        option_drawings_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(CalendarActivity.this, DrawingActivity.class);
+                CalendarDay selectedDay = calendarView.getSelectedDate();
+                if (selectedDay == null) {
+                    selectedDay = CalendarDay.today();
+                }
+
+                // MaterialCalendarView uses LocalDate internally.
+                // Format the date part (e.g., "2025-10-01")
+                String dateString = selectedDay.getDay()+" "+selectedDay.getMonth() +","+ selectedDay.getYear();
+
+                intent.putExtra(DATE_EXTRA_KEY, dateString);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
+        option_text_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(CalendarActivity.this, Notepad.class);
+                CalendarDay selectedDay = calendarView.getSelectedDate();
+
+                if (selectedDay == null) {
+                    selectedDay = CalendarDay.today();
+                }
+
+                String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
+                intent.putExtra(DATE_EXTRA_KEY, dateString);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
+
+        fabAddNote.setOnClickListener(v -> {
+            if (isOptionsVisible) {
+                optionsLayout.setVisibility(View.VISIBLE);
+                optionsLayout.startAnimation(slideUpAnimation);
+                hideOptions();
+            } else {
+                optionsLayout.startAnimation(slideDownAnimation);
+                slideDownAnimation.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        optionsLayout.setVisibility(View.GONE);
+                        optionsLayout.clearAnimation();
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+                    }
+                });
+                showOptions();
+            }
+        });
+    }
+    private void hideOptions() {
+        Animation animation = AnimationUtils.loadAnimation(this, R.anim.fab_options_slide_down);
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                optionsLayout.setVisibility(View.GONE);
+                transparent_overlay.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+        optionsLayout.startAnimation(animation);
+        isOptionsVisible = false;
     }
 
+    private void showOptions() {
+        optionsLayout.setVisibility(View.VISIBLE);
+        AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
+        fadeIn.setDuration(250);
+        optionsLayout.startAnimation(fadeIn);
+        transparent_overlay.setVisibility(View.VISIBLE);
+        isOptionsVisible = true;
+    }
+    private void hideOptions(final Animation animation) {
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                optionsLayout.setVisibility(View.GONE);
+                optionsLayout.clearAnimation();
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+        optionsLayout.startAnimation(animation);
+        isOptionsVisible = false;
+    }
     /**
      * Updates the label above the notes list to show the currently selected date.
      * @param timeInMillis The timestamp of the selected date.
