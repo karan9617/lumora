@@ -25,6 +25,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -48,8 +49,10 @@ public class ListItemsActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private NoteRepository noteRepository;
     NotesRepositoryTrash notesRepositoryTrash;
-
+    ConstraintLayout listItemLayout;
+    private int selectedColor = Color.parseColor("#232323");
     private List<ListItem> listItems = new ArrayList<>();
+    private boolean isNoteModified = false;
     private ListAdapter listAdapter;
 
     private long noteId = -1;
@@ -92,7 +95,7 @@ public class ListItemsActivity extends AppCompatActivity {
         noteTitleEditText = findViewById(R.id.noteTitleEditText);
         recyclerViewList = findViewById(R.id.recyclerViewList);
         ImageButton addItemButton = findViewById(R.id.addItemButton);
-
+        listItemLayout = findViewById(R.id.listItemLayout);
         noteRepository = new NoteRepository(this);
 
         // Setup RecyclerView
@@ -145,9 +148,11 @@ public class ListItemsActivity extends AppCompatActivity {
      */
     private void loadNoteData(Intent intent) {
         noteId = intent.getLongExtra("note_id", -1);
+        Note currentNode = noteRepository.getNoteById(noteId);
         String title = intent.getStringExtra("note_title");
         String content = intent.getStringExtra("note_content"); // This is the serialized list
-
+        noteColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
+        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
         if (noteId != -1) {
             if (title != null) noteTitleEditText.setText(title);
 
@@ -269,7 +274,7 @@ public class ListItemsActivity extends AppCompatActivity {
 
         // *** CRITICAL CHANGE: Prepend the LIST_NOTE_PREFIX to the content before saving ***
         String finalContent = NotesListActivity.LIST_NOTE_PREFIX + "\n" + listContent;
-
+        noteColor = selectedColor;
 
         // Note: The 'imagePath' is null as this is a list note
         Note note = new Note(title, finalContent, currentDate, noteColor, false, "");
@@ -296,7 +301,6 @@ public class ListItemsActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_notepad_actions, menu);
         // Hide the color palette if you want to enforce a standard look for list notes
-        menu.findItem(R.id.action_color).setVisible(false);
         return true;
     }
 
@@ -321,7 +325,36 @@ public class ListItemsActivity extends AppCompatActivity {
             }
             return true;
         }
+        else if(id== R.id.action_color){
+            showColorPickerDialog();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
+    }
+    private void showColorPickerDialog() {
+        final int[] colors = {
+                Color.WHITE,
+                Color.parseColor("#FFC0CB"),
+                Color.parseColor("#FFFF66"),
+                Color.parseColor("#C0C0C0"),
+                Color.parseColor("#ADD8E6")
+        };
+
+        final String[] colorNames = {getApplicationContext().getString(R.string.white_text),
+                getApplicationContext().getString(R.string.pink_text),
+                getApplicationContext().getString(R.string.yellow_text),
+                getApplicationContext().getString(R.string.silver_text),
+                getApplicationContext().getString(R.string.blue_text)};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.background_color_choose);
+        builder.setItems(colorNames, (dialog, which) -> {
+            selectedColor = colors[which];
+            Toast.makeText(getApplicationContext(),"note background color saved",Toast.LENGTH_SHORT).show();
+            //listItemLayout.setBackgroundColor(selectedColor);
+            isNoteModified = true;
+        });
+        builder.show();
     }
     private void showDeleteConfirmationDialog() {
         new AlertDialog.Builder(this)
