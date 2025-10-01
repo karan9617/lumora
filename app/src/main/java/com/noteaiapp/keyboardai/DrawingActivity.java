@@ -51,7 +51,9 @@ public class DrawingActivity extends AppCompatActivity {
     private NoteRepository noteRepository;
     private long currentNoteId = -1;
     private boolean isDirty = false, isSpray = false, isRectangle = false,isErasing = false,isTextMode = false; // Flag to track unsaved changes
-
+    private static final String DATE_EXTRA_KEY = "date_specific_notes";
+    private boolean dateReceived = false;
+    private String receivedDateFromActivities = "";
 
     // This static class will temporarily hold the drawing data to bypass the Intent size limit
     public static class DrawingDataManager {
@@ -82,6 +84,15 @@ public class DrawingActivity extends AppCompatActivity {
 
         // Check if we are editing an existing note
         Intent intent = getIntent();
+        String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
+        if(receivedDate != null && !receivedDate.isEmpty()){
+            dateReceived = true;
+            this.receivedDateFromActivities = receivedDate;
+        }
+        else{
+            receivedDateFromActivities = getCurrentDate();
+        }
+
         if (intent.hasExtra("note_id")) {
             currentNoteId = intent.getLongExtra("note_id", -1);
             if (currentNoteId != -1) {
@@ -179,6 +190,7 @@ public class DrawingActivity extends AppCompatActivity {
                         drawingNote.setTitle("Sketch");
                         drawingNote.setColor(Color.WHITE); // Default color
                         drawingNote.setDate(getCurrentDate());
+                        drawingNote.setDate(receivedDateFromActivities);
                         drawingNote.setContent("");
                         drawingNote.setPinned(false);
                         drawingNote.setImagePath(imagePath);

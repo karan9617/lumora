@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
@@ -273,6 +274,7 @@ public class CalendarActivity extends AppCompatActivity {
     private boolean isOptionsVisible = false;
     LinearLayout option_text_layout, option_drawings_layout,option_list_layout;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
+    private TextView tvNoNotesMessage;
 
     Animation slideUpAnimation;
     Animation slideDownAnimation;
@@ -289,7 +291,10 @@ public class CalendarActivity extends AppCompatActivity {
         fabAddNote = findViewById(R.id.fabAddNote);
         optionsLayout = findViewById(R.id.options_layout);
         transparent_overlay = findViewById(R.id.transparent_overlay);
-
+        tvNoNotesMessage = findViewById(R.id.tvNoNotesMessage);
+        tvNoNotesMessage.setText("No notes currently for this date, press the add button to add notes :)");
+        tvNoNotesMessage.setGravity(Gravity.CENTER_HORIZONTAL);
+        tvNoNotesMessage.setVisibility(View.GONE); // Start hidden
         option_text_layout = findViewById(R.id.option_text_layout);
         option_drawings_layout = findViewById(R.id.option_drawings_layout);
         option_list_layout = findViewById(R.id.option_list_layout);
@@ -425,6 +430,66 @@ public class CalendarActivity extends AppCompatActivity {
         filterAndDisplayNotes(todayMillis); // <--- Initial filter applied here
         listener();
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshNotesAndCalendar();
+    }
+    private void refreshNotesAndCalendar() {
+        // 1. Reload all notes
+        allNotes.clear();
+        allNotes.addAll(notesRepository.getAllNotes());
+        allNotes.addAll(notesRepository.getAllPinnedNotes());
+
+        // 2. Determine which day is currently selected or default to today
+        CalendarDay selectedDay = calendarView.getSelectedDate();
+        long targetTimeMillis;
+
+        if (selectedDay == null) {
+            // If no day is selected (e.g., initial load), use today's date
+            selectedDay = CalendarDay.today();
+            targetTimeMillis = System.currentTimeMillis();
+        } else {
+            // Convert the selected CalendarDay back to milliseconds for filtering
+            Calendar cal = Calendar.getInstance();
+            cal.set(selectedDay.getYear(), selectedDay.getMonth(), selectedDay.getDay());
+            targetTimeMillis = cal.getTimeInMillis();
+        }
+
+        // 3. Update Calendar Decorators (Dots/Counts)
+        Set<CalendarDay> noteDates = new HashSet<>();
+        HashMap<CalendarDay, Integer> noteCountMap = new HashMap<>();
+
+        for (Note note : allNotes) {
+            try {
+                // Parse date string to Date object
+                Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(note.getDate());
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                CalendarDay day = CalendarDay.from(cal);
+
+                noteDates.add(day);
+
+                int currentCount = noteCountMap.getOrDefault(day, 0);
+                noteCountMap.put(day, currentCount + 1);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Clear all existing decorators before adding the new set
+        calendarView.removeDecorators();
+
+        // Add decorators based on the fresh data
+        for (Map.Entry<CalendarDay, Integer> entry : noteCountMap.entrySet()) {
+            calendarView.addDecorator(new MultiNoteDayDecorator(this, entry.getKey(), entry.getValue()));
+        }
+        calendarView.addDecorator(new NoteDayDecorator(this, noteDates));
+
+        // 4. Update the UI for the selected date
+        updateSelectedDateLabel(targetTimeMillis);
+        filterAndDisplayNotes(targetTimeMillis);
+    }
     public void listener(){
         option_list_layout.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -447,14 +512,12 @@ public class CalendarActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(CalendarActivity.this, DrawingActivity.class);
                 CalendarDay selectedDay = calendarView.getSelectedDate();
+
                 if (selectedDay == null) {
                     selectedDay = CalendarDay.today();
                 }
 
-                // MaterialCalendarView uses LocalDate internally.
-                // Format the date part (e.g., "2025-10-01")
-                String dateString = selectedDay.getDay()+" "+selectedDay.getMonth() +","+ selectedDay.getYear();
-
+                String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
                 intent.putExtra(DATE_EXTRA_KEY, dateString);
                 startActivity(intent);
                 hideOptions();
@@ -584,6 +647,12 @@ public class CalendarActivity extends AppCompatActivity {
         if (displayedNotes.isEmpty()) {
             // Note: Use a better method for showing "No Notes" than just a Toast in a real app
             Toast.makeText(this, "No notes found for " + targetDateKey, Toast.LENGTH_SHORT).show();
+
+            tvNoNotesMessage.setVisibility(View.VISIBLE);
+            recyclerViewNotes.setVisibility(View.GONE);
+        }else {
+            tvNoNotesMessage.setVisibility(View.GONE);
+            recyclerViewNotes.setVisibility(View.VISIBLE);
         }
     }
 

@@ -58,6 +58,7 @@
             android:layout_height="1dp"
             android:background="#CCCCCC"/>
 
+
         <!-- Notes List Section -->
         <TextView
             android:id="@+id/tv_selected_date_label"
@@ -71,7 +72,20 @@
             android:textColor="@android:color/black"
             android:textStyle="bold"
             android:text="Notes for Today"/>
-
+        <TextView
+            android:id="@+id/tvNoNotesMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:fontFamily="@font/latoregular"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:layout_gravity="center_horizontal"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:text="Notes for Today currently for this date.."/>
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"

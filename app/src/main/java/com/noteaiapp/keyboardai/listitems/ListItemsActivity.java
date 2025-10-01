@@ -57,7 +57,9 @@ public class ListItemsActivity extends AppCompatActivity {
 
     private long noteId = -1;
     private int noteColor = Color.parseColor("#FFFFFF"); // Default white
-
+    private static final String DATE_EXTRA_KEY = "date_specific_notes";
+    private boolean dateReceived = false;
+    private String receivedDateFromActivities = "";
     /**
      * Model class for a single list item. This object holds the content and state (checked/unchecked).
      */
@@ -105,7 +107,14 @@ public class ListItemsActivity extends AppCompatActivity {
 
         // Load existing note data if provided (for editing)
         loadNoteData(getIntent());
-
+        String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
+        if(receivedDate != null && !receivedDate.isEmpty()){
+            dateReceived = true;
+            this.receivedDateFromActivities = receivedDate;
+        }
+        else{
+            receivedDateFromActivities = getCurrentDate();
+        }
         // Add New Item Button Listener
         addItemButton.setOnClickListener(v -> addNewListItem(""));
 
@@ -185,7 +194,10 @@ public class ListItemsActivity extends AppCompatActivity {
             }
         }
     }
-
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        return sdf.format(new Date());
+    }
     /**
      * Serializes the list of items into a single string to be saved in the Note content field.
      * Format: "[ ] Item text 1\n[x] Item text 2\n[ ] Item text 3"
@@ -277,7 +289,7 @@ public class ListItemsActivity extends AppCompatActivity {
         noteColor = selectedColor;
 
         // Note: The 'imagePath' is null as this is a list note
-        Note note = new Note(title, finalContent, currentDate, noteColor, false, "");
+        Note note = new Note(title, finalContent, receivedDateFromActivities, noteColor, false, "");
 
         if (noteId == -1) {
             // New Note
