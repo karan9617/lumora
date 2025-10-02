@@ -47,8 +47,8 @@
             app:mcv_headerTextAppearance="@style/CalendarHeaderText2"
             app:mcv_weekDayTextAppearance="@style/CalendarWeekDayText"
             app:mcv_arrowColor="@color/purple_500"
-            android:layout_width="match_parent"
-
+            android:layout_width="360dp"
+            android:layout_gravity="center_horizontal"
             android:layout_height="wrap_content"
             app:mcv_showOtherDates="all"
             app:mcv_selectionColor="#9C27B0"
@@ -93,12 +93,14 @@
 
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
+            android:layout_gravity="center_horizontal"
             android:layout_height="match_parent"
             android:id="@+id/nestedLayoutView">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerViewNotes"
                 android:layout_width="match_parent"
+                android:layout_gravity="center_horizontal"
                 android:layout_height="match_parent"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"

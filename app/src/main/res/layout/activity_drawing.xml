@@ -28,6 +28,7 @@
         android:layout_marginBottom="8dp"
         app:cardBackgroundColor="@android:color/white"
         app:cardCornerRadius="16dp"
+
         app:cardElevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -41,15 +42,17 @@
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
             android:background="#5E5C5C"
+            android:fillViewport="true"
             android:paddingTop="8dp"
             android:paddingBottom="8dp">
 
             <LinearLayout
                 android:id="@+id/tool_group_slider"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_horizontal"
+                android:layout_gravity="center_horizontal">
 
                 <ImageButton
                     android:id="@+id/eraser"
