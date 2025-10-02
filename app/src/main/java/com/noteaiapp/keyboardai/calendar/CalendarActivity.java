@@ -280,6 +280,7 @@ public class CalendarActivity extends AppCompatActivity {
 
     Animation slideUpAnimation;
     Animation slideDownAnimation;
+    OutOfMonthDecorator outOfMonthDecorator;
     View transparent_overlay;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -382,6 +383,7 @@ public class CalendarActivity extends AppCompatActivity {
         });
 
         calendarView.addDecorator(new AllDatesDecorator(this));
+
         // 3. Setup RecyclerView
         // Initialize adapter with the empty displayedNotes list
         notesAdapter = new NotesCalendarAdapter(getApplicationContext(), displayedNotes, new NotesCalendarAdapter.OnNoteClickListener() {
@@ -490,7 +492,20 @@ public class CalendarActivity extends AppCompatActivity {
         }
         calendarView.addDecorator(new AllDatesDecorator(this));
         calendarView.addDecorator(new NoteDayDecorator(this, noteDates));
+        CalendarDay initialMonth = calendarView.getCurrentDate();
+        outOfMonthDecorator = new OutOfMonthDecorator(initialMonth);
         calendarView.addDecorator(selectedDayDecorator);
+        calendarView.addDecorator(outOfMonthDecorator);
+
+        calendarView.setOnMonthChangedListener((widget, date) -> {
+            // Remove the old decorator
+            calendarView.removeDecorator(outOfMonthDecorator);
+
+            // Create a new decorator for the new visible month
+            outOfMonthDecorator = new OutOfMonthDecorator(date);
+            calendarView.addDecorator(outOfMonthDecorator);
+        });
+
         // 4. Update the UI for the selected date
         updateSelectedDateLabel(targetTimeMillis);
         filterAndDisplayNotes(targetTimeMillis);
