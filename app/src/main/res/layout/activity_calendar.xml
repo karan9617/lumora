@@ -7,7 +7,7 @@
     android:layout_width="match_parent"
     android:fitsSystemWindows="true"
     android:layout_height="match_parent"
-    android:background="#2B2B2B"
+    android:background="#000000"
     tools:context=".calendar.CalendarActivity">
 
     <!-- Transparent Overlay (to dim background when menu is open) -->
@@ -31,8 +31,8 @@
             android:id="@+id/calendar_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="#191919"
-            app:title="AI Calendar"
+            android:background="#020304"
+            app:title="@string/ai_calendar_heading"
             app:titleTextColor="@android:color/white"
             android:elevation="4dp"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
@@ -41,15 +41,19 @@
         <!-- The Calendar View-->
         <com.prolificinteractive.materialcalendarview.MaterialCalendarView
             android:id="@+id/calendarView"
-            android:background="@drawable/calendar_background"
             app:mcv_calendarMode="month"
+            android:background="@color/black"
             app:mcv_dateTextAppearance="@style/CalendarDateText"
-            app:mcv_headerTextAppearance="@style/CalendarHeaderText"
+            app:mcv_headerTextAppearance="@style/CalendarHeaderText2"
             app:mcv_weekDayTextAppearance="@style/CalendarWeekDayText"
+            app:mcv_arrowColor="@color/purple_500"
             android:layout_width="match_parent"
+
             android:layout_height="wrap_content"
             app:mcv_showOtherDates="all"
-            app:mcv_selectionColor="#00F"
+            app:mcv_selectionColor="#9C27B0"
+            android:soundEffectsEnabled="true"
+
             />
 
         <!-- Divider -->
@@ -69,9 +73,9 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:textSize="16sp"
-            android:textColor="@android:color/black"
+            android:textColor="#BAB9B9"
             android:textStyle="bold"
-            android:text="Notes for Today"/>
+            android:text="@string/notes_for_today"/>
         <TextView
             android:id="@+id/tvNoNotesMessage"
             android:layout_width="wrap_content"
@@ -83,9 +87,10 @@
             android:paddingBottom="8dp"
             android:layout_gravity="center_horizontal"
             android:textSize="16sp"
-            android:textColor="@color/white"
+            android:textColor="#BAB9B9"
             android:textStyle="bold"
-            android:text="Notes for Today currently for this date.."/>
+            android:text="@string/empty_text"/>
+
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"

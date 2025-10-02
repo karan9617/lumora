@@ -138,6 +138,25 @@
     <string name="color_menu1">Цвет</string>
     <string name="label_text">Метка</string>
 
+    <string name="list_option_text">список</string>
+    <string name="calendar">Календарь</string>
+    <string name="restore_note_trash">Нет заметок для восстановления.</string>
+
+    <!-- calendar activity-->
+    <string name="calendar_notes">Календарь заметок</string>
+    <string name="no_notes_found">Заметки не найдены для</string>
+    <string name="note_for_text">Заметки на</string>
+    <string name="ai_calendar_heading">Календарь с ИИ</string>
+    <string name="notes_for_today">Заметки на сегодня</string>
+    <string name="empty_text">На эту дату пока нет заметок..</string>
+
+    <string name="dialog_text">Вы уверены, что хотите переместить этот список в корзину?</string>
+    <string name="delete_text">Удалить список?</string>
+    <string name="delete_text2">УДАЛИТЬ</string>
+    <string name="list_trash_text">Список перемещён в корзину.</string>
+    <string name="notes_discarded">Заметка удалена.</string>
+    <string name="cancel_list">ОТМЕНА</string>
+
     <string name="no_notes_text">Пока нет заметок. Нажмите +, чтобы добавить!</string>
     <string name="no_text_found">Заметка не найдена</string>
     <string name="widget_text_deleted">Эта заметка могла быть удалена.</string>

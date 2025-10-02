@@ -123,6 +123,25 @@
     <string name="sort_by_date">Ordenar por Data</string>
     <string name="sort_by_alpha">Ordenar Alfabeticamente</string>
 
+    <string name="list_option_text">lista</string>
+    <string name="calendar">Calendário</string>
+    <string name="restore_note_trash">Sem notas para restaurar.</string>
+
+    <!-- calendar activity-->
+    <string name="calendar_notes">Calendário de Notas</string>
+    <string name="no_notes_found">Nenhuma nota encontrada para</string>
+    <string name="note_for_text">Notas para</string>
+    <string name="ai_calendar_heading">Calendário com IA</string>
+    <string name="notes_for_today">Notas de Hoje</string>
+    <string name="empty_text">Atualmente não há notas para esta data..</string>
+
+    <string name="dialog_text">Tem certeza de que deseja mover esta lista de verificação para a lixeira?</string>
+    <string name="delete_text">Excluir Lista de Verificação?</string>
+    <string name="delete_text2">EXCLUIR</string>
+    <string name="list_trash_text">Nota da lista movida para a lixeira.</string>
+    <string name="notes_discarded">Nota descartada.</string>
+    <string name="cancel_list">CANCELAR</string>
+
     <string name="drawer_menu_instructions">Instruções</string>
     <string name="drawer_menu_Trash">Lixeira</string>
     <string name="drawer_menu_policies">Políticas</string>

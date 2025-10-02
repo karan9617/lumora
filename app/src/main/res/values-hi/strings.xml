@@ -146,4 +146,22 @@
     <string name="note_preview">नोट सामग्री का पूर्वावलोकन...</string>
     <string name="select_text">विजेट के लिए एक नोट चुनें</string>
 
+    <string name="list_option_text">सूची</string>
+    <string name="calendar">कैलेंडर</string>
+    <string name="restore_note_trash">कोई नोट पुनर्स्थापित करने के लिए नहीं है।</string>
+
+    <!-- calendar activity-->
+    <string name="calendar_notes">नोट कैलेंडर</string>
+    <string name="no_notes_found">इस तारीख के लिए कोई नोट नहीं मिला</string>
+    <string name="note_for_text">के लिए नोट्स</string>
+    <string name="ai_calendar_heading">एआई कैलेंडर</string>
+    <string name="notes_for_today">आज के नोट्स</string>
+    <string name="empty_text">इस तारीख के लिए वर्तमान में कोई नोट्स नहीं हैं..</string>
+
+    <string name="dialog_text">क्या आप वाकई इस चेकलिस्ट को ट्रैश में डालना चाहते हैं?</string>
+    <string name="delete_text">चेकलिस्ट हटाएँ?</string>
+    <string name="delete_text2">हटाएँ</string>
+    <string name="list_trash_text">सूची नोट ट्रैश में डाला गया।</string>
+    <string name="notes_discarded">नोट त्याग दिया गया।</string>
+    <string name="cancel_list">रद्द करें</string>
 </resources>

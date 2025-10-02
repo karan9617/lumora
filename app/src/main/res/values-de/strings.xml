@@ -83,7 +83,25 @@
     <string name="trash_layout_restore">Wiederherstellen</string>
     <string name="trash_delete_button">Löschen</string>
 
+    <string name="list_option_text">Liste</string>
+    <string name="calendar">Kalender</string>
+    <string name="restore_note_trash">Keine Notizen zum Wiederherstellen.</string>
 
+    <!-- calendar activity-->
+    <string name="calendar_notes">Notizkalender</string>
+    <string name="no_notes_found">Keine Notizen gefunden für</string>
+    <string name="note_for_text">Notizen für</string>
+    <string name="ai_calendar_heading">KI-Kalender</string>
+    <string name="notes_for_today">Notizen für heute</string>
+    <string name="empty_text">Zurzeit keine Notizen für dieses Datum..</string>
+
+    <string name="dialog_text">Möchten Sie diese Checkliste wirklich in den Papierkorb verschieben?</string>
+    <string name="delete_text">Checkliste löschen?</string>
+    <string name="delete_text2">LÖSCHEN</string>
+    <string name="list_trash_text">Listen-Notiz in den Papierkorb verschoben.</string>
+    <string name="notes_discarded">Notiz verworfen.</string>
+    <string name="cancel_list">ABBRECHEN</string>
+    
     <string name="image_failed">Bild konnte nicht geladen werden.</string>
     <string name="image_load_text">Bild erfolgreich geladen!</string>
     <string name="drawing_saved">Zeichnung erfolgreich gespeichert!</string>

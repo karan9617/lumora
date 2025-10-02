@@ -31,6 +31,25 @@
     <string name="voice_enabled_initial_text">Prise de notes activée par la voix avec fonction de brainstorming IA.</string>
     <string name="draw_sketch_welcome_page">Dessinez sur le canevas enrichi pour améliorer l\'expérience de prise de notes avec des options d\'édition d\'images.</string>
 
+    <string name="list_option_text">liste</string>
+    <string name="calendar">Calendrier</string>
+    <string name="restore_note_trash">Aucune note à restaurer.</string>
+
+    <!-- calendar activity-->
+    <string name="calendar_notes">Calendrier des notes</string>
+    <string name="no_notes_found">Aucune note trouvée pour</string>
+    <string name="note_for_text">Notes pour</string>
+    <string name="ai_calendar_heading">Calendrier IA</string>
+    <string name="notes_for_today">Notes daujourdhui</string>
+    <string name="empty_text">Aucune note pour cette date pour le moment..</string>
+
+    <string name="dialog_text">Voulez-vous vraiment déplacer cette liste vers la corbeille ?</string>
+    <string name="delete_text">Supprimer la liste ?</string>
+    <string name="delete_text2">SUPPRIMER</string>
+    <string name="list_trash_text">Note de liste déplacée vers la corbeille.</string>
+    <string name="notes_discarded">Note supprimée.</string>
+    <string name="cancel_list">ANNULER</string>
+
     <string name="fill_notes_messages">Veuillez remplir tous les champs</string>
     <string name="thank_you_feedback">Merci pour votre retour !</string>
     <string name="feedback_successful">Commentaire partagé</string>

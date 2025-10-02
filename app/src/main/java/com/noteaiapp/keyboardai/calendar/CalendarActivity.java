@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -274,14 +275,12 @@ public class CalendarActivity extends AppCompatActivity {
     private boolean isOptionsVisible = false;
     LinearLayout option_text_layout, option_drawings_layout,option_list_layout;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
+    SelectedDayDecorator selectedDayDecorator;
     private TextView tvNoNotesMessage;
 
     Animation slideUpAnimation;
     Animation slideDownAnimation;
     View transparent_overlay;
-    private final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault());
-
-    HashMap<Integer,String> mappingForMonth = new HashMap<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -298,7 +297,7 @@ public class CalendarActivity extends AppCompatActivity {
         option_text_layout = findViewById(R.id.option_text_layout);
         option_drawings_layout = findViewById(R.id.option_drawings_layout);
         option_list_layout = findViewById(R.id.option_list_layout);
-
+        selectedDayDecorator = new SelectedDayDecorator(this);
         transparent_overlay.setOnClickListener(v -> {
             if (isOptionsVisible) {
                 hideOptions();
@@ -312,7 +311,7 @@ public class CalendarActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             // Enable the back button
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Note Calendar");
+            getSupportActionBar().setTitle(getApplicationContext().getString(R.string.calendar_notes));
         }
         // Handle back button click
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -364,21 +363,25 @@ public class CalendarActivity extends AppCompatActivity {
             calendarView.addDecorator(new MultiNoteDayDecorator(this, entry.getKey(), entry.getValue()));
         }
 
-
         calendarView.addDecorator(new NoteDayDecorator(this, noteDates));
+
+
         selectedDateLabel = findViewById(R.id.tv_selected_date_label);
         recyclerViewNotes = findViewById(R.id.recyclerViewNotes);
         calendarView.setOnDateChangedListener((widget, date, selected) -> {
             // FIX: Do NOT subtract 1 — MaterialCalendarView months are already 0-indexed internally
             Calendar cal = Calendar.getInstance();
-            cal.set(date.getYear(), date.getMonth(), date.getDay()); // ✅ Fix applied here
+            cal.set(date.getYear(), date.getMonth(), date.getDay()); //
 
             long selectedDateMillis = cal.getTimeInMillis();
 
             updateSelectedDateLabel(selectedDateMillis);
             filterAndDisplayNotes(selectedDateMillis);
+            selectedDayDecorator.setDate(date);
+            calendarView.invalidateDecorators();
         });
 
+        calendarView.addDecorator(new AllDatesDecorator(this));
         // 3. Setup RecyclerView
         // Initialize adapter with the empty displayedNotes list
         notesAdapter = new NotesCalendarAdapter(getApplicationContext(), displayedNotes, new NotesCalendarAdapter.OnNoteClickListener() {
@@ -429,6 +432,7 @@ public class CalendarActivity extends AppCompatActivity {
         updateSelectedDateLabel(todayMillis);
         filterAndDisplayNotes(todayMillis); // <--- Initial filter applied here
         listener();
+
     }
     @Override
     protected void onResume() {
@@ -484,8 +488,9 @@ public class CalendarActivity extends AppCompatActivity {
         for (Map.Entry<CalendarDay, Integer> entry : noteCountMap.entrySet()) {
             calendarView.addDecorator(new MultiNoteDayDecorator(this, entry.getKey(), entry.getValue()));
         }
+        calendarView.addDecorator(new AllDatesDecorator(this));
         calendarView.addDecorator(new NoteDayDecorator(this, noteDates));
-
+        calendarView.addDecorator(selectedDayDecorator);
         // 4. Update the UI for the selected date
         updateSelectedDateLabel(targetTimeMillis);
         filterAndDisplayNotes(targetTimeMillis);
@@ -617,7 +622,7 @@ public class CalendarActivity extends AppCompatActivity {
     private void updateSelectedDateLabel(long timeInMillis) {
         SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault());
         String dateString = sdf.format(timeInMillis);
-        selectedDateLabel.setText("Notes for " + dateString);
+        selectedDateLabel.setText(getApplicationContext().getString(R.string.note_for_text)+" " + dateString);
         selectedDateLabel.setTextColor(Color.WHITE);
     }
 
@@ -646,7 +651,7 @@ public class CalendarActivity extends AppCompatActivity {
         // Optionally show a message if no notes are found
         if (displayedNotes.isEmpty()) {
             // Note: Use a better method for showing "No Notes" than just a Toast in a real app
-            Toast.makeText(this, "No notes found for " + targetDateKey, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getApplicationContext().getString(R.string.no_notes_found)+" " + targetDateKey, Toast.LENGTH_SHORT).show();
 
             tvNoNotesMessage.setVisibility(View.VISIBLE);
             recyclerViewNotes.setVisibility(View.GONE);

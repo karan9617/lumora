@@ -113,6 +113,24 @@
     <string name="yellow_text">Amarillo</string>
     <string name="silver_text">Plateado</string>
     <string name="blue_text">Azul Claro</string>
+    <string name="list_option_text">lista</string>
+    <string name="calendar">Calendario</string>
+    <string name="restore_note_trash">No hay notas para restaurar.</string>
+
+    <!-- calendar activity-->
+    <string name="calendar_notes">Calendario de Notas</string>
+    <string name="no_notes_found">No se encontraron notas para</string>
+    <string name="note_for_text">Notas para</string>
+    <string name="ai_calendar_heading">Calendario de IA</string>
+    <string name="notes_for_today">Notas de Hoy</string>
+    <string name="empty_text">Actualmente no hay notas para esta fecha..</string>
+
+    <string name="dialog_text">¿Estás seguro de que deseas mover esta lista a la papelera?</string>
+    <string name="delete_text">¿Eliminar lista?</string>
+    <string name="delete_text2">ELIMINAR</string>
+    <string name="list_trash_text">Nota de lista movida a la papelera.</string>
+    <string name="notes_discarded">Nota descartada.</string>
+    <string name="cancel_list">CANCELAR</string>
 
     <string name="notes_main_message">NotesAI te ayuda a crear notas creativas. Haz clic en el botón de más para empezar. ¡Feliz toma de notas! :)</string>
     <string name="notes_pinned_heading">Fijadas</string>

@@ -96,6 +96,25 @@
     <string name="notepad_title">标题</string>
     <string name="content_text">文本笔记...</string>
 
+    <string name="list_option_text">列表</string>
+    <string name="calendar">日历</string>
+    <string name="restore_note_trash">没有可恢复的笔记。</string>
+
+    <!-- calendar activity-->
+    <string name="calendar_notes">笔记日历</string>
+    <string name="no_notes_found">未找到以下日期的笔记：</string>
+    <string name="note_for_text">的笔记</string>
+    <string name="ai_calendar_heading">AI 日历</string>
+    <string name="notes_for_today">今天的笔记</string>
+    <string name="empty_text">当前日期没有笔记..</string>
+
+    <string name="dialog_text">您确定要将此清单移至回收站吗？</string>
+    <string name="delete_text">删除清单？</string>
+    <string name="delete_text2">删除</string>
+    <string name="list_trash_text">列表笔记已移至回收站。</string>
+    <string name="notes_discarded">笔记已丢弃。</string>
+    <string name="cancel_list">取消</string>
+
     <string name="microphone_permission">需要麦克风权限</string>
     <string name="microphone_message">NotesAI 需要麦克风权限才能启用语音转文本功能。请授予权限以使用此功能。</string>
     <string name="permission_denied">权限永久拒绝</string>

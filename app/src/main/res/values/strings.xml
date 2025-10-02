@@ -55,7 +55,7 @@
     <string name="text_instruction_view_note">1. Taking Notes:\n- Create text notes easily.\n- Organize your thoughts efficiently.</string>
     <string name="voice_notes_instruction">2. Voice Notes:\n- Record voice notes directly from the app.\n- Convenient for capturing ideas quickly.</string>
     <string name="pin_notes_instruction">3. Pin Notes:\n- Pin important notes at the top.\n- Quickly access high-priority notes.</string>
-    <string name="sort_notes_instruction">4. Sort Notes:\n- Sort notes by date, title, or priority.\n- Keep your notes organized.</string>
+    <string name="sort_notes_instruction">4. Sort Notes:\n- Sort notes by date, title, or priority.\n- Keep your notes organized. \n- Calendar view for sorting notes. </string>
     <string name="ai_completition_instruction">5. AI Completion:\n- Use AI to auto-complete your notes.\n- Generate ideas or summaries efficiently.</string>
     <string name="drawing_instruction_note">6. Drawing:\n- Sketch and draw directly within your notes.\n- Add visual elements to your notes.</string>
     <string name="string_instruction">7. Sketching:\n- Create more detailed sketches or diagrams.\n- Perfect for brainstorming or visual notes.</string>
@@ -136,9 +136,27 @@
     <string name="sliding_text_dialog">Drag slider or select a fixed color on top</string>
     <string name="close_dialog">CLOSE</string>
     <string name="successful_save_theme_color">Background color saved!</string>
+
     <string name="list_option_text">list</string>
     <string name="calendar">Calendar</string>
     <string name="restore_note_trash">No notes to restore.</string>
+
+    <!-- calendar activity-->
+    <string name="calendar_notes">Note Calendar</string>
+    <string name="no_notes_found">No notes found for</string>
+    <string name="note_for_text">Notes for</string>
+    <string name="ai_calendar_heading">AI Calendar</string>
+    <string name="notes_for_today">Notes for Today</string>
+    <string name="empty_text">Notes for Today currently for this date..</string>
+
+
+    <string name="dialog_text">Are you sure you want to move this checklist to the trash?</string>
+    <string name="delete_text">Delete Checklist?</string>
+    <string name="delete_text2">DELETE</string>
+    <string name="list_trash_text">List note moved to trash.</string>
+    <string name="notes_discarded">Note discarded.</string>
+    <string name="cancel_list">CANCEL</string>
+
      <!-- drawer menu -->
     <string name="drawer_menu_instructions">Instructions</string>
     <string name="drawer_menu_Trash">Trash</string>

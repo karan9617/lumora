@@ -370,9 +370,9 @@ public class ListItemsActivity extends AppCompatActivity {
     }
     private void showDeleteConfirmationDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("Delete Checklist?")
-                .setMessage("Are you sure you want to move this checklist to the trash?")
-                .setPositiveButton("DELETE", (dialog, which) -> {
+                .setTitle(R.string.delete_text)
+                .setMessage(R.string.dialog_text)
+                .setPositiveButton(R.string.delete_text2, (dialog, which) -> {
                     // User confirmed deletion
                     if (noteId != -1) {
                         // Assuming you have access to a background thread mechanism if needed,
@@ -383,14 +383,14 @@ public class ListItemsActivity extends AppCompatActivity {
                             noteRepository.deleteNote(noteId);
                             notesRepositoryTrash.addNote(deletedNote);
                         });
-                        Toast.makeText(this, "List note moved to trash.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getApplicationContext().getString(R.string.list_trash_text), Toast.LENGTH_SHORT).show();
                     } else {
                         // This case is handled in onOptionsItemSelected, but is here for robustness
-                        Toast.makeText(this, "Note discarded.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getApplicationContext().getString(R.string.notes_discarded), Toast.LENGTH_SHORT).show();
                     }
                     finish();
                 })
-                .setNegativeButton("CANCEL", (dialog, which) -> {
+                .setNegativeButton(getApplicationContext().getString(R.string.cancel_list), (dialog, which) -> {
                     // User cancelled, dismiss the dialog
                     dialog.dismiss();
                 })
