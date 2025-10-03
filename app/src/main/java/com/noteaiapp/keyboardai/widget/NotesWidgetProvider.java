@@ -10,6 +10,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.util.Log;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import com.noteaiapp.keyboardai.DrawingActivity;
@@ -18,6 +20,7 @@ import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 
 import java.io.File;
 
@@ -95,6 +98,7 @@ public class NotesWidgetProvider extends AppWidgetProvider {
         private final AppWidgetManager appWidgetManager;
         private final RemoteViews views;
         private final int appWidgetId;
+        public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
 
         UpdateNoteViewTask(Context context, AppWidgetManager appWidgetManager, RemoteViews views, int appWidgetId) {
             this.context = context;
@@ -118,8 +122,12 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                 Intent openIntent;
                 long noteId = selectedNote.getId();
                 views.setInt(R.id.layout_widget_id, "setBackgroundColor", selectedNote.getColor());
-
-                if (selectedNote.getImagePath() != null &&
+                String noteContent = selectedNote.getContent();
+                if (noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)) {
+                    openIntent = new Intent(context, ListItemsActivity.class);
+                    openIntent.putExtra("note_id", noteId);
+                }
+                else if (selectedNote.getImagePath() != null &&
                         selectedNote.getImagePath().length() > 0 &&
                         (context.getString(R.string.sketch_text).trim().toLowerCase())
                                 .equalsIgnoreCase(selectedNote.getTitle().toLowerCase().trim().split(";")[0])) {
@@ -140,27 +148,79 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                 views.setOnClickPendingIntent(R.id.layout_widget_id, pendingIntent);
 
                 // Show drawing if available
-                if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {
-                    File imageFile = new File(selectedNote.getImagePath());
-                    if (imageFile.exists()) {
-                        String titleFromNotes = selectedNote.getTitle().split(";")[0].trim().toLowerCase();
-                        String titleFromStrings = context.getString(R.string.sketch_text).trim().toLowerCase();
-                        if (titleFromNotes.equalsIgnoreCase(titleFromStrings)) {
-                            Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
-                            views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle().split(";")[0]);
-                            views.setImageViewBitmap(R.id.image_drawing, bitmap);
-                            views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.GONE);
-                            views.setViewVisibility(R.id.widget_single_drawing_layout, android.view.View.VISIBLE);
-                            views.setViewVisibility(R.id.widget_notes_list, android.view.View.GONE);
-                            views.setViewVisibility(R.id.widget_empty_view, android.view.View.GONE);
+                if(noteContent != null && noteContent.startsWith(UpdateNoteViewTask.LIST_NOTE_PREFIX)){
+                    String listContent = noteContent.substring(UpdateNoteViewTask.LIST_NOTE_PREFIX.length()).trim();
+                    Log.d("com.noteaiapp.keyboardai","list view here");
+                    //holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
+                    // 2. Split the list content into individual lines
+                    String[] items = listContent.split("\n");
+                    StringBuilder previewBuilder = new StringBuilder();
+                    int itemCount = 0;
+                    final int MAX_PREVIEW_ITEMS = 5; // Set the maximum number of items to show
+
+                    for (String item : items) {
+                        if (itemCount >= MAX_PREVIEW_ITEMS) {
+                            break; // Stop after collecting MAX_PREVIEW_ITEMS
+                        }
+
+                        String cleanedItem = item.trim();
+                        if (cleanedItem.isEmpty()) {
+                            continue; // Skip empty lines
+                        }
+
+                        // 3. Remove the "[x] " or "[ ] " prefix (which is 4 characters long)
+                        if (cleanedItem.length() >= 4 && (cleanedItem.startsWith("[x] ") || cleanedItem.startsWith("[ ] "))) {
+                            cleanedItem = cleanedItem.substring(4).trim();
+                        }
+
+                        if (cleanedItem.isEmpty()) {
+                            continue; // Skip items that become empty after cleaning
+                        }
+
+                        // 4. Append the cleaned item to the preview string, separating by a newline character
+                        if (previewBuilder.length() > 0) {
+                            // *** CHANGED: Use newline (\n) instead of ", " ***
+                            previewBuilder.append("\n");
+                        }
+                        previewBuilder.append(cleanedItem);
+                        itemCount++;
+                    }
+
+                    // Set the cleaned content preview
+                    views.setTextViewText(R.id.widget_note_content, previewBuilder.toString());
+                    views.setViewVisibility(R.id.widget_note_content, android.view.View.VISIBLE);
+                    views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle());
+                    views.setViewVisibility(R.id.widget_note_title, android.view.View.VISIBLE);
+                    views.setInt(R.id.layout_widget_id, "setBackgroundColor", selectedNote.getColor());
+
+                    views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.VISIBLE);
+                    views.setViewVisibility(R.id.widget_single_drawing_layout, android.view.View.GONE);
+                    views.setViewVisibility(R.id.widget_notes_list, android.view.View.GONE);
+                    views.setViewVisibility(R.id.widget_empty_view, android.view.View.GONE);
+                }
+                else {
+                    if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {
+                        File imageFile = new File(selectedNote.getImagePath());
+                        if (imageFile.exists()) {
+                            String titleFromNotes = selectedNote.getTitle().split(";")[0].trim().toLowerCase();
+                            String titleFromStrings = context.getString(R.string.sketch_text).trim().toLowerCase();
+                            if (titleFromNotes.equalsIgnoreCase(titleFromStrings)) {
+                                Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+                                views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle().split(";")[0]);
+                                views.setImageViewBitmap(R.id.image_drawing, bitmap);
+                                views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.GONE);
+                                views.setViewVisibility(R.id.widget_single_drawing_layout, android.view.View.VISIBLE);
+                                views.setViewVisibility(R.id.widget_notes_list, android.view.View.GONE);
+                                views.setViewVisibility(R.id.widget_empty_view, android.view.View.GONE);
+                            } else {
+                                updateViewsForTextNote(selectedNote);
+                            }
                         } else {
                             updateViewsForTextNote(selectedNote);
                         }
                     } else {
                         updateViewsForTextNote(selectedNote);
                     }
-                } else {
-                    updateViewsForTextNote(selectedNote);
                 }
             } else {
                 views.setTextViewText(R.id.widget_note_title, context.getString(R.string.no_text_found));

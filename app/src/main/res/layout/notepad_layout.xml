@@ -163,6 +163,7 @@
                 android:soundEffectsEnabled="true"
                 android:id="@+id/voiceicon" />
 
+
             <ProgressBar
                 android:id="@+id/listeningProgress"
 
@@ -172,7 +173,17 @@
                 android:visibility="gone"
                 android:indeterminateTint="@color/white" />
         </FrameLayout>
-
+        <ImageButton
+            android:id="@+id/cameraScanButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd="true"
+            android:paddingLeft="20dp"
+            android:layout_marginEnd="16dp"
+            android:src="@drawable/ic_save_icon"
+            android:background="@android:color/transparent"
+            android:contentDescription="Scan Text with Camera"
+            android:scaleType="fitCenter" />
         <ImageButton
             android:id="@+id/red_pen"
             android:visibility="gone"

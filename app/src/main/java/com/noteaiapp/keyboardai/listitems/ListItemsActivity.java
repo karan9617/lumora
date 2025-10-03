@@ -34,6 +34,7 @@ import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.NotesListActivity; // Import to access the LIST_NOTE_PREFIX
 import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
+import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -158,8 +159,8 @@ public class ListItemsActivity extends AppCompatActivity {
     private void loadNoteData(Intent intent) {
         noteId = intent.getLongExtra("note_id", -1);
         Note currentNode = noteRepository.getNoteById(noteId);
-        String title = intent.getStringExtra("note_title");
-        String content = intent.getStringExtra("note_content"); // This is the serialized list
+        String title = (currentNode == null)?"":currentNode.getTitle();
+        String content = (currentNode == null ) ?"":currentNode.getContent();// This is the serialized list
         noteColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
         selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
         if (noteId != -1) {
@@ -254,6 +255,7 @@ public class ListItemsActivity extends AppCompatActivity {
     private void saveNote() {
         // *** NEW STEP: Synchronize data from EditText views before serializing ***
         synchronizeRecyclerViewData();
+        NotesWidgetProvider.refreshWidget(getApplicationContext());
         // ----------------------------------------------------------------------
 
         String title = noteTitleEditText.getText().toString().trim();

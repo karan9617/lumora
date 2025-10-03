@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.noteaiapp.keyboardai.Models.Note;
+import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.FileUtils;
 
@@ -43,54 +44,98 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
-        String t = note.getTitle().split(";")[0];
-        holder.titleTextView.setText(t);
-        holder.contentTextView.setText(note.getContent());
-        holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
+        String noteContent = note.getContent();
+        if(noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)){
+            String listContent = noteContent.substring(NotesListActivity.LIST_NOTE_PREFIX.length()).trim();
+            holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
+            // 2. Split the list content into individual lines
+            String[] items = listContent.split("\n");
+            StringBuilder previewBuilder = new StringBuilder();
+            int itemCount = 0;
+            final int MAX_PREVIEW_ITEMS = 5; // Set the maximum number of items to show
 
-        holder.titleTextView.setText(t);
-        try {
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-            SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
-            Date date = inputFormat.parse(note.getDate());
-            String formattedDate = outputFormat.format(date);
-            holder.noteDate.setText(formattedDate);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            holder.noteDate.setText(note.getDate());
-        }
-
-        byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
-        if (drawingData != null && drawingData.length > 0) {
-            if(note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)){
-                holder.labeltext1.setVisibility(View.GONE);
-                holder.labeltext2.setVisibility(View.GONE);
-            }
-            else{
-                holder.labeltext1.setVisibility(View.VISIBLE);
-                holder.labeltext2.setVisibility(View.VISIBLE);
-            }
-            try {
-                Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-                if (drawingBitmap != null) {
-                    holder.noteDrawingImageView.setImageBitmap(drawingBitmap);
-                    holder.noteDrawingImageView.setVisibility(View.VISIBLE);
-                    holder.contentTextView.setVisibility(View.GONE);
-                } else {
-                    holder.noteDrawingImageView.setVisibility(View.GONE);
-                    holder.contentTextView.setVisibility(View.GONE);
+            for (String item : items) {
+                if (itemCount >= MAX_PREVIEW_ITEMS) {
+                    break; // Stop after collecting MAX_PREVIEW_ITEMS
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                holder.noteDrawingImageView.setVisibility(View.GONE);
-                holder.contentTextView.setVisibility(View.GONE);
+
+                String cleanedItem = item.trim();
+                if (cleanedItem.isEmpty()) {
+                    continue; // Skip empty lines
+                }
+
+                // 3. Remove the "[x] " or "[ ] " prefix (which is 4 characters long)
+                if (cleanedItem.length() >= 4 && (cleanedItem.startsWith("[x] ") || cleanedItem.startsWith("[ ] "))) {
+                    cleanedItem = cleanedItem.substring(4).trim();
+                }
+
+                if (cleanedItem.isEmpty()) {
+                    continue; // Skip items that become empty after cleaning
+                }
+
+                // 4. Append the cleaned item to the preview string, separating by a newline character
+                if (previewBuilder.length() > 0) {
+                    // *** CHANGED: Use newline (\n) instead of ", " ***
+                    previewBuilder.append("\n");
+                }
+                previewBuilder.append(cleanedItem);
+                itemCount++;
             }
-        } else {
-            holder.contentTextView.setText(note.getContent());
+
+            // Set the cleaned content preview
+            holder.contentTextView.setText(previewBuilder.toString());
             holder.contentTextView.setVisibility(View.VISIBLE);
             holder.noteDrawingImageView.setVisibility(View.GONE);
         }
+        else {
+            String t = note.getTitle().split(";")[0];
+            holder.titleTextView.setText(t);
+            holder.contentTextView.setText(note.getContent());
+            holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
 
+            holder.titleTextView.setText(t);
+            try {
+                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
+                Date date = inputFormat.parse(note.getDate());
+                String formattedDate = outputFormat.format(date);
+                holder.noteDate.setText(formattedDate);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                holder.noteDate.setText(note.getDate());
+            }
+
+            byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
+            if (drawingData != null && drawingData.length > 0) {
+                if (note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)) {
+                    holder.labeltext1.setVisibility(View.GONE);
+                    holder.labeltext2.setVisibility(View.GONE);
+                } else {
+                    holder.labeltext1.setVisibility(View.VISIBLE);
+                    holder.labeltext2.setVisibility(View.VISIBLE);
+                }
+                try {
+                    Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+                    if (drawingBitmap != null) {
+                        holder.noteDrawingImageView.setImageBitmap(drawingBitmap);
+                        holder.noteDrawingImageView.setVisibility(View.VISIBLE);
+                        holder.contentTextView.setVisibility(View.GONE);
+                    } else {
+                        holder.noteDrawingImageView.setVisibility(View.GONE);
+                        holder.contentTextView.setVisibility(View.GONE);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    holder.noteDrawingImageView.setVisibility(View.GONE);
+                    holder.contentTextView.setVisibility(View.GONE);
+                }
+            } else {
+
+                holder.contentTextView.setText(note.getContent());
+                holder.contentTextView.setVisibility(View.VISIBLE);
+                holder.noteDrawingImageView.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Override

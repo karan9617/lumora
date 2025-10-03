@@ -12,8 +12,10 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -38,13 +40,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import com.noteaiapp.keyboardai.Models.Note;
+import com.noteaiapp.keyboardai.camera.CameraActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.data.WordTokenizer;
@@ -53,6 +64,7 @@ import com.noteaiapp.keyboardai.ui.DrawingView;
 import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -74,7 +86,21 @@ public class Notepad extends AppCompatActivity {
 
     private static final String TAG = "NotepadActivity";
     private static final int PERMISSION_REQUEST_CODE = 1;
+    // camera
+    private static final int CAMERA_PERMISSION_CODE = 100;
+    private static final int CAMERA_REQUEST_CODE = 101;
 
+    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_CAMERA_PERMISSION = 100;
+
+    private Uri photoUri;
+    private EditText editText;
+    private Button cameraButton;
+    private String currentPhotoPath;
+
+    ImageButton cameraScanButton;
+
+    //speach
     private SpeechRecognizer speechRecognizer;
     FrameLayout imageframelayout;
     private StringBuilder resultBuilder = new StringBuilder(),titleBuilder = new StringBuilder();;
@@ -174,7 +200,9 @@ public class Notepad extends AppCompatActivity {
             }
         }
 
-
+        if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+        }
         if (noteId != -1) {
             titleText.setText(noteTitle);
             resultText.setText(noteContent);
@@ -278,7 +306,7 @@ public class Notepad extends AppCompatActivity {
                 currentHint = "";
             }
         });
-
+        cameraScanButton.setOnClickListener(v -> openCamera());
         titleText.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { isNoteModified = true; }
@@ -365,6 +393,65 @@ public class Notepad extends AppCompatActivity {
             }
             @Override public void onEvent(int eventType, Bundle params) {}
         });
+    }
+    private void openCamera() {
+        Intent i = new Intent(Notepad.this, CameraActivity.class);
+        cameraLauncher.launch(i);
+    }
+    private final ActivityResultLauncher<Intent> cameraLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    String ocrText = result.getData().getStringExtra("ocr_text");
+                    if (ocrText != null && !ocrText.isEmpty()) {
+                        resultText.setText(ocrText);
+                    } else {
+                        Toast.makeText(this, "No text detected", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+
+    private void performOcr(Bitmap bitmap) {
+        InputImage image = InputImage.fromBitmap(bitmap, 0);
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+
+        recognizer.process(image)
+                .addOnSuccessListener(result -> {
+                    // Task completed successfully
+                    String recognizedText = result.getText();
+                    if (!recognizedText.trim().isEmpty()) {
+                        // Append the recognized text to the current note content
+                        String currentText = resultText.getText().toString();
+                        if (!currentText.isEmpty() && !currentText.endsWith("\n")) {
+                            currentText += "\n\n"; // Add spacing if there's existing text
+                        }
+                        resultText.setText(currentText + recognizedText);
+                        resultText.setSelection(resultText.getText().length()); // Move cursor to end
+                        isNoteModified = true;
+                        Toast.makeText(this, "Text scanned and added!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "No text found in the image.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Task failed with an exception
+                    Log.e(TAG, "ML Kit Text Recognition failed: " + e.getMessage());
+                    Toast.makeText(this, "Text scanning failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCamera();
+            } else {
+                Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
     public void registerListeners(){
         clearImageButton.setOnClickListener(new View.OnClickListener() {
@@ -932,7 +1019,7 @@ public class Notepad extends AppCompatActivity {
         voiceicon = findViewById(R.id.voiceicon);
         listeningProgress = findViewById(R.id.listeningProgress);
         imageframelayout = findViewById(R.id.imageframelayout);
-
+        cameraScanButton = findViewById(R.id.cameraScanButton);
         clearImageButton =  findViewById(R.id.clearImageButton);
         imageCard = findViewById(R.id.imageCard);
         resultText = findViewById(R.id.resultText);

@@ -4,12 +4,13 @@
     package="com.noteaiapp.keyboardai"
     >
 
+
+
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
-
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-permission android:name="android.permission.VIBRATE" />
-
-    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:allowBackup="false"
@@ -32,6 +33,15 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
+        </provider>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths2" />
         </provider>
         <receiver
             android:name=".widget.NotesWidgetProvider"
@@ -120,6 +130,12 @@
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
         <activity
             android:name=".calendar.CalendarActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".camera.CameraActivity"
             android:exported="true"
             android:screenOrientation="portrait"
             android:label="@string/app_name"
