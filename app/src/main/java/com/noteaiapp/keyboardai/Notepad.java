@@ -50,6 +50,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
@@ -85,6 +86,7 @@ import org.json.JSONObject;
 public class Notepad extends AppCompatActivity {
 
     private static final String TAG = "NotepadActivity";
+    BottomSheetBehavior<View> bottomSheetBehavior;
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
     private static final int CAMERA_PERMISSION_CODE = 100;
@@ -151,6 +153,10 @@ public class Notepad extends AppCompatActivity {
         postponeEnterTransition();
         init();
         registerListeners();
+        FrameLayout bottomSheet = findViewById(R.id.bottom_sheet);
+        BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+        behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
 

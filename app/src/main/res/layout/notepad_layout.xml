@@ -15,7 +15,6 @@
         android:background="#E1201D25"
         app:subtitleTextColor="@android:color/white"
         android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
-
         app:menu="@menu/notepad_menu" />
 
     <EditText
@@ -34,9 +33,10 @@
         android:textStyle="bold" />
 
     <FrameLayout
+        android:id="@+id/content_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/button_bar"
+        android:layout_above="@id/coordinator_layout"
         android:layout_below="@id/noteTitleEditText">
 
         <ScrollView
@@ -75,12 +75,12 @@
                         android:textSize="18sp"
                         android:inputType="textMultiLine" />
                 </FrameLayout>
+
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:id="@+id/imageframelayout"
-                    >
+                    android:id="@+id/imageframelayout">
                     <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -89,133 +89,206 @@
                         app:cardCornerRadius="12dp"
                         android:visibility="gone"
                         app:cardUseCompatPadding="true"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        >
+                        app:cardBackgroundColor="@android:color/transparent">
                         <ImageView
                             android:id="@+id/imagesketch"
                             android:layout_width="match_parent"
                             android:layout_height="300dp"
                             android:soundEffectsEnabled="true"
+                            android:visibility="invisible" />
+                        <ImageButton
+                            android:id="@+id/clearImageButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_gravity="top|end"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/ic_close"
+                            android:soundEffectsEnabled="true"
+                            android:backgroundTint="@color/white"
                             android:visibility="invisible"
-                            />
-                    <ImageButton
-                        android:id="@+id/clearImageButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_gravity="top|end"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/ic_close"
-                        android:soundEffectsEnabled="true"
-                        android:backgroundTint="@color/white"
-                        android:visibility="invisible"
-                        android:src="@drawable/ic_close"
-                        app:tint="@color/black" />
+                            android:src="@drawable/ic_close"
+                            app:tint="@color/black" />
                     </androidx.cardview.widget.CardView>
-
                 </FrameLayout>
             </LinearLayout>
         </ScrollView>
-
     </FrameLayout>
+
     <com.noteaiapp.keyboardai.ui.DrawingView
         android:id="@+id/drawingView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_above="@id/coordinator_layout"
+        android:layout_below="@id/noteTitleEditText"
         android:background="@android:color/transparent"
         android:visibility="gone" />
 
-    <LinearLayout
-        android:id="@+id/button_bar"
-        android:layout_width="wrap_content"
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinator_layout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/rounded_background"
-        android:layout_marginLeft="10px"
-        android:layout_centerHorizontal="true"
-        android:layout_marginRight="10px"
-        android:layout_marginBottom="8px"
-        android:soundEffectsEnabled="true"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        android:layout_alignParentBottom="true">
 
-        <ImageButton
-            android:id="@+id/clearDrawingButton"
-            android:visibility="gone"
+        <LinearLayout
+            android:id="@+id/button_bar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/rounded_white_background"
-            android:src="@drawable/ic_eraser"
-            android:padding="17px"
-            android:layout_marginEnd="8dp"
-            android:text="Erase" />
+            android:layout_gravity="bottom|center_horizontal"
+            android:background="@drawable/rounded_background"
+            android:layout_marginLeft="10px"
+            android:layout_marginRight="10px"
+            android:layout_marginBottom="40dp"
+            android:soundEffectsEnabled="true"
+            android:gravity="center"
+            android:elevation="16dp"
+            android:orientation="horizontal"
+            android:padding="8dp">
 
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_voice_icon"
-                android:soundEffectsEnabled="true"
-                android:id="@+id/voiceicon" />
-
-
-            <ProgressBar
-                android:id="@+id/listeningProgress"
-
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_gravity="center"
+            <ImageButton
+                android:id="@+id/clearDrawingButton"
                 android:visibility="gone"
-                android:indeterminateTint="@color/white" />
-        </FrameLayout>
-        <ImageButton
-            android:id="@+id/cameraScanButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_alignParentEnd="true"
-            android:paddingLeft="20dp"
-            android:layout_marginEnd="16dp"
-            android:src="@drawable/ic_save_icon"
-            android:background="@android:color/transparent"
-            android:contentDescription="Scan Text with Camera"
-            android:scaleType="fitCenter" />
-        <ImageButton
-            android:id="@+id/red_pen"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/color_picker_red"
-            android:contentDescription="red_color_button_description"
-            android:src="@drawable/ic_large_pen"
-            android:soundEffectsEnabled="true"
-            android:padding="17px"
-            android:layout_marginEnd="8dp"
-            android:text="pen" />
-        <ImageButton
-            android:id="@+id/black_pen"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/color_picker_black"
-            android:contentDescription="red_color_button_description"
-            android:soundEffectsEnabled="true"
-            android:src="@drawable/ic_large_pen"
-            android:padding="17px"
-            android:layout_marginEnd="8dp"
-            android:text="pen" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_white_background"
+                android:src="@drawable/ic_eraser"
+                android:padding="17px"
+                android:layout_marginEnd="8dp"
+                android:text="Erase" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/toggleModeDrawSave"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:soundEffectsEnabled="true"
-            android:visibility="gone"
-            android:text="Save" />
-    </LinearLayout>
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_voice_icon"
+                    android:soundEffectsEnabled="true"
+                    android:id="@+id/voiceicon" />
+
+                <ProgressBar
+                    android:id="@+id/listeningProgress"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:visibility="gone"
+                    android:indeterminateTint="@color/white" />
+            </FrameLayout>
+    <!--
+            <ImageButton
+                android:id="@+id/cameraScanButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:paddingLeft="20dp"
+                android:layout_marginEnd="16dp"
+                android:src="@drawable/ic_save_icon"
+                android:background="@android:color/transparent"
+                android:contentDescription="Scan Text with Camera"
+                android:scaleType="fitCenter" />
+-->
+            <ImageButton
+                android:id="@+id/red_pen"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/color_picker_red"
+                android:contentDescription="red_color_button_description"
+                android:src="@drawable/ic_large_pen"
+                android:soundEffectsEnabled="true"
+                android:padding="17px"
+                android:layout_marginEnd="8dp"
+                android:text="pen" />
+
+            <ImageButton
+                android:id="@+id/black_pen"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/color_picker_black"
+                android:contentDescription="red_color_button_description"
+                android:soundEffectsEnabled="true"
+                android:src="@drawable/ic_large_pen"
+                android:padding="17px"
+                android:layout_marginEnd="8dp"
+                android:text="pen" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/toggleModeDrawSave"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:soundEffectsEnabled="true"
+                android:visibility="gone"
+                android:text="Save" />
+        </LinearLayout>
+
+        <!-- Bottom Sheet -->
+        <FrameLayout
+            android:id="@+id/bottom_sheet"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/rounded_background"
+            android:elevation="8dp"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+            app:behavior_hideable="false"
+            app:behavior_peekHeight="30dp"
+            app:behavior_fitToContents="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center_horizontal">
+
+                <!-- Drag handle -->
+                <View
+                    android:layout_width="40dp"
+                    android:layout_height="4dp"
+                    android:background="@android:color/white"
+                    android:layout_marginBottom="12dp"
+                    android:layout_gravity="center" />
+
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/openCameraButton"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/rounded_white_background"
+                        android:src="@drawable/ic_save_icon"
+                        android:contentDescription="Camera" />
+
+                    <ImageButton
+                        android:id="@+id/openDrawingButton"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/rounded_white_background"
+                        android:src="@drawable/ic_large_pen"
+                        android:contentDescription="Drawing" />
+
+                    <ImageButton
+                        android:id="@+id/cameraScanButton"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:layout_margin="8dp"
+                        android:background="@drawable/rounded_white_background"
+                        android:src="@drawable/baseline_camera_alt_24"
+                        android:contentDescription="Change Color" />
+                </LinearLayout>
+            </LinearLayout>
+        </FrameLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </RelativeLayout>
