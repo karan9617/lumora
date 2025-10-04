@@ -166,7 +166,7 @@
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
                 android:layout_toEndOf="@id/side_sheet_handle"
-                android:background="@drawable/rounded_background"
+                android:background="@drawable/rounded_background_light"
                 android:orientation="vertical"
                 android:padding="8dp"
                 android:gravity="center_horizontal">
@@ -177,7 +177,7 @@
                     android:layout_height="60dp"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="12dp"
-                    android:background="@drawable/rounded_white_background"
+                    android:background="@drawable/rounded_background"
                     android:src="@drawable/baseline_format_italic_24"
                     android:contentDescription="italics" />
 
@@ -186,7 +186,7 @@
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:layout_marginBottom="12dp"
-                    android:background="@drawable/rounded_white_background"
+                    android:background="@drawable/rounded_background"
                     android:src="@drawable/bold_icon"
                     android:contentDescription="Bold" />
 
@@ -195,7 +195,7 @@
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:layout_marginBottom="12dp"
-                    android:background="@drawable/rounded_white_background"
+                    android:background="@drawable/rounded_background"
                     android:src="@drawable/baseline_camera_alt_24"
                     android:contentDescription="Camera" />
             </LinearLayout>
