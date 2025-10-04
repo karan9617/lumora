@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
@@ -21,10 +22,13 @@ import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.text.Editable;
+import android.text.Spannable;
 import android.text.TextWatcher;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -34,6 +38,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -48,6 +53,7 @@ import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -116,7 +122,7 @@ public class Notepad extends AppCompatActivity {
     private NoteRepository noteRepository;
     private DrawingView drawingView;
     private Button toggleModeDrawSave;
-    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen;
+    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton;
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
@@ -153,12 +159,99 @@ public class Notepad extends AppCompatActivity {
         postponeEnterTransition();
         init();
         registerListeners();
-        FrameLayout bottomSheet = findViewById(R.id.bottom_sheet);
-        BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
-        behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+       // FrameLayout bottomSheet = findViewById(R.id.frameLayout);
+        //BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+        //behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
+        // In your onCreate method:
+        RelativeLayout sideSheet = findViewById(R.id.side_sheet);
+        LinearLayout sideSheetHandle = findViewById(R.id.side_sheet_handle);
+
+// Initially hide the side sheet (off-screen to the right)
+        sideSheet.setVisibility(View.VISIBLE);
+        sideSheet.setTranslationX(130); // Only the handle is visible (80dp is the sheet width)
+
+// Track if it's open or closed
+        final boolean[] isOpen = {false};
+
+// Add touch listener for dragging
+        sideSheetHandle.setOnTouchListener(new View.OnTouchListener() {
+            private float startX;
+            private float startTranslationX;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = event.getRawX();
+                        startTranslationX = sideSheet.getTranslationX();
+                        return true;
+
+                    case MotionEvent.ACTION_MOVE:
+                        float deltaX = event.getRawX() - startX;
+                        float newTranslationX = startTranslationX + deltaX;
+
+                        // Constrain movement between -100 (fully open, extends left) and 180 (closed)
+                        if (newTranslationX >= -100 && newTranslationX <= 180) {
+                            sideSheet.setTranslationX(newTranslationX);
+                        }
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        // Snap to open or closed based on position
+                        float currentTranslation = sideSheet.getTranslationX();
+                        if (currentTranslation < 40) {
+                            // Snap to open (negative value makes it extend more to the left)
+                            sideSheet.animate()
+                                    .translationX(-100)
+                                    .setDuration(200)
+                                    .start();
+                            isOpen[0] = true;
+                        } else {
+                            // Snap to closed
+                            sideSheet.animate()
+                                    .translationX(180)
+                                    .setDuration(200)
+                                    .start();
+                            isOpen[0] = false;
+                        }
+                        return true;
+                }
+                return false;
+            }
+        });
+
+// Also add click listener for quick toggle
+        sideSheetHandle.setOnClickListener(v -> {
+            if (isOpen[0]) {
+                // Close
+                sideSheet.animate()
+                        .translationX(80)
+                        .setDuration(300)
+                        .start();
+                isOpen[0] = false;
+            } else {
+                // Open
+                sideSheet.animate()
+                        .translationX(0)
+                        .setDuration(300)
+                        .start();
+                isOpen[0] = true;
+            }
+        });
+
+        ///
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
+        italicsButton = findViewById(R.id.italicsButton);
+        boldButton = findViewById(R.id.boldButton);
+        if (boldButton != null) {
+            // Set the listener to apply the BOLD style to selected text
+            boldButton.setOnClickListener(v -> applyStyleToSelection(Typeface.BOLD));
+        }
+        if(italicsButton != null){
+            italicsButton.setOnClickListener((v -> applyStyleToSelection(Typeface.ITALIC)));
+        }
 
         noteId = getIntent().getLongExtra("note_id", -1);
         Note currentNode = noteRepository.getNoteById(noteId);
@@ -211,7 +304,8 @@ public class Notepad extends AppCompatActivity {
         }
         if (noteId != -1) {
             titleText.setText(noteTitle);
-            resultText.setText(noteContent);
+            loadNote(noteContent);
+            //resultText.setText(noteContent);
             resultBuilder.append(noteContent);
             titleBuilder.append(noteTitle);
         } else {
@@ -400,6 +494,58 @@ public class Notepad extends AppCompatActivity {
             @Override public void onEvent(int eventType, Bundle params) {}
         });
     }
+    public String saveNoteContent() {
+        // HtmlCompat.toHtml converts Spannable text (StyleSpans) into standard HTML tags (<b>, <i>).
+        return HtmlCompat.toHtml(resultText.getText(), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
+    }
+    public void loadNote(String savedHtml) {
+        if (savedHtml == null || savedHtml.isEmpty()) {
+            resultText.setText("");
+            return;
+        }
+        // HtmlCompat.fromHtml converts HTML tags (<b>, <i>, etc.) back into Spannable text.
+        resultText.setText(HtmlCompat.fromHtml(savedHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
+    }
+
+    private void applyStyleToSelection(int style) {
+        Editable editable = resultText.getText();
+        if (editable == null) return;
+
+        int start = resultText.getSelectionStart();
+        int end = resultText.getSelectionEnd();
+
+        if (start == end) {
+            Toast.makeText(this, "Please select text to apply formatting.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (start > end) {
+            int temp = start;
+            start = end;
+            end = temp;
+        }
+
+        StyleSpan[] existingSpans = editable.getSpans(start, end, StyleSpan.class);
+        boolean isStylePresent = false;
+
+        // Check if the style is already present in the selection range and remove it (toggle)
+        for (StyleSpan span : existingSpans) {
+            if (span.getStyle() == style) {
+                editable.removeSpan(span);
+                isStylePresent = true;
+                break;
+            }
+        }
+
+        // If the style was not present, apply the new style span
+        if (!isStylePresent) {
+            StyleSpan styleSpan = new StyleSpan(style);
+            // SPAN_EXCLUSIVE_EXCLUSIVE is generally safe for formatting text
+            editable.setSpan(styleSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        isNoteModified = true;
+    }
     private void openCamera() {
         Intent i = new Intent(Notepad.this, CameraActivity.class);
         cameraLauncher.launch(i);
@@ -416,34 +562,6 @@ public class Notepad extends AppCompatActivity {
                 }
             });
 
-    private void performOcr(Bitmap bitmap) {
-        InputImage image = InputImage.fromBitmap(bitmap, 0);
-        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
-
-        recognizer.process(image)
-                .addOnSuccessListener(result -> {
-                    // Task completed successfully
-                    String recognizedText = result.getText();
-                    if (!recognizedText.trim().isEmpty()) {
-                        // Append the recognized text to the current note content
-                        String currentText = resultText.getText().toString();
-                        if (!currentText.isEmpty() && !currentText.endsWith("\n")) {
-                            currentText += "\n\n"; // Add spacing if there's existing text
-                        }
-                        resultText.setText(currentText + recognizedText);
-                        resultText.setSelection(resultText.getText().length()); // Move cursor to end
-                        isNoteModified = true;
-                        Toast.makeText(this, "Text scanned and added!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(this, "No text found in the image.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    // Task failed with an exception
-                    Log.e(TAG, "ML Kit Text Recognition failed: " + e.getMessage());
-                    Toast.makeText(this, "Text scanning failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -735,8 +853,8 @@ public class Notepad extends AppCompatActivity {
 
     public void saveNote() {
         NotesWidgetProvider.refreshWidget(getApplicationContext());
-
-        String content = resultText.getText().toString().trim();
+        String content = saveNoteContent();
+        //String content = resultText.getText().toString().trim();
         WordTokenizer tokenizer = new WordTokenizer(content);
         List<String> labels = tokenizer.getTokenizedWords();
         if(labels == null) {
