@@ -30,6 +30,7 @@ import android.text.Spannable;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.style.AlignmentSpan;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.Log;
@@ -48,6 +49,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ProgressBar;
+import androidx.appcompat.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,10 +66,6 @@ import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.text.TextRecognition;
-import com.google.mlkit.vision.text.TextRecognizer;
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.camera.CameraActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
@@ -129,12 +127,16 @@ public class Notepad extends AppCompatActivity {
     private String imagePath;
     private boolean isDrawingMode = false;
     private RelativeLayout mainContentLayout;
+    // Search state management (now only used to find indices for highlighting)
+    private List<Integer> searchIndices = new ArrayList<>();
+    private final int HIGHLIGHT_COLOR = Color.YELLOW;
     private int selectedColor = Color.WHITE;
     private boolean isNoteModified = false,isDirty = false;
     MaterialToolbar toolbar;
     private Handler handler;
     private Runnable suggestionRunnable;
     private final long DELAY = 500;
+    SearchView search_view;
     private ImageView imagesketch,voiceicon;
     private String currentHint = "";
     // NEW: Variable to hold the note's pinned status
@@ -885,17 +887,105 @@ public class Notepad extends AppCompatActivity {
         //     centerAlignButton.setColorFilter(activeColor); // Uncomment if you add a center button
         // }
     }
+    private void clearHighlights() {
+        Spannable spannable = resultText.getText();
+        BackgroundColorSpan[] spans = spannable.getSpans(0, spannable.length(), BackgroundColorSpan.class);
+        for (BackgroundColorSpan span : spans) {
+            spannable.removeSpan(span);
+        }
+        searchIndices.clear();
+    }
+
+    /**
+     * Finds all occurrences of the query in resultText and highlights them.
+     * This version uses the `searchIndices` to store locations but only for highlighting purposes.
+     * @param query The text to search for.
+     */
+    private void performSearch(String query) {
+        clearHighlights();
+
+        if (query == null || query.isEmpty()) {
+            return;
+        }
+
+        String fullText = resultText.getText().toString().toLowerCase(Locale.getDefault());
+        String lowerQuery = query.toLowerCase(Locale.getDefault());
+        int index = fullText.indexOf(lowerQuery);
+
+        while (index >= 0) {
+            searchIndices.add(index);
+            index = fullText.indexOf(lowerQuery, index + lowerQuery.length());
+        }
+
+        if (!searchIndices.isEmpty()) {
+            highlightResults(query.length());
+        }
+    }
+
+    /**
+     * Applies the yellow highlight span to all found search results.
+     */
+    private void highlightResults(int queryLength) {
+        Spannable spannable = resultText.getText();
+
+        // Re-apply the highlight for all matching indices
+        for (int index : searchIndices) {
+            spannable.setSpan(
+                    new BackgroundColorSpan(HIGHLIGHT_COLOR),
+                    index,
+                    index + queryLength,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+        }
+
+        // When results are found, scroll the view to the first match
+        if (!searchIndices.isEmpty()) {
+            int firstMatchIndex = searchIndices.get(0);
+            resultText.post(() -> {
+                Layout layout = resultText.getLayout();
+                if (layout != null) {
+                    int line = layout.getLineForOffset(firstMatchIndex);
+                    // Scroll to the line where the first match appears
+                    resultText.scrollTo(0, layout.getLineTop(line));
+                }
+            });
+        }
+    }
     public void registerListeners(){
+
+        if (search_view != null) {
+            search_view.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    performSearch(query);
+                    search_view.clearFocus(); // Hide keyboard on submit
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    // Search as the user types
+                    performSearch(newText);
+                    return true;
+                }
+            });
+
+            // Clear highlights when the user closes the search view
+            search_view.setOnCloseListener(() -> {
+                clearHighlights();
+                return false; // Return false to allow the default close action to happen
+            });
+        }
         if (leftAlignButton != null) {
             // ALIGN_NORMAL is typically Left alignment
             leftAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_NORMAL));
         }
         if (rightAlignButton != null) {
-            rightAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_CENTER));
+            rightAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_OPPOSITE));
         }
         if (centerAlignButton != null) {
             // ALIGN_OPPOSITE is typically Right alignment
-            centerAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_OPPOSITE));
+            centerAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_CENTER));
         }
         if (pdfUploadButton != null) {
             pdfUploadButton.setOnClickListener(v -> openPdfFilePicker());
@@ -1178,6 +1268,7 @@ public class Notepad extends AppCompatActivity {
     }
 
     public void saveNote() {
+        clearHighlights();
         NotesWidgetProvider.refreshWidget(getApplicationContext());
         String content = saveNoteContent();
         //String content = resultText.getText().toString().trim();
@@ -1476,6 +1567,7 @@ public class Notepad extends AppCompatActivity {
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
         leftAlignButton = findViewById(R.id.leftAlignButton);
+        search_view = findViewById(R.id.search_view);
         rightAlignButton =findViewById(R.id.rightAlignButton);
         centerAlignButton = findViewById(R.id.centerAlignButton);
         linkCreationButton = findViewById(R.id.linkCreationButton);
