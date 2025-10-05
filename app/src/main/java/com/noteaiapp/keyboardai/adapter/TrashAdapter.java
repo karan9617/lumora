@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.noteaiapp.keyboardai.Models.Note;
@@ -48,14 +49,20 @@ public class TrashAdapter extends RecyclerView.Adapter<TrashAdapter.TrashNoteVie
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.trash_item, parent, false);
         return new TrashNoteViewHolder(view);
     }
-
+    public String loadNote(String savedHtml) {
+        if (savedHtml == null || savedHtml.isEmpty()) {
+            return "";
+        }
+        // HtmlCompat.fromHtml converts HTML tags (<b>, <i>, etc.) back into Spannable text.
+        return String.valueOf(HtmlCompat.fromHtml(savedHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
+    }
     @Override
     public void onBindViewHolder(@NonNull TrashNoteViewHolder holder, int position) {
         Note note = trashList.get(position);
         holder.titleTextView.setText(note.getTitle().split(";")[0]);
 
 
-        String noteContent = note.getContent();
+        String noteContent = loadNote(note.getContent());
 
         holder.contentTextView.setText(note.getContent());
         if (noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)) {

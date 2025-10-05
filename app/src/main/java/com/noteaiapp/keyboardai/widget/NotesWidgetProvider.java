@@ -14,6 +14,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import androidx.core.text.HtmlCompat;
+
 import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
@@ -229,10 +231,17 @@ public class NotesWidgetProvider extends AppWidgetProvider {
             }
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
+        public String loadNote(String savedHtml) {
+            if (savedHtml == null || savedHtml.isEmpty()) {
+                return "";
+            }
+            // HtmlCompat.fromHtml converts HTML tags (<b>, <i>, etc.) back into Spannable text.
+            return String.valueOf(HtmlCompat.fromHtml(savedHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
+        }
 
         private void updateViewsForTextNote(Note note) {
-            views.setTextViewText(R.id.widget_note_title, note.getTitle().split(";")[0]);
-            views.setTextViewText(R.id.widget_note_content, note.getContent());
+            views.setTextViewText(R.id.widget_note_title, loadNote(note.getTitle().split(";")[0]));
+            views.setTextViewText(R.id.widget_note_content, loadNote(note.getContent()));
             views.setInt(R.id.layout_widget_id, "setBackgroundColor", note.getColor());
             views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_single_drawing_layout, android.view.View.GONE);

@@ -8,6 +8,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+
+import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -52,6 +54,7 @@ public class AppWidgetConfigureActivity extends Activity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         loadNotes();
     }
+
 
     private void loadNotes() {
 

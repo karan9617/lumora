@@ -23,6 +23,7 @@ import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.google.android.material.card.MaterialCardView;
 
 import androidx.annotation.NonNull;
+import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
@@ -179,7 +180,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
             } else {
                 // Standard note, use content as is
-                holder.noteContent.setText(noteContent);
+                holder.noteContent.setText(loadNote(noteContent));
             }
 
             holder.noteContent.setVisibility(View.VISIBLE);
@@ -240,6 +241,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             }
             return false;
         });
+    }
+    public String loadNote(String savedHtml) {
+        if (savedHtml == null || savedHtml.isEmpty()) {
+            return "";
+        }
+        // HtmlCompat.fromHtml converts HTML tags (<b>, <i>, etc.) back into Spannable text.
+        return String.valueOf(HtmlCompat.fromHtml(savedHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
     }
     private Animation getShakeAnimation() {
         if (shakeAnimation == null) {

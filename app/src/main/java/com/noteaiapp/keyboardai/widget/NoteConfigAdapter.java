@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.NotesListActivity;
@@ -40,11 +41,17 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.widget_list_item, parent, false);
         return new NoteViewHolder(view);
     }
-
+    public String loadNote(String savedHtml) {
+        if (savedHtml == null || savedHtml.isEmpty()) {
+            return "";
+        }
+        // HtmlCompat.fromHtml converts HTML tags (<b>, <i>, etc.) back into Spannable text.
+        return String.valueOf(HtmlCompat.fromHtml(savedHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
+    }
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
-        String noteContent = note.getContent();
+        String noteContent = loadNote(note.getContent());
         if(noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)){
             String listContent = noteContent.substring(NotesListActivity.LIST_NOTE_PREFIX.length()).trim();
             holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
@@ -89,8 +96,8 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
         }
         else {
             String t = note.getTitle().split(";")[0];
-            holder.titleTextView.setText(t);
-            holder.contentTextView.setText(note.getContent());
+            holder.titleTextView.setText(loadNote(t));
+            holder.contentTextView.setText(loadNote(note.getContent()));
             holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
 
             holder.titleTextView.setText(t);
@@ -131,7 +138,7 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
                 }
             } else {
 
-                holder.contentTextView.setText(note.getContent());
+                holder.contentTextView.setText(loadNote(note.getContent()));
                 holder.contentTextView.setVisibility(View.VISIBLE);
                 holder.noteDrawingImageView.setVisibility(View.GONE);
             }

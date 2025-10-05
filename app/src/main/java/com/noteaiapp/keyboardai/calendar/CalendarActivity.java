@@ -27,6 +27,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
+import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -108,7 +109,13 @@ public class CalendarActivity extends AppCompatActivity {
             View view = LayoutInflater.from(context).inflate(R.layout.calendar_notes_items, parent, false);
             return new NotesCalendarAdapter.ViewHolder(view);
         }
-
+        public String loadNote(String savedHtml) {
+            if (savedHtml == null || savedHtml.isEmpty()) {
+                return "";
+            }
+            // HtmlCompat.fromHtml converts HTML tags (<b>, <i>, etc.) back into Spannable text.
+            return String.valueOf(HtmlCompat.fromHtml(savedHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
+        }
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             Note note = notes.get(position); // Use 'notes'
@@ -211,7 +218,7 @@ public class CalendarActivity extends AppCompatActivity {
 
                 } else {
                     // Standard note, use content as is
-                    holder.noteContent.setText(noteContent);
+                    holder.noteContent.setText(loadNote(noteContent));
                 }
                 holder.noteContent.setVisibility(View.VISIBLE);
                 holder.noteDrawing.setVisibility(View.GONE);
@@ -510,6 +517,7 @@ public class CalendarActivity extends AppCompatActivity {
         updateSelectedDateLabel(targetTimeMillis);
         filterAndDisplayNotes(targetTimeMillis);
     }
+
     public void listener(){
         option_list_layout.setOnClickListener(new View.OnClickListener() {
             @Override
