@@ -25,9 +25,11 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
+import android.text.style.AlignmentSpan;
 import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.Log;
@@ -120,7 +122,7 @@ public class Notepad extends AppCompatActivity {
     private NoteRepository noteRepository;
     private DrawingView drawingView;
     private Button toggleModeDrawSave;
-    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton,pdfUploadButton;
+    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton,pdfUploadButton,leftAlignButton,centerAlignButton,rightAlignButton;
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
@@ -732,7 +734,78 @@ public class Notepad extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         pdfFileLauncher.launch(intent);
     }
+    private void applyAlignmentToSelection(Layout.Alignment alignment) {
+        final Editable editable = resultText.getText();
+        if (editable == null) return;
+
+        int start = resultText.getSelectionStart();
+        int end = resultText.getSelectionEnd();
+
+        // 1. Determine the scope (paragraph boundaries)
+        // Alignment spans must cover entire paragraphs.
+
+        // Find the start of the paragraph containing 'start'
+        int spanStart = start;
+        while (spanStart > 0 && editable.charAt(spanStart - 1) != '\n') {
+            spanStart--;
+        }
+
+        // Find the end of the paragraph containing 'end'
+        int spanEnd = end;
+        while (spanEnd < editable.length() && editable.charAt(spanEnd) != '\n') {
+            spanEnd++;
+        }
+
+        // Ensure spanEnd is exclusive (up to the next newline or end of text)
+        spanEnd = Math.min(spanEnd, editable.length());
+
+
+        // 2. Remove all existing AlignmentSpans in the determined range
+        AlignmentSpan[] existingSpans = editable.getSpans(spanStart, spanEnd, AlignmentSpan.class);
+        boolean isSameAlignment = false;
+
+        for (AlignmentSpan span : existingSpans) {
+            if (((AlignmentSpan.Standard)span).getAlignment() == alignment) {
+                isSameAlignment = true;
+            }
+            editable.removeSpan(span);
+        }
+
+        // 3. Apply the new AlignmentSpan unless the same one was already found (toggle behavior)
+        if (!isSameAlignment || alignment != Layout.Alignment.ALIGN_NORMAL) {
+            // If the selected alignment is not ALIGN_NORMAL (Left) OR
+            // if we are toggling off the existing alignment (which would set it to default left)
+
+            // Only apply a new span if it's not ALIGN_NORMAL,
+            // as removing all spans defaults the text back to ALIGN_NORMAL (Left).
+            if (alignment != Layout.Alignment.ALIGN_NORMAL) {
+                AlignmentSpan newSpan = new AlignmentSpan.Standard(alignment);
+                // SPAN_PARAGRAPH is required for AlignmentSpan
+                editable.setSpan(newSpan, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE | Spannable.SPAN_PARAGRAPH);
+                Toast.makeText(this, "Text aligned to " + alignment.name(), Toast.LENGTH_SHORT).show();
+            } else {
+                // If the user clicked Left, we already removed all spans, so it's left-aligned now.
+                Toast.makeText(this, "Text aligned to Left", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            // If they clicked the same alignment that was already there and it was ALIGN_NORMAL, do nothing or just toast
+            Toast.makeText(this, "Text alignment reset to default Left", Toast.LENGTH_SHORT).show();
+        }
+
+        isNoteModified = true;
+    }
     public void registerListeners(){
+        if (leftAlignButton != null) {
+            // ALIGN_NORMAL is typically Left alignment
+            leftAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_NORMAL));
+        }
+        if (rightAlignButton != null) {
+            rightAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_CENTER));
+        }
+        if (centerAlignButton != null) {
+            // ALIGN_OPPOSITE is typically Right alignment
+            centerAlignButton.setOnClickListener(v -> applyAlignmentToSelection(Layout.Alignment.ALIGN_OPPOSITE));
+        }
         if (pdfUploadButton != null) {
             pdfUploadButton.setOnClickListener(v -> openPdfFilePicker());
         }
@@ -1303,6 +1376,9 @@ public class Notepad extends AppCompatActivity {
     public void init(){
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
+        leftAlignButton = findViewById(R.id.leftAlignButton);
+        rightAlignButton =findViewById(R.id.rightAlignButton);
+        centerAlignButton = findViewById(R.id.centerAlignButton);
         linkCreationButton = findViewById(R.id.linkCreationButton);
         pdfUploadButton = findViewById(R.id.pdfUploadButton);
         listeningProgress = findViewById(R.id.listeningProgress);

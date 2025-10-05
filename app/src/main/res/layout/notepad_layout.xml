@@ -172,25 +172,6 @@
                 android:gravity="center_horizontal">
 
                 <ImageButton
-                    android:id="@+id/italicsButton"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="12dp"
-                    android:background="@drawable/rounded_background"
-                    android:src="@drawable/baseline_format_italic_24"
-                    android:contentDescription="italics" />
-
-                <ImageButton
-                    android:id="@+id/boldButton"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:layout_marginBottom="12dp"
-                    android:background="@drawable/rounded_background"
-                    android:src="@drawable/bold_icon"
-                    android:contentDescription="Bold" />
-
-                <ImageButton
                     android:id="@+id/cameraScanButton"
                     android:layout_width="60dp"
                     android:layout_height="60dp"
@@ -214,6 +195,15 @@
                     android:background="@drawable/rounded_background"
                     android:src="@drawable/pdf_icon"
                     android:contentDescription="Camera" />
+                <ImageButton
+                    android:id="@+id/centerAlignButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/rounded_background"
+                    android:src="@drawable/center_align_icon"
+                    android:contentDescription="Camera" />
+
             </LinearLayout>
         </RelativeLayout>
     </FrameLayout>
@@ -224,7 +214,6 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:background="@drawable/rounded_background"
         android:layout_marginLeft="10px"
         android:layout_marginRight="10px"
         android:layout_marginBottom="8dp"
@@ -246,17 +235,59 @@
             android:text="Erase" />
 
         <FrameLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center">
-
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_toEndOf="@id/side_sheet_handle"
+                android:background="@drawable/rounded_background_light"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_horizontal|center_vertical">
+                <ImageButton
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/left_align_button"
+                    android:soundEffectsEnabled="true"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="11dp"
+                    android:background="@drawable/rounded_background_light"
+                    android:id="@+id/leftAlignButton" />
+                <ImageButton
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/bold_icon"
+                    android:soundEffectsEnabled="true"
+                    android:layout_marginEnd="11dp"
+                    android:background="@drawable/rounded_background_light"
+                    android:id="@+id/boldButton" />
             <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
                 android:src="@drawable/ic_voice_icon"
+                android:padding="10dp"
                 android:soundEffectsEnabled="true"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/round_voice_bg"
                 android:id="@+id/voiceicon" />
-
+                <ImageButton
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/baseline_format_italic_24"
+                    android:soundEffectsEnabled="true"
+                    android:layout_marginEnd="11dp"
+                    android:background="@drawable/rounded_background_light"
+                    android:id="@+id/italicsButton" />
+                <ImageButton
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/right_align_icon"
+                    android:soundEffectsEnabled="true"
+                    android:layout_marginEnd="11dp"
+                android:background="@drawable/rounded_background_light"
+                    android:id="@+id/rightAlignButton" />
             <ProgressBar
                 android:id="@+id/listeningProgress"
                 android:layout_width="40dp"
@@ -264,6 +295,7 @@
                 android:layout_gravity="center"
                 android:visibility="gone"
                 android:indeterminateTint="@color/white" />
+            </LinearLayout>
         </FrameLayout>
 
         <ImageButton
