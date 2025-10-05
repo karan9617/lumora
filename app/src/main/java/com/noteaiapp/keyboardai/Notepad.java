@@ -587,6 +587,36 @@ public class Notepad extends AppCompatActivity {
                 })
                 .show();
     }
+    private int getParagraphBoundary(Editable editable, int index, boolean findStart) {
+        if (editable == null) return index;
+
+        // Ensure index is within bounds
+        if (index < 0) return 0;
+        if (index > editable.length()) return editable.length();
+
+        if (findStart) {
+            // Find the preceding newline or start of text
+            while (index > 0) {
+                if (editable.charAt(index - 1) == '\n') {
+                    break;
+                }
+                index--;
+            }
+            return index;
+        } else {
+            // Find the following newline or end of text
+            while (index < editable.length()) {
+                if (editable.charAt(index) == '\n') {
+                    // Include the newline in the span for the paragraph boundary requirement
+                    index++;
+                    break;
+                }
+                index++;
+            }
+            return index;
+        }
+    }
+
     private void insertPdfLink(Uri uri, String fileName) {
         // The display text will be the file name, possibly prefixed with a PDF icon/label
         String linkText = "[PDF] " + fileName;
@@ -626,8 +656,59 @@ public class Notepad extends AppCompatActivity {
             resultText.setText("");
             return;
         }
-        // HtmlCompat.fromHtml converts HTML tags (<b>, <i>, etc.) back into Spannable text.
-        resultText.setText(HtmlCompat.fromHtml(savedHtml, HtmlCompat.FROM_HTML_MODE_COMPACT));
+
+        // 1. Load the HTML content using the best possible flag
+        resultText.setText(HtmlCompat.fromHtml(
+                savedHtml,
+                HtmlCompat.FROM_HTML_SEPARATOR_LINE_BREAK_PARAGRAPH
+        ));
+
+        // 2. --- Manual Alignment Re-Application Fix ---
+
+        // Determine the intended alignment from the saved HTML string
+        Layout.Alignment targetAlignment = Layout.Alignment.ALIGN_NORMAL; // Default is left/start
+
+        // Check for right alignment
+        if (savedHtml.contains("align=\"right\"")) {
+            targetAlignment = Layout.Alignment.ALIGN_OPPOSITE;
+        }
+        // Check for center alignment
+        else if (savedHtml.contains("align=\"center\"")) {
+            targetAlignment = Layout.Alignment.ALIGN_CENTER;
+        }
+
+        // Apply the determined alignment to the entire text
+        Spannable spannable = (Spannable) resultText.getText();
+
+        // Check if an AlignmentSpan already exists and matches the target.
+        // If the AlignmentSpan is ALIGN_NORMAL, it's often missing.
+        AlignmentSpan[] currentSpans = spannable.getSpans(0, spannable.length(), AlignmentSpan.class);
+
+        boolean alignmentFound = false;
+        if (currentSpans.length > 0) {
+            for (AlignmentSpan span : currentSpans) {
+                if (span.getAlignment() == targetAlignment) {
+                    alignmentFound = true;
+                    break;
+                }
+            }
+        }
+
+        // If the correct alignment wasn't found or applied by HtmlCompat, apply it manually.
+        if (!alignmentFound && targetAlignment != Layout.Alignment.ALIGN_NORMAL) {
+            // Remove any existing alignment spans first to prevent conflicts (though they shouldn't exist if alignmentFound is false)
+            for (AlignmentSpan span : currentSpans) {
+                spannable.removeSpan(span);
+            }
+
+            // Apply the new alignment span to the entire text
+            spannable.setSpan(
+                    new AlignmentSpan.Standard(targetAlignment),
+                    0, // Start of the text
+                    spannable.length(), // End of the text
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+        }
     }
 
     private void applyStyleToSelection(int style) {
@@ -735,64 +816,74 @@ public class Notepad extends AppCompatActivity {
         pdfFileLauncher.launch(intent);
     }
     private void applyAlignmentToSelection(Layout.Alignment alignment) {
-        final Editable editable = resultText.getText();
-        if (editable == null) return;
+        Editable editable = resultText.getText();
+        if (editable == null) {
+            return;
+        }
 
         int start = resultText.getSelectionStart();
         int end = resultText.getSelectionEnd();
 
-        // 1. Determine the scope (paragraph boundaries)
-        // Alignment spans must cover entire paragraphs.
+        // 1. Find the true paragraph boundaries based on the selection
+        int paragraphStart = getParagraphBoundary(editable, start, true);
+        int paragraphEnd = getParagraphBoundary(editable, end, false);
 
-        // Find the start of the paragraph containing 'start'
-        int spanStart = start;
-        while (spanStart > 0 && editable.charAt(spanStart - 1) != '\n') {
-            spanStart--;
-        }
-
-        // Find the end of the paragraph containing 'end'
-        int spanEnd = end;
-        while (spanEnd < editable.length() && editable.charAt(spanEnd) != '\n') {
-            spanEnd++;
-        }
-
-        // Ensure spanEnd is exclusive (up to the next newline or end of text)
-        spanEnd = Math.min(spanEnd, editable.length());
-
-
-        // 2. Remove all existing AlignmentSpans in the determined range
-        AlignmentSpan[] existingSpans = editable.getSpans(spanStart, spanEnd, AlignmentSpan.class);
-        boolean isSameAlignment = false;
-
-        for (AlignmentSpan span : existingSpans) {
-            if (((AlignmentSpan.Standard)span).getAlignment() == alignment) {
-                isSameAlignment = true;
+        // Safety check: if start and end are the same (no selection, just cursor)
+        if (paragraphStart == paragraphEnd) {
+            // If the text is empty, ensure start is 0
+            if (editable.length() == 0) {
+                paragraphStart = 0;
+                paragraphEnd = 0;
             }
+            // If text is not empty, use the cursor position to find the current paragraph
+            else {
+                int cursor = resultText.getSelectionStart();
+                paragraphStart = getParagraphBoundary(editable, cursor, true);
+                paragraphEnd = getParagraphBoundary(editable, cursor, false);
+            }
+        }
+
+        // 2. Remove any existing AlignmentSpans in the corrected range
+        AlignmentSpan[] spans = editable.getSpans(paragraphStart, paragraphEnd, AlignmentSpan.class);
+        for (AlignmentSpan span : spans) {
             editable.removeSpan(span);
         }
 
-        // 3. Apply the new AlignmentSpan unless the same one was already found (toggle behavior)
-        if (!isSameAlignment || alignment != Layout.Alignment.ALIGN_NORMAL) {
-            // If the selected alignment is not ALIGN_NORMAL (Left) OR
-            // if we are toggling off the existing alignment (which would set it to default left)
-
-            // Only apply a new span if it's not ALIGN_NORMAL,
-            // as removing all spans defaults the text back to ALIGN_NORMAL (Left).
-            if (alignment != Layout.Alignment.ALIGN_NORMAL) {
-                AlignmentSpan newSpan = new AlignmentSpan.Standard(alignment);
-                // SPAN_PARAGRAPH is required for AlignmentSpan
-                editable.setSpan(newSpan, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE | Spannable.SPAN_PARAGRAPH);
-                Toast.makeText(this, "Text aligned to " + alignment.name(), Toast.LENGTH_SHORT).show();
-            } else {
-                // If the user clicked Left, we already removed all spans, so it's left-aligned now.
-                Toast.makeText(this, "Text aligned to Left", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            // If they clicked the same alignment that was already there and it was ALIGN_NORMAL, do nothing or just toast
-            Toast.makeText(this, "Text alignment reset to default Left", Toast.LENGTH_SHORT).show();
+        // 3. Apply the new AlignmentSpan
+        // Only apply the span if the range is valid (i.e., not an empty document)
+        if (paragraphStart != paragraphEnd || editable.length() > 0) {
+            editable.setSpan(new AlignmentSpan.Standard(alignment),
+                    paragraphStart,
+                    paragraphEnd,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
-        isNoteModified = true;
+        // Optional: Ensure the UI state of the buttons reflects the change
+        updateAlignmentButtonState(alignment);
+    }
+    // You'll likely need this helper to update your button visual state (color/tint)
+    private void updateAlignmentButtonState(Layout.Alignment currentAlignment) {
+        // Define default/active colors (use your resource colors)
+        int inactiveColor = Color.parseColor("#707070"); // Example inactive color
+        int activeColor = Color.parseColor("#007AFF"); // Example active color (blue)
+
+        // Null checks for buttons, ensure they are initialized in init()
+        if (leftAlignButton == null || rightAlignButton == null) return;
+
+        // Reset all buttons to inactive
+        leftAlignButton.setColorFilter(inactiveColor);
+        rightAlignButton.setColorFilter(inactiveColor);
+        // centerAlignButton.setColorFilter(inactiveColor); // Uncomment if you add a center button
+
+        // Set the active button
+        if (currentAlignment == Layout.Alignment.ALIGN_NORMAL) {
+            leftAlignButton.setColorFilter(activeColor);
+        } else if (currentAlignment == Layout.Alignment.ALIGN_OPPOSITE) {
+            rightAlignButton.setColorFilter(activeColor);
+        }
+        // else if (currentAlignment == Layout.Alignment.ALIGN_CENTER) {
+        //     centerAlignButton.setColorFilter(activeColor); // Uncomment if you add a center button
+        // }
     }
     public void registerListeners(){
         if (leftAlignButton != null) {
@@ -1175,6 +1266,14 @@ public class Notepad extends AppCompatActivity {
 
         isNoteModified = false;
         supportFinishAfterTransition();
+    }
+    private String getHtmlContent() {
+        if (resultText.getText() != null) {
+            // TO_HTML_PARAGRAPH_LINES_CONSECUTIVE is essential for preserving
+            // paragraph-level spans like alignment.
+            return HtmlCompat.toHtml(resultText.getText(), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
+        }
+        return "";
     }
     /*
 
