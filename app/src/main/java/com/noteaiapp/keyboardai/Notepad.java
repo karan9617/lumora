@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -17,6 +18,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -118,7 +120,7 @@ public class Notepad extends AppCompatActivity {
     private NoteRepository noteRepository;
     private DrawingView drawingView;
     private Button toggleModeDrawSave;
-    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton;
+    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton,pdfUploadButton;
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
@@ -145,6 +147,7 @@ public class Notepad extends AppCompatActivity {
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
+    private ActivityResultLauncher<Intent> pdfFileLauncher;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -155,6 +158,28 @@ public class Notepad extends AppCompatActivity {
         postponeEnterTransition();
         init();
         registerListeners();
+        pdfFileLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            // Grant persistence read permission access to this URI
+                            final int takeFlags = result.getData().getFlags()
+                                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            try {
+                                getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                            } catch (SecurityException e) {
+                                Log.e(TAG, "Failed to take persistable URI permission. Content access may be temporary.", e);
+                            }
+
+                            String fileName = getFileName(uri);
+                            insertPdfLink(uri, fileName);
+                        }
+                    }
+                }
+        );
        // FrameLayout bottomSheet = findViewById(R.id.frameLayout);
         //BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
         //behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
@@ -560,6 +585,36 @@ public class Notepad extends AppCompatActivity {
                 })
                 .show();
     }
+    private void insertPdfLink(Uri uri, String fileName) {
+        // The display text will be the file name, possibly prefixed with a PDF icon/label
+        String linkText = "[PDF] " + fileName;
+
+        // 1. Append a new line and the link text to the editable
+        Editable editable = resultText.getText();
+        int start = editable.length();
+
+        // Ensure the link is on a new line
+        if (start > 0 && editable.charAt(start - 1) != '\n') {
+            editable.append("\n");
+            start++;
+        }
+
+        editable.append(linkText);
+        int end = editable.length();
+
+        // 2. Create and apply the URLSpan using the file's Content URI as the URL
+        // The LinkMovementMethod will handle the click and use ACTION_VIEW with this URI.
+        URLSpan fileLinkSpan = new URLSpan(uri.toString());
+        editable.setSpan(fileLinkSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // 3. Optional: Add a style span to make it bold or colored for better visibility
+        StyleSpan boldSpan = new StyleSpan(Typeface.BOLD);
+        editable.setSpan(boldSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        isNoteModified = true;
+        Toast.makeText(this, "PDF link inserted: " + fileName, Toast.LENGTH_LONG).show();
+    }
+
     public String saveNoteContent() {
         // HtmlCompat.toHtml converts Spannable text (StyleSpans) into standard HTML tags (<b>, <i>).
         return HtmlCompat.toHtml(resultText.getText(), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
@@ -612,6 +667,31 @@ public class Notepad extends AppCompatActivity {
 
         isNoteModified = true;
     }
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (nameIndex != -1) {
+                        result = cursor.getString(nameIndex);
+                    }
+                }
+            } finally {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.getLastPathSegment();
+            if (result == null || result.isEmpty()) {
+                result = "Untitled PDF.pdf";
+            }
+        }
+        return result;
+    }
     private void openCamera() {
         Intent i = new Intent(Notepad.this, CameraActivity.class);
         cameraLauncher.launch(i);
@@ -643,7 +723,19 @@ public class Notepad extends AppCompatActivity {
             }
         }
     }
+    private void openPdfFilePicker() {
+        // Use Intent.ACTION_OPEN_DOCUMENT to allow persistent access to the URI
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("application/pdf");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        // Request persistence read permission
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        pdfFileLauncher.launch(intent);
+    }
     public void registerListeners(){
+        if (pdfUploadButton != null) {
+            pdfUploadButton.setOnClickListener(v -> openPdfFilePicker());
+        }
         if (linkCreationButton != null) {
             // Set the listener to apply the LINK to selected text
             linkCreationButton.setOnClickListener(v -> applyLinkToSelection());
@@ -1212,6 +1304,7 @@ public class Notepad extends AppCompatActivity {
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
         linkCreationButton = findViewById(R.id.linkCreationButton);
+        pdfUploadButton = findViewById(R.id.pdfUploadButton);
         listeningProgress = findViewById(R.id.listeningProgress);
         imageframelayout = findViewById(R.id.imageframelayout);
         cameraScanButton = findViewById(R.id.cameraScanButton);

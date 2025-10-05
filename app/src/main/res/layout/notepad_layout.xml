@@ -206,6 +206,14 @@
                     android:background="@drawable/rounded_background"
                     android:src="@drawable/ic_link"
                     android:contentDescription="Camera" />
+                <ImageButton
+                    android:id="@+id/pdfUploadButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/rounded_background"
+                    android:src="@drawable/pdf_icon"
+                    android:contentDescription="Camera" />
             </LinearLayout>
         </RelativeLayout>
     </FrameLayout>
