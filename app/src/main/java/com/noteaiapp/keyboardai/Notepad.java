@@ -22,9 +22,12 @@ import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.Spannable;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
 import android.text.style.StyleSpan;
+import android.text.style.URLSpan;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuItem;
@@ -96,15 +99,8 @@ public class Notepad extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
     private static final int CAMERA_PERMISSION_CODE = 100;
-    private static final int CAMERA_REQUEST_CODE = 101;
 
-    private static final int REQUEST_IMAGE_CAPTURE = 1;
     private static final int REQUEST_CAMERA_PERMISSION = 100;
-
-    private Uri photoUri;
-    private EditText editText;
-    private Button cameraButton;
-    private String currentPhotoPath;
 
     ImageButton cameraScanButton;
 
@@ -122,7 +118,7 @@ public class Notepad extends AppCompatActivity {
     private NoteRepository noteRepository;
     private DrawingView drawingView;
     private Button toggleModeDrawSave;
-    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton;
+    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton;
     private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
@@ -494,6 +490,76 @@ public class Notepad extends AppCompatActivity {
             @Override public void onEvent(int eventType, Bundle params) {}
         });
     }
+    /**
+     * NEW: Prompts the user for a URL and applies a URLSpan to the selected text.
+     * This handles adding, updating, and removing links.
+     */
+    private void applyLinkToSelection() {
+        final Editable editable = resultText.getText();
+        if (editable == null) return;
+
+        final int start = resultText.getSelectionStart();
+        final int end = resultText.getSelectionEnd();
+
+        if (start == end) {
+            Toast.makeText(this, "Please select text to create a link.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final int spanStart = Math.min(start, end);
+        final int spanEnd = Math.max(start, end);
+
+        // Create an EditText for the URL input
+        final EditText urlInput = new EditText(this);
+        urlInput.setHint("https://www.example.com");
+        urlInput.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
+
+        // Check for existing link to allow editing/removal
+        URLSpan[] existingSpans = editable.getSpans(spanStart, spanEnd, URLSpan.class);
+
+        if (existingSpans.length > 0) {
+            // If there's an existing span, use its URL as initial text
+            urlInput.setText(existingSpans[0].getURL());
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Enter Link URL")
+                .setView(urlInput)
+                .setPositiveButton(existingSpans.length > 0 ? "Update" : "Add", (dialog, which) -> {
+                    String url = urlInput.getText().toString().trim();
+
+                    // 1. Remove all existing URL spans in the selection first
+                    for (URLSpan span : existingSpans) {
+                        editable.removeSpan(span);
+                    }
+
+                    if (!url.isEmpty()) {
+                        // Ensure the URL has a scheme (like http:// or https://)
+                        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                            url = "https://" + url;
+                        }
+
+                        // 2. Apply the new URL span
+                        URLSpan urlSpan = new URLSpan(url);
+                        editable.setSpan(urlSpan, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        isNoteModified = true;
+                        Toast.makeText(this, "Link applied!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // If input is cleared, it acts as a removal
+                        isNoteModified = true;
+                        Toast.makeText(this, "Link removed.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
+                .setNeutralButton(existingSpans.length > 0 ? "Remove Link" : null, (dialog, which) -> {
+                    for (URLSpan span : existingSpans) {
+                        editable.removeSpan(span);
+                    }
+                    isNoteModified = true;
+                    Toast.makeText(this, "Link removed.", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
     public String saveNoteContent() {
         // HtmlCompat.toHtml converts Spannable text (StyleSpans) into standard HTML tags (<b>, <i>).
         return HtmlCompat.toHtml(resultText.getText(), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
@@ -578,6 +644,10 @@ public class Notepad extends AppCompatActivity {
         }
     }
     public void registerListeners(){
+        if (linkCreationButton != null) {
+            // Set the listener to apply the LINK to selected text
+            linkCreationButton.setOnClickListener(v -> applyLinkToSelection());
+        }
         clearImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1141,6 +1211,7 @@ public class Notepad extends AppCompatActivity {
     public void init(){
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
+        linkCreationButton = findViewById(R.id.linkCreationButton);
         listeningProgress = findViewById(R.id.listeningProgress);
         imageframelayout = findViewById(R.id.imageframelayout);
         cameraScanButton = findViewById(R.id.cameraScanButton);
@@ -1155,6 +1226,7 @@ public class Notepad extends AppCompatActivity {
         toggleModeDrawSave.setVisibility(View.GONE);
         imagesketch = findViewById(R.id.imagesketch);
         black_pen = findViewById(R.id.black_pen);
+        resultText.setMovementMethod(LinkMovementMethod.getInstance());
     }
     @Override
     protected void onDestroy() {

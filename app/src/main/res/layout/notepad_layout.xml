@@ -198,6 +198,14 @@
                     android:background="@drawable/rounded_background"
                     android:src="@drawable/baseline_camera_alt_24"
                     android:contentDescription="Camera" />
+                <ImageButton
+                    android:id="@+id/linkCreationButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/rounded_background"
+                    android:src="@drawable/ic_link"
+                    android:contentDescription="Camera" />
             </LinearLayout>
         </RelativeLayout>
     </FrameLayout>
