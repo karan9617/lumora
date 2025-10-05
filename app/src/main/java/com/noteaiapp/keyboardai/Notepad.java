@@ -1127,6 +1127,10 @@ public class Notepad extends AppCompatActivity {
         isDrawingMode = !isDrawingMode;
         if (isDrawingMode) {
             titleText.setVisibility(View.GONE);
+            boldButton.setVisibility(View.GONE);
+            italicsButton.setVisibility(View.GONE);
+            leftAlignButton.setVisibility(View.GONE);
+            rightAlignButton.setVisibility(View.GONE);
             isDirty = true;
             red_pen.setVisibility(View.VISIBLE);
             black_pen.setVisibility(View.VISIBLE);
@@ -1143,6 +1147,10 @@ public class Notepad extends AppCompatActivity {
 
         } else {
             titleText.setVisibility(View.VISIBLE);
+            boldButton.setVisibility(View.VISIBLE);
+            leftAlignButton.setVisibility(View.VISIBLE);
+            rightAlignButton.setVisibility(View.VISIBLE);
+            italicsButton.setVisibility(View.VISIBLE);
             isDirty = false;
             voiceicon.setVisibility(View.VISIBLE);
             red_pen.setVisibility(View.GONE);

@@ -12,7 +12,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#E1201D25"
+        android:background="#E1000000"
         app:subtitleTextColor="@android:color/white"
         android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
         app:menu="@menu/notepad_menu" >
@@ -150,7 +150,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="end|center_vertical"
             android:elevation="16dp"
-            android:layout_marginEnd="-30dp"
+            android:layout_marginEnd="-20dp"
             android:visibility="gone"
             android:translationX="0dp">
 
@@ -161,7 +161,8 @@
                 android:layout_height="100dp"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:translationY="-130dp"
+                android:layout_alignParentTop="true"
+
                 android:background="@drawable/rounded_background"
                 android:gravity="center"
 
@@ -182,6 +183,7 @@
                 android:layout_toEndOf="@id/side_sheet_handle"
                 android:background="@drawable/rounded_background_light"
                 android:orientation="vertical"
+                android:id="@+id/slidersheets"
                 android:padding="8dp"
                 android:gravity="center_horizontal">
 
@@ -237,16 +239,6 @@
         android:orientation="horizontal"
         android:padding="8dp">
 
-        <ImageButton
-            android:id="@+id/clearDrawingButton"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/rounded_white_background"
-            android:src="@drawable/ic_eraser"
-            android:padding="17px"
-            android:layout_marginEnd="8dp"
-            android:text="Erase" />
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -256,7 +248,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_toEndOf="@id/side_sheet_handle"
-                android:background="@drawable/rounded_background_light"
+                android:background="@drawable/rounded_darkblack_background"
                 android:orientation="horizontal"
                 android:padding="8dp"
                 android:gravity="center_horizontal|center_vertical">
@@ -302,6 +294,54 @@
                     android:layout_marginEnd="11dp"
                 android:background="@drawable/rounded_background_light"
                     android:id="@+id/rightAlignButton" />
+
+                <!-- sketching tools-->
+
+                <ImageButton
+                    android:id="@+id/red_pen"
+                    android:visibility="gone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/color_picker_red"
+                    android:contentDescription="red_color_button_description"
+                    android:src="@drawable/ic_large_pen"
+                    android:soundEffectsEnabled="true"
+                    android:padding="17px"
+                    android:layout_marginEnd="8dp"
+                    android:text="pen" />
+
+                <ImageButton
+                    android:id="@+id/black_pen"
+                    android:visibility="gone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/color_picker_black"
+                    android:contentDescription="red_color_button_description"
+                    android:soundEffectsEnabled="true"
+                    android:src="@drawable/ic_large_pen"
+                    android:padding="17px"
+                    android:layout_marginEnd="8dp"
+                    android:text="pen" />
+
+
+                <ImageButton
+                    android:id="@+id/clearDrawingButton"
+                    android:visibility="gone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_white_background"
+                    android:src="@drawable/ic_eraser"
+                    android:padding="17px"
+                    android:layout_marginEnd="8dp"
+                    android:text="Erase" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/toggleModeDrawSave"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:soundEffectsEnabled="true"
+                    android:visibility="gone"
+                    android:text="Save" />
             <ProgressBar
                 android:id="@+id/listeningProgress"
                 android:layout_width="40dp"
@@ -312,40 +352,9 @@
             </LinearLayout>
         </FrameLayout>
 
-        <ImageButton
-            android:id="@+id/red_pen"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/color_picker_red"
-            android:contentDescription="red_color_button_description"
-            android:src="@drawable/ic_large_pen"
-            android:soundEffectsEnabled="true"
-            android:padding="17px"
-            android:layout_marginEnd="8dp"
-            android:text="pen" />
 
-        <ImageButton
-            android:id="@+id/black_pen"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/color_picker_black"
-            android:contentDescription="red_color_button_description"
-            android:soundEffectsEnabled="true"
-            android:src="@drawable/ic_large_pen"
-            android:padding="17px"
-            android:layout_marginEnd="8dp"
-            android:text="pen" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/toggleModeDrawSave"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:soundEffectsEnabled="true"
-            android:visibility="gone"
-            android:text="Save" />
+
     </LinearLayout>
 
 </RelativeLayout>
