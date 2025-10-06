@@ -215,7 +215,21 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                                 views.setViewVisibility(R.id.widget_notes_list, android.view.View.GONE);
                                 views.setViewVisibility(R.id.widget_empty_view, android.view.View.GONE);
                             } else {
-                                updateViewsForTextNote(selectedNote);
+                                if(imageFile.exists()){
+                                    Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+                                    views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle().split(";")[0]);
+                                    views.setViewVisibility(R.id.image_drawing_with_content, View.VISIBLE);
+                                    views.setTextViewText(R.id.widget_note_content, loadNote(selectedNote.getContent()));
+                                    views.setImageViewBitmap(R.id.image_drawing_with_content, bitmap);
+                                    views.setInt(R.id.layout_widget_id, "setBackgroundColor", selectedNote.getColor());
+                                    views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.VISIBLE);
+                                    views.setViewVisibility(R.id.widget_single_drawing_layout, android.view.View.GONE);
+                                    views.setViewVisibility(R.id.widget_notes_list, android.view.View.GONE);
+                                    views.setViewVisibility(R.id.widget_empty_view, android.view.View.GONE);
+                                }
+                                else {
+                                    updateViewsForTextNote(selectedNote);
+                                }
                             }
                         } else {
                             updateViewsForTextNote(selectedNote);

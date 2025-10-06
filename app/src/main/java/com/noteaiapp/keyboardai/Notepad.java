@@ -73,6 +73,7 @@ import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.data.WordTokenizer;
 import com.noteaiapp.keyboardai.processor.WordProcessor;
 import com.noteaiapp.keyboardai.ui.DrawingView;
+import com.noteaiapp.keyboardai.ui.LinkPreviewHelper;
 import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 
@@ -97,7 +98,7 @@ import org.json.JSONObject;
 public class Notepad extends AppCompatActivity {
 
     private static final String TAG = "NotepadActivity";
-    BottomSheetBehavior<View> bottomSheetBehavior;
+
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
     private static final int CAMERA_PERMISSION_CODE = 100;
@@ -129,6 +130,7 @@ public class Notepad extends AppCompatActivity {
     private RelativeLayout mainContentLayout;
     // Search state management (now only used to find indices for highlighting)
     private List<Integer> searchIndices = new ArrayList<>();
+    LinearLayout linear_layout_main;
     private final int HIGHLIGHT_COLOR = Color.YELLOW;
     private int selectedColor = Color.WHITE;
     private boolean isNoteModified = false,isDirty = false;
@@ -137,7 +139,7 @@ public class Notepad extends AppCompatActivity {
     private Runnable suggestionRunnable;
     private final long DELAY = 500;
     SearchView search_view;
-    private ImageView imagesketch,voiceicon;
+    private ImageView imagesketch,voiceicon,linkImage;
     private String currentHint = "";
     // NEW: Variable to hold the note's pinned status
     private boolean isPinned = false;
@@ -485,9 +487,6 @@ public class Notepad extends AppCompatActivity {
                             return;
                         }
                     }
-
-
-
                     //resultBuilder.append(spokenText).append(" ");
                     //resultText.append(spokenText);
                     isNoteModified = true;
@@ -502,39 +501,25 @@ public class Notepad extends AppCompatActivity {
                 if (titleText.hasFocus()) {
                     titleText.setText(titleBuilder.toString() + partial.get(0));
                 } else {
-                    resultText.setText(resultBuilder.toString() + partial.get(0));
+
+                    loadNote(resultBuilder.toString() + partial.get(0));
+                    //resultText.setText(resultBuilder.toString() + partial.get(0));
+
                 }
-                /*
-                String joinedText = "";
-
-                if (partial != null) {
-
-                    joinedText = String.join(" ", partial);
-                }
-
-                if (partial != null && partial.size() > 0) {
-                    resultText.setText(resultBuilder.toString() + joinedText);
-                }*/
             }
             @Override public void onEvent(int eventType, Bundle params) {}
         });
     }
-    /**
-     * NEW: Prompts the user for a URL and applies a URLSpan to the selected text.
-     * This handles adding, updating, and removing links.
-     */
+
     private void applyLinkToSelection() {
         final Editable editable = resultText.getText();
         if (editable == null) return;
-
         final int start = resultText.getSelectionStart();
         final int end = resultText.getSelectionEnd();
-
         if (start == end) {
             Toast.makeText(this, "Please select text to create a link.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         final int spanStart = Math.min(start, end);
         final int spanEnd = Math.max(start, end);
 
@@ -550,7 +535,6 @@ public class Notepad extends AppCompatActivity {
             // If there's an existing span, use its URL as initial text
             urlInput.setText(existingSpans[0].getURL());
         }
-
         new AlertDialog.Builder(this)
                 .setTitle("Enter Link URL")
                 .setView(urlInput)
@@ -1073,11 +1057,13 @@ public class Notepad extends AppCompatActivity {
                     if (!isListening) {
                         isListening = true;
                         hintTextView.setVisibility(View.VISIBLE);
+                        voiceicon.setBackground(ContextCompat.getDrawable(getApplicationContext(),R.drawable.rounded_purple_background));
                         speechRecognizer.startListening(recognizerIntent);
                         Toast.makeText(getApplicationContext(), R.string.listening_text, Toast.LENGTH_SHORT).show();
                     } else {
                         isListening = false;
                         hintTextView.setVisibility(View.INVISIBLE);
+                        voiceicon.setBackground(ContextCompat.getDrawable(getApplicationContext(),R.drawable.round_voice_bg));
                         speechRecognizer.stopListening();
                         listeningProgress.setVisibility(ProgressBar.GONE);
                     }
@@ -1285,8 +1271,10 @@ public class Notepad extends AppCompatActivity {
         if(labels == null) {
             Log.d(TAG, "LABELS is actually NULL!");
         } else if(labels.size() == 0) {
+            labels.add("quick-note");labels.add("brief");
             Log.d(TAG, "LABELS is empty (size=0) with content: '" + content + "'");
         } else if(labels.size() == 1) {
+            labels.add("note");
             Log.d(TAG, "LABELS has 1 item: " + labels.get(0) + " with content: '" + content + "'");
         } else {
             Log.d(TAG, "LABELS: " + labels.get(0) + " : " + labels.get(1) + " (total=" + labels.size() + ")");
@@ -1574,6 +1562,7 @@ public class Notepad extends AppCompatActivity {
     public void init(){
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
+        linkImage = findViewById(R.id.linkImage);
         leftAlignButton = findViewById(R.id.leftAlignButton);
         search_view = findViewById(R.id.search_view);
         rightAlignButton =findViewById(R.id.rightAlignButton);
@@ -1592,8 +1581,11 @@ public class Notepad extends AppCompatActivity {
         toggleModeDrawSave =  findViewById(R.id.toggleModeDrawSave);
         red_pen = findViewById(R.id.red_pen);
         toggleModeDrawSave.setVisibility(View.GONE);
+        linear_layout_main = findViewById(R.id.linear_layout_main);
         imagesketch = findViewById(R.id.imagesketch);
         black_pen = findViewById(R.id.black_pen);
+        //linkPreviewHelper = new LinkPreviewHelper(this, resultText, linear_layout_main,linkImage);
+        //linkPreviewHelper.setupLinkPreviewWatcher();
         resultText.setMovementMethod(LinkMovementMethod.getInstance());
     }
     @Override
