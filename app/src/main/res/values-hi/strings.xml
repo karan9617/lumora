@@ -114,7 +114,7 @@
     <string name="silver_text">चाँदी</string>
     <string name="blue_text">हल्का नीला</string>
 
-    <string name="notes_main_message">NotesAI आपको रचनात्मक नोट्स बनाने में मदद करता है। शुरू करने के लिए प्लस बटन पर क्लिक करें। नोट्स बनाने का आनंद लें! :)</string>
+    <string name="notes_main_message">NotesAI आपकी रचनात्मक सोच को नोट्स में बदलने में मदद करता है। प्लस बटन दबाकर अपना पहला नोट शुरू करें — खुश होकर लिखें! :)</string>
     <string name="notes_pinned_heading">पिन किए गए</string>
     <string name="all_notes_heading">सभी नोट्स</string>
     <string name="option_text_layout">टेक्स्ट</string>

@@ -133,7 +133,7 @@
     <string name="silver_text">银色</string>
     <string name="blue_text">浅蓝色</string>
 
-    <string name="notes_main_message">NotesAI 可帮助您创建创意笔记。点击加号按钮即可开始。记笔记愉快！ :)</string>
+    <string name="notes_main_message">NotesAI 帮助您以创意的方式捕捉想法。点击加号按钮开始您的第一条笔记吧——写作愉快！:)</string>
     <string name="notes_pinned_heading">已置顶</string>
     <string name="all_notes_heading">所有笔记</string>
     <string name="option_text_layout">文本</string>

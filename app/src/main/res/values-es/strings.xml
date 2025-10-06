@@ -132,7 +132,7 @@
     <string name="notes_discarded">Nota descartada.</string>
     <string name="cancel_list">CANCELAR</string>
 
-    <string name="notes_main_message">NotesAI te ayuda a crear notas creativas. Haz clic en el botón de más para empezar. ¡Feliz toma de notas! :)</string>
+    <string name="notes_main_message">NotesAI te ayuda a capturar tus ideas de forma creativa. Toca el botón de más para comenzar tu primera nota — ¡feliz escritura! :)</string>
     <string name="notes_pinned_heading">Fijadas</string>
     <string name="all_notes_heading">Todas las Notas</string>
     <string name="option_text_layout">Texto</string>

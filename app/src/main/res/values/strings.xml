@@ -125,7 +125,7 @@
     <string name="blue_text">Light Blue</string>
 
     <!-- notes list activity -->
-    <string name="notes_main_message">NotesAI helps you create creative notes. Click on the plus button to get started. Happy noting :)</string>
+    <string name="notes_main_message">NotesAI helps you capture your ideas creatively. Tap the plus button to start your first note — happy writing! :)</string>
     <string name="notes_pinned_heading">Pinned</string>
     <string name="all_notes_heading">All Notes</string>
     <string name="option_text_layout">Text</string>

@@ -132,7 +132,7 @@
     <string name="silver_text">Silber</string>
     <string name="blue_text">Hellblau</string>
 
-    <string name="notes_main_message">NotesAI hilft Ihnen, kreative Notizen zu erstellen. Klicken Sie auf das Plus-Symbol, um zu beginnen. Viel Spaß beim Notieren! :)</string>
+    <string name="notes_main_message">NotesAI hilft dir, deine Ideen kreativ festzuhalten. Tippe auf die Plus-Schaltfläche, um deine erste Notiz zu starten — viel Spaß beim Schreiben! :)</string>
     <string name="notes_pinned_heading">Angeheftet</string>
     <string name="all_notes_heading">Alle Notizen</string>
     <string name="option_text_layout">Text</string>

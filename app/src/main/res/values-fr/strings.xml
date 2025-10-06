@@ -133,7 +133,7 @@
     <string name="silver_text">Argent</string>
     <string name="blue_text">Bleu Clair</string>
 
-    <string name="notes_main_message">NotesAI vous aide à créer des notes créatives. Cliquez sur le bouton plus pour commencer. Bonne prise de notes ! :)</string>
+    <string name="notes_main_message">NotesAI vous aide à capturer vos idées de manière créative. Appuyez sur le bouton plus pour commencer votre première note — bonne écriture ! :)</string>
     <string name="notes_pinned_heading">Épinglées</string>
     <string name="all_notes_heading">Toutes les Notes</string>
     <string name="option_text_layout">Texte</string>
