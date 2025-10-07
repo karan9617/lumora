@@ -21,7 +21,7 @@ public class NotesDbHelper extends SQLiteOpenHelper {
     public static final String COLUMN_FONT_FAMILY = "font_family";
     public static final String COLUMN_FONT_SIZE = "font_size";
     public static final String COLUMN_FONT_COLOR = "font_color";
-
+    public static final String COLUMN_FOLDER_NAME = "folder_name";
     // Labels
     public static final String TABLE_LABELS = "labels";
     public static final String COLUMN_LABEL_ID = "id";
@@ -38,6 +38,7 @@ public class NotesDbHelper extends SQLiteOpenHelper {
             + COLUMN_TITLE + " TEXT,"
             + COLUMN_CONTENT + " TEXT,"
             + COLUMN_DATE + " TEXT,"
+            + COLUMN_FOLDER_NAME + " TEXT,"
             + COLUMN_COLOR + " INTEGER,"
             + COLUMN_IMAGE_PATH + " TEXT," // Use TEXT for file path
             + COLUMN_ORDER + " INTEGER DEFAULT 0,"
@@ -86,7 +87,7 @@ public class NotesDbHelper extends SQLiteOpenHelper {
             // Add the new image_path column and drop the old drawing_data column
             db.execSQL("ALTER TABLE " + TABLE_NOTES + " ADD COLUMN " + COLUMN_IMAGE_PATH + " TEXT;");
             db.execSQL("CREATE TABLE temp_notes AS SELECT " +
-                    COLUMN_ID + ", " + COLUMN_TITLE + ", " + COLUMN_CONTENT + ", " +
+                    COLUMN_ID + ", " + COLUMN_TITLE + ", " + COLUMN_CONTENT + ", " + COLUMN_FOLDER_NAME +", " +
                     COLUMN_DATE + ", " + COLUMN_COLOR + ", " + COLUMN_IMAGE_PATH + ", " +
                     COLUMN_ORDER + ", " + COLUMN_PINNED + ", " + COLUMN_FONT_FAMILY + ", " +
                     COLUMN_FONT_SIZE + ", " + COLUMN_FONT_COLOR +

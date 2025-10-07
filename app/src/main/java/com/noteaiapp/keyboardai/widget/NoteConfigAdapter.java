@@ -2,6 +2,7 @@ package com.noteaiapp.keyboardai.widget;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +26,7 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
 
     private List<Note> notes;
     private OnNoteClickListener listener;
+    public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
 
     public interface OnNoteClickListener {
         void onNoteClick(Note note);
@@ -52,43 +54,22 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
         String noteContent = loadNote(note.getContent());
-        if(noteContent != null && noteContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)){
-            String listContent = noteContent.substring(NotesListActivity.LIST_NOTE_PREFIX.length()).trim();
+        if(noteContent != null && noteContent.startsWith(NoteConfigAdapter.LIST_NOTE_PREFIX)){
+            String listContent = noteContent.substring(NoteConfigAdapter.LIST_NOTE_PREFIX.length()).trim();
             holder.itemView.setOnClickListener(v -> listener.onNoteClick(note));
+            Log.d("com.noteaiapp.keyboardai","listContent:"+listContent);
+
             // 2. Split the list content into individual lines
-            String[] items = listContent.split("\n");
+            String[] items = listContent.split("\\[ \\]");
+            Log.d("com.noteaiapp.keyboardai","item count:"+items.length);
+
             StringBuilder previewBuilder = new StringBuilder();
-            int itemCount = 0;
-            final int MAX_PREVIEW_ITEMS = 5; // Set the maximum number of items to show
-
-            for (String item : items) {
-                if (itemCount >= MAX_PREVIEW_ITEMS) {
-                    break; // Stop after collecting MAX_PREVIEW_ITEMS
+            for (String part : items) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) {
+                    previewBuilder.append("- ").append(trimmed).append("\n");
                 }
-
-                String cleanedItem = item.trim();
-                if (cleanedItem.isEmpty()) {
-                    continue; // Skip empty lines
-                }
-
-                // 3. Remove the "[x] " or "[ ] " prefix (which is 4 characters long)
-                if (cleanedItem.length() >= 4 && (cleanedItem.startsWith("[x] ") || cleanedItem.startsWith("[ ] "))) {
-                    cleanedItem = cleanedItem.substring(4).trim();
-                }
-
-                if (cleanedItem.isEmpty()) {
-                    continue; // Skip items that become empty after cleaning
-                }
-
-                // 4. Append the cleaned item to the preview string, separating by a newline character
-                if (previewBuilder.length() > 0) {
-                    // *** CHANGED: Use newline (\n) instead of ", " ***
-                    previewBuilder.append("\n");
-                }
-                previewBuilder.append(cleanedItem);
-                itemCount++;
             }
-
             // Set the cleaned content preview
             holder.contentTextView.setText(previewBuilder.toString());
             holder.contentTextView.setVisibility(View.VISIBLE);

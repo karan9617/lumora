@@ -2,6 +2,7 @@ package com.noteaiapp.keyboardai;
 
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -18,6 +19,7 @@ import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -58,6 +60,7 @@ import java.io.FileOutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -89,6 +92,7 @@ public class NotesListActivity extends AppCompatActivity {
     NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
     ImageButton shuffle,themeColor;
+    NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,7 +113,7 @@ public class NotesListActivity extends AppCompatActivity {
         noteRepository = new NoteRepository(this);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView = findViewById(R.id.nav_view);
         option_list_layout = findViewById(R.id.option_list_layout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -135,11 +139,20 @@ public class NotesListActivity extends AppCompatActivity {
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
-
+        loadFoldersToDrawer();
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            if (id == R.id.nav_instructions) {
+            if (id == R.id.new_folder) {
+                // 1. Handle the "New folder" action
+                showNewFolderDialog();
+            }
+            else if (item.getGroupId() == R.id.folders_group) {
+                // Logic to filter your notes list by this folder's name/ID
+                String folderName = item.getTitle().toString();
+                Toast.makeText(this, "Loading notes from folder: " + folderName, Toast.LENGTH_SHORT).show();
+                // TODO: Implement actual data filtering logic here
+            }else if (id == R.id.nav_instructions) {
                 startActivity(new Intent(this, InstructionsActivity.class));
             } else if (id == R.id.nav_trash) {
                 startActivity(new Intent(this, TrashActivity.class));
@@ -474,6 +487,64 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
 
+    }
+    private void loadFoldersToDrawer() {
+        Menu menu = navigationView.getMenu();
+        // Get the menu item that contains the dynamic folders submenu (from drawer_menu.xml)
+        MenuItem foldersGroup = menu.findItem(R.id.folders_group);
+        if (foldersGroup == null) return;
+
+        Menu dynamicMenu = foldersGroup.getSubMenu();
+        if (dynamicMenu == null) return;
+
+        // Clear old folder list before adding new ones
+        dynamicMenu.clear();
+
+        // --- STEP 1: Fetch Folder Data ---
+        // In a real app, you would fetch this list from Firestore/SQLite
+        List<String> existingFolders = getExistingFoldersFromDatabase();
+
+        // --- STEP 2: Add Items to the Drawer ---
+        for (int i = 0; i < existingFolders.size(); i++) {
+            String folderName = existingFolders.get(i);
+
+            // Add a new item to the dynamic submenu
+            dynamicMenu.add(R.id.folders_group, Menu.NONE, Menu.NONE, folderName)
+                    .setIcon(R.drawable.ic_close) // Placeholder icon
+                    .setCheckable(true);
+        }
+    }
+    private void showNewFolderDialog() {
+        final EditText input = new EditText(this);
+        input.setHint("Enter folder name");
+
+        new AlertDialog.Builder(this)
+                .setTitle("Create New Folder")
+                .setView(input)
+                .setPositiveButton("Create", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        String folderName = input.getText().toString().trim();
+                        if (!folderName.isEmpty()) {
+                            createNewFolder(folderName);
+                        } else {
+                            Toast.makeText(NotesListActivity.this, "Folder name cannot be empty.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    private void createNewFolder(String name) {
+        // TODO: Implement actual folder creation logic (e.g., Firestore update)
+        Toast.makeText(this, "Folder '" + name + "' created!", Toast.LENGTH_LONG).show();
+
+        // Re-load the folders to update the navigation drawer immediately
+        loadFoldersToDrawer();
+    }
+
+    private List<String> getExistingFoldersFromDatabase() {
+        // Mock data for demonstration
+        return new ArrayList<>(Arrays.asList("Personal", "Work", "Ideas", "Receipts"));
     }
     private int getCurrentBackgroundColor() {
         return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
