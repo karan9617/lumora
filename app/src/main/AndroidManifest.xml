@@ -116,6 +116,11 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
         <activity
+            android:name=".FolderNotesActivity"
+            android:exported="true"
+
+            android:theme="@style/Theme.KeyboardAi"></activity>
+        <activity
             android:name=".operationactivity.TrashActivity"
             android:exported="true"
             android:label="@string/app_name"

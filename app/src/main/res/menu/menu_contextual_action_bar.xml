@@ -2,12 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     >
-
     <item
-        android:id="@+id/action_pin"
-        android:icon="@drawable/baseline_push_pin_24"
-        android:title="@string/context_bar_pin"
-        app:showAsAction="ifRoom" />
+        android:id="@+id/action_folder"
+        android:title="@string/action_folder_text"
+        android:icon="@drawable/baseline_folder_24"
+        app:showAsAction="always" />
+
 
     <item
         android:id="@+id/action_share"
@@ -20,6 +20,10 @@
         app:showAsAction="ifRoom" />
 
 
-
+    <item
+        android:id="@+id/remove_note_folder"
+        android:icon="@drawable/baseline_folder_24"
+        android:title="@string/remove_from_folder"
+        app:showAsAction="ifRoom" />
 
 </menu>

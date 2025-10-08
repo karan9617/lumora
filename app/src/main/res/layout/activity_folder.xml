@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="#B4000000"
+    >
+    <!-- tools:openDrawer="left"
+     <TextView
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:id="@+id/initialtext"
+         android:textColor="@color/white"
+         android:gravity="center"
+         android:background="@drawable/rounded_purple_background"
+         android:text="NotesAI helps you create creative notes. Click on the plus button to get started. Happy noting :)"
+
+         />
+ -->
+
+    <!-- This is the main content area of the screen -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/initialtext"
+            android:textColor="@color/white"
+            android:gravity="center"
+
+            android:layout_centerInParent="true"
+            android:background="@drawable/rounded_purple_background"
+            android:padding="24dp"
+            android:elevation="8dp"
+            android:layout_marginLeft="10dp"
+            android:fontFamily="@font/latoregular"
+            android:layout_marginRight="10dp"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="@string/notes_main_message"
+            />
+        <!-- Toolbar is at the top -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#1F1F1F"
+            android:elevation="4dp"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+
+            <!-- The Search Bar -->
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/search_view"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                app:queryHint="Search your notes"
+                app:queryBackground="@android:color/transparent"
+                android:textColorHint="@android:color/darker_gray"
+                android:textColor="@android:color/white"
+                android:layout_gravity="right"
+                />
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_color_lens"
+                android:id="@+id/themeColor"
+                android:layout_gravity="right"
+                android:background="@drawable/button_background_transparent"
+                android:layout_marginEnd="17dp"
+                />
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/baseline_auto_delete_24"
+                android:id="@+id/deleteLabel"
+                android:layout_gravity="right"
+                android:background="@drawable/button_background_transparent"
+                android:layout_marginEnd="17dp"
+                />
+        </androidx.appcompat.widget.Toolbar>
+
+        <!-- NestedScrollView for unified scrolling of all note lists -->
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/toolbar">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+
+
+                <!-- Separator line -->
+                <View
+                    android:id="@+id/separatorLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="#333333"/>
+
+                <!-- Header for Other Notes -->
+                <TextView
+                    android:id="@+id/otherNotesHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/all_notes_heading"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:textSize="20sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <!-- RecyclerView for Regular Notes -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/notesRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="10"
+                    tools:listitem="@layout/note_item_layout"/>
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
+        <View
+            android:id="@+id/transparent_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#80000000"
+            android:visibility="gone" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="20dp"
+            android:gravity="end"
+            android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/options_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="end"
+                android:layout_marginRight="20dp"
+                android:visibility="gone">
+                <!--
+                        <TextView
+                            android:id="@+id/option_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:text="Text"
+                            android:background="@drawable/rounded_background"
+                            android:padding="12dp"
+                            android:elevation="4dp"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp" />
+                        -->
+                <LinearLayout
+                    android:id="@+id/option_text_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="7dp"
+                    android:background="@drawable/rounded_background"
+                    android:padding="12dp"
+                    android:elevation="4dp">
+                    <TextView
+                        android:id="@+id/option_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/option_text_layout"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_text_icon"
+                        app:tint="@android:color/white"
+                        android:contentDescription="Image note icon" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/option_drawings_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="7dp"
+                    android:background="@drawable/rounded_background"
+                    android:padding="12dp"
+
+                    android:elevation="4dp">
+                    <TextView
+                        android:id="@+id/option_drawings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/options_draw_layout"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/baseline_brush_24"
+                        android:id="@+id/draw_icon"
+                        app:tint="@android:color/white"
+                        android:contentDescription="Draw note icon" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/option_list_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="1dp"
+                    android:background="@drawable/rounded_background"
+                    android:padding="12dp"
+                    android:elevation="4dp">
+                    <TextView
+                        android:id="@+id/option_list"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/list_option_text"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/list_icon"
+                        app:tint="@android:color/white"
+                        android:contentDescription="Image note icon" />
+                </LinearLayout>
+
+                <!--<TextView
+                    android:id="@+id/option_excel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Excel"
+                    android:background="@drawable/rounded_background"
+                    android:padding="12dp"
+                    android:elevation="4dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />-->
+            </LinearLayout>
+
+            <!-- Floating Add Note Button -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabAddNote"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:layout_margin="20dp"
+                android:contentDescription="Add Note"
+                app:srcCompat="@android:drawable/ic_input_add"
+                app:backgroundTint="@color/purple_500"
+                app:tint="@android:color/white"/>
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- The Navigation View for the side menu-->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true"
+        app:menu="@menu/drawer_menu"
+        app:itemIconTint="@color/white"
+        app:itemTextColor="@color/white"
+        android:background="#1F1F1F"/>
+
+</androidx.drawerlayout.widget.DrawerLayout>
