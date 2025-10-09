@@ -80,7 +80,7 @@ public class NoteRepository {
             } while (cursor.moveToNext());
         }
         cursor.close();
-        db.close();
+       // db.close();
         return notes;
     }
     public List<Label> getAllFolder(){
@@ -149,7 +149,7 @@ public class NoteRepository {
         }
         // IMPORTANT: We do NOT call db.close() here to prevent closing the connection
         // pool while other threads might be accessing the database.
-        db.close();
+        //db.close();
         return deletedRows;
     }
     public List<Note> getAllPinnedNotes() {
@@ -184,7 +184,7 @@ public class NoteRepository {
             } while (cursor.moveToNext());
         }
         cursor.close();
-        db.close();
+       // db.close();
         return notes;
     }
 

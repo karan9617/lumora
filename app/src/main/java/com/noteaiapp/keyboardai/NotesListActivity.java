@@ -144,10 +144,10 @@ public class NotesListActivity extends AppCompatActivity {
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
-        loadFoldersToDrawer();
+        //loadFoldersToDrawer();
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
-
+/*
             if (id == R.id.new_folder) {
                 // 1. Handle the "New folder" action
                 showNewFolderDialog();
@@ -162,7 +162,8 @@ public class NotesListActivity extends AppCompatActivity {
 
                 Toast.makeText(this, "Loading notes from folder: " + folderName, Toast.LENGTH_SHORT).show();
                 // TODO: Implement actual data filtering logic here
-            }else if (id == R.id.nav_instructions) {
+            }else */
+            if (id == R.id.nav_instructions) {
                 startActivity(new Intent(this, InstructionsActivity.class));
             } else if (id == R.id.nav_trash) {
                 startActivity(new Intent(this, TrashActivity.class));
@@ -498,6 +499,7 @@ public class NotesListActivity extends AppCompatActivity {
         });
 
     }
+    /*
     private void loadFoldersToDrawer() {
         Menu menu = navigationView.getMenu();
         // Get the menu item that contains the dynamic folders submenu (from drawer_menu.xml)
@@ -559,7 +561,7 @@ public class NotesListActivity extends AppCompatActivity {
         for(Label label: arr)
             allfolderNames.add(label.getName());
         return allfolderNames;
-    }
+    }*/
     private int getCurrentBackgroundColor() {
         return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 .getInt(BACKGROUND_COLOR_KEY, DEFAULT_BACKGROUND_COLOR);
@@ -1048,10 +1050,11 @@ public class NotesListActivity extends AppCompatActivity {
             }
 
             int id = item.getItemId();
-            if(id == R.id.action_folder){
+            /*if(id == R.id.action_folder){
                 showAllFolderDialog(id,selectedNote);
             }
-            else if (id == R.id.action_share) {
+            else */
+            if (id == R.id.action_share) {
 
                 // 1. Check if it's an image/drawing note
                 if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {

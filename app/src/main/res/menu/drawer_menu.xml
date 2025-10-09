@@ -31,6 +31,7 @@
                 android:title="@string/drawer_feedback_text" />
         </menu>
     </item>
+    <!--
     <item android:title="Folders">
         <menu>
             <item
@@ -42,5 +43,5 @@
     <item android:id="@+id/folders_group" android:title="Existing Folders" android:checkableBehavior="single">
         <menu android:id="@+id/dynamic_folders_menu" />
     </item>
-
+-->
 </menu>

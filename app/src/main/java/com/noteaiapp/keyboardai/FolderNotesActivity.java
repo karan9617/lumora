@@ -150,7 +150,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            if (id == R.id.new_folder) {
+            /*if (id == R.id.new_folder) {
                 // 1. Handle the "New folder" action
                 showNewFolderDialog();
             }
@@ -164,7 +164,7 @@ public class FolderNotesActivity extends AppCompatActivity {
 
                 Toast.makeText(this, "Loading notes from folder: " + folderName, Toast.LENGTH_SHORT).show();
                 // TODO: Implement actual data filtering logic here
-            }else if (id == R.id.nav_instructions) {
+            }else */if (id == R.id.nav_instructions) {
                 startActivity(new Intent(this, InstructionsActivity.class));
             } else if (id == R.id.nav_trash) {
                 startActivity(new Intent(this, TrashActivity.class));
@@ -405,6 +405,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         });
 
     }
+    /*
     private void loadFoldersToDrawer() {
         Menu menu = navigationView.getMenu();
         // Get the menu item that contains the dynamic folders submenu (from drawer_menu.xml)
@@ -430,7 +431,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                     .setIcon(R.drawable.baseline_folder_24) // Placeholder icon
                     .setCheckable(true);
         }
-    }
+    }*/
     private void showNewFolderDialog() {
         final EditText input = new EditText(this);
         input.setHint("Enter folder name");
@@ -456,7 +457,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         Toast.makeText(this, "Folder '" + name + "' created!", Toast.LENGTH_LONG).show();
         noteRepository.addLabel(new Label(name,Color.BLACK));
         // Re-load the folders to update the navigation drawer immediately
-        loadFoldersToDrawer();
+        //loadFoldersToDrawer();
     }
 
     private List<String> getExistingFoldersFromDatabase() {
@@ -919,7 +920,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                 mode.finish();
                 return true;
             }
-            else if(id == R.id.remove_note_folder){
+            /*else if(id == R.id.remove_note_folder){
                 final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
 
                 if (selectedNotes.isEmpty()) {
@@ -943,7 +944,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                     });
                 });
                 return true;
-            }
+            }*/
             else if (id == R.id.action_delete_note) {
                 final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
 
