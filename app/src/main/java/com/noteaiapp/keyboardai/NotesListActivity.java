@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Html;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -1109,8 +1110,17 @@ public class NotesListActivity extends AppCompatActivity {
 
                         // Add optional text
                         String title = selectedNote.getTitle() != null ? selectedNote.getTitle().split(";")[0] : "";
+                        String content = (selectedNote.getContent() != null)? selectedNote.getContent():"";
+                        String cleanContent = "";
+                        if(content.length() > 0) {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                                cleanContent = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY).toString();
+                            } else {
+                                cleanContent = Html.fromHtml(content).toString();
+                            }
+                        }
                         String shareText = "Title: " + title + "\n\n" +
-                                "Description: " + (selectedNote.getContent() != null ? selectedNote.getContent() : "");
+                                "Description: " + (cleanContent);
                         shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
 
                         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -1128,7 +1138,16 @@ public class NotesListActivity extends AppCompatActivity {
 
                     String title = selectedNote.getTitle() != null ? selectedNote.getTitle().split(";")[0] : "";
                     String content = selectedNote.getContent() != null ? selectedNote.getContent() : "";
-                    String shareText = title + "\n\n" + content;
+                    String cleanContent;
+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                        cleanContent = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY).toString();
+                    } else {
+                        cleanContent = Html.fromHtml(content).toString();
+                    }
+
+// 3. Construct the final share text using the clean content
+                    String shareText = title + "\n\n" + cleanContent;
 
                     shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
 
