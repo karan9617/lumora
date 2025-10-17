@@ -8,13 +8,13 @@
         android:title="@string/action_folder_text"
         android:icon="@drawable/baseline_folder_24"
         app:showAsAction="always" />
-        -->
+
         <item
         android:id="@+id/action_pin"
         android:icon="@drawable/baseline_push_pin_24"
         android:title="@string/remove_from_folder"
         app:showAsAction="ifRoom" />
-
+-->
 
     <item
         android:id="@+id/action_share"

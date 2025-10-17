@@ -87,19 +87,16 @@
                 />
         </androidx.appcompat.widget.Toolbar>
 
-        <!-- NestedScrollView for unified scrolling of all note lists -->
-        <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/toolbar">
+
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:layout_marginTop="74dp"
                 android:padding="8dp">
 
-                <!-- Header for Pinned Notes -->
+                <!-- Header for Pinned Notes
                 <TextView
                     android:id="@+id/pinnedNotesHeader"
                     android:layout_width="wrap_content"
@@ -112,17 +109,16 @@
                     android:textColor="#FFFFFF"
                     android:textStyle="bold" />
 
-                <!-- RecyclerView for Pinned Notes -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/notesRecyclerViewPinned"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:clipToPadding="false"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                     android:nestedScrollingEnabled="false"
                     tools:itemCount="3"
                     tools:listitem="@layout/note_item_layout"/>
 
-                <!-- Separator line -->
                 <View
                     android:id="@+id/separatorLine"
                     android:layout_width="match_parent"
@@ -131,7 +127,6 @@
                     android:layout_marginBottom="16dp"
                     android:background="#333333"/>
 
-                <!-- Header for Other Notes -->
                 <TextView
                     android:id="@+id/otherNotesHeader"
                     android:layout_width="wrap_content"
@@ -141,20 +136,20 @@
                     android:layout_marginBottom="8dp"
                     android:textSize="20sp"
                     android:textColor="#FFFFFF"
-                    android:textStyle="bold" />
+                    android:textStyle="bold" />-->
 
                 <!-- RecyclerView for Regular Notes -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/notesRecyclerView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                     android:clipToPadding="false"
                     android:nestedScrollingEnabled="false"
                     tools:itemCount="10"
                     tools:listitem="@layout/note_item_layout"/>
             </LinearLayout>
 
-        </androidx.core.widget.NestedScrollView>
         <View
             android:id="@+id/transparent_overlay"
             android:layout_width="match_parent"

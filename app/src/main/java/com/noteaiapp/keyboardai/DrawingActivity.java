@@ -25,6 +25,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
@@ -161,55 +162,72 @@ public class DrawingActivity extends AppCompatActivity {
     }
 
     private void saveOrUpdateDrawing() {
-        // Get the drawing data as a byte array
         byte[] drawingData = drawingView.getDrawingData();
         NotesWidgetProvider.refreshWidget(getApplicationContext());
 
         if (drawingData != null && drawingData.length > 0) {
-            // Convert the byte array to a Bitmap
-            Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-            if (drawingBitmap != null) {
-                // Generate a unique file name using a timestamp
-                String filename = "drawing_" + System.currentTimeMillis() + ".png";
+            new Thread(() -> {
+                try {
+                    // Decode inside the thread
+                    Bitmap originalBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+                    if (originalBitmap == null) return;
 
+                    // Downscale large bitmaps to avoid crashes
+                    int maxSize = 2048; // limit width/height to prevent OOM
+                    Bitmap drawingBitmap = scaleBitmap(originalBitmap, maxSize);
 
-                String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+                    String filename = "drawing_" + System.currentTimeMillis() + ".png";
+                    String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
 
-                if (imagePath != null) {
-                    if (currentNoteId != -1) {
-                        // We are updating an existing note
-                        Note existingNote = noteRepository.getNoteById(currentNoteId);
-                        if (existingNote != null) {
-                            existingNote.setImagePath(imagePath);
-                            noteRepository.updateNote(existingNote);
-                            Toast.makeText(this, R.string.drawing_saved, Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        // We are saving a new note
-                        Note drawingNote = new Note();
-                        drawingNote.setTitle("Sketch");
-                        drawingNote.setColor(Color.WHITE); // Default color
-                        drawingNote.setDate(getCurrentDate());
-                        drawingNote.setDate(receivedDateFromActivities);
-                        drawingNote.setContent("");
-                        drawingNote.setPinned(false);
-                        drawingNote.setImagePath(imagePath);
-                        long newRowId = noteRepository.addNote(drawingNote);
-                        if (newRowId != -1) {
-                            Toast.makeText(this, R.string.drawing_saved, Toast.LENGTH_SHORT).show();
-                            Log.d("DrawingActivity", "Saved note with ID: " + newRowId);
+                    if (imagePath != null) {
+                        if (currentNoteId != -1) {
+                            Note existingNote = noteRepository.getNoteById(currentNoteId);
+                            if (existingNote != null) {
+                                existingNote.setImagePath(imagePath);
+                                noteRepository.updateNote(existingNote);
+                            }
                         } else {
-                            Toast.makeText(this, R.string.save_failed, Toast.LENGTH_SHORT).show();
+                            Note drawingNote = new Note();
+                            drawingNote.setTitle("Sketch");
+                            drawingNote.setColor(Color.WHITE);
+                            drawingNote.setDate(getCurrentDate());
+                            drawingNote.setContent("");
+                            drawingNote.setPinned(false);
+                            drawingNote.setImagePath(imagePath);
+                            noteRepository.addNote(drawingNote);
+                            Log.d("NoteApp", "Saved drawing successfully");
                         }
                     }
-                    isDirty = false; // Reset the dirty flag after saving
-                    finish(); // Close the activity after saving
-                } else {
+                } catch (Exception e) {
+                    Log.e("NoteApp", "Error saving drawing", e);
+                } finally {
+                    runOnUiThread(() -> {
+                        isDirty = false;
+                        Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                        finish();
+                    });
                 }
-            } else {
-            }
-        } else {
+            }).start();
         }
+    }
+
+    private Bitmap scaleBitmap(Bitmap src, int maxSize) {
+        int width = src.getWidth();
+        int height = src.getHeight();
+        if (width <= maxSize && height <= maxSize) return src;
+
+        float ratio = (float) width / (float) height;
+        int newWidth, newHeight;
+        if (ratio > 1) {
+            newWidth = maxSize;
+            newHeight = (int) (maxSize / ratio);
+        } else {
+            newHeight = maxSize;
+            newWidth = (int) (maxSize * ratio);
+        }
+
+        return Bitmap.createScaledBitmap(src, newWidth, newHeight, true);
     }
 
     @Override

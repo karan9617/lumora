@@ -1,9 +1,13 @@
 package com.noteaiapp.keyboardai;
 
+import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -46,6 +50,7 @@ import com.google.android.material.navigation.NavigationView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
@@ -54,7 +59,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
@@ -71,13 +78,12 @@ import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class NotesListActivity extends AppCompatActivity {
-    private RecyclerView notesRecyclerView, notesRecyclerViewPinned;
+    private RecyclerView notesRecyclerView;/// notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
-    private NotesAdapterPinned notesAdapterPinned;
+   // private NotesAdapterPinned notesAdapterPinned;
     View transparentOverlay;
     private List<Note> notesList;
-    List<Note> allNotesFromDb, allPinnedNotesFromDb;
-    public static List<Note> trashList = new ArrayList<>();
+    List<Note> allNotesFromDb;// allPinnedNotesFromDb;
     public static List<Label> folderListArr = new ArrayList<>();
     Toolbar toolbar;
     private NoteRepository noteRepository;
@@ -85,21 +91,27 @@ public class NotesListActivity extends AppCompatActivity {
     FloatingActionButton fabAddNote;
     LinearLayout option_text_layout, option_drawings_layout,option_list_layout;
     private DrawerLayout drawerLayout;
-    ItemTouchHelper itemTouchHelper,itemTouchHelperPinned;
+    ItemTouchHelper itemTouchHelper;//itemTouchHelperPinned;
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
 
     private SearchView searchView;
-    static public List<Note> allNotes, pinnedNotes;
+    static public List<Note> allNotes;// pinnedNotes;
     private ActionMode actionMode;
     private Note selectedNote;
-    TextView pinnedNotesHeader;
+    //TextView pinnedNotesHeader;
     public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
     private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
     private boolean isOptionsVisible = false;
     ImageButton shuffle,themeColor;
     NavigationView navigationView;
-
+    private BroadcastReceiver noteUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Call the refresh logic here
+            loadNotesFromDatabase();
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,7 +127,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
         allNotesFromDb = new ArrayList<>();
-        allPinnedNotesFromDb = new ArrayList<>();
+        //allPinnedNotesFromDb = new ArrayList<>();
         noteRepository = new NoteRepository(this);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -128,11 +140,14 @@ public class NotesListActivity extends AppCompatActivity {
         themeColor = findViewById(R.id.themeColor);
         option_text_layout = findViewById(R.id.option_text_layout);
         shuffle = findViewById(R.id.shuffle);
-        pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
+        //pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
         searchView = findViewById(R.id.search_view);
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
-        notesRecyclerViewPinned = findViewById(R.id.notesRecyclerViewPinned);
+        //notesRecyclerViewPinned = findViewById(R.id.notesRecyclerViewPinned);
+        //notesRecyclerViewPinned.setLayoutManager(new LinearLayoutManager(this));
+        notesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
         loadAndApplyBackgroundColor();
         final Animation slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         final Animation slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
@@ -275,12 +290,12 @@ public class NotesListActivity extends AppCompatActivity {
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
 
-        StaggeredGridLayoutManager layoutManagerPinned = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-        notesRecyclerViewPinned.setLayoutManager(layoutManagerPinned);
+        //StaggeredGridLayoutManager layoutManagerPinned = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+       // notesRecyclerViewPinned.setLayoutManager(layoutManagerPinned);
 
         notesList = new ArrayList<>();
         allNotes = new ArrayList<>();
-        pinnedNotes = new ArrayList<>();
+       // pinnedNotes = new ArrayList<>();
 
         ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
             @Override
@@ -386,7 +401,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         }, itemTouchHelper,notesRecyclerView);
         notesRecyclerView.setAdapter(notesAdapter);
-
+      /*
         ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
@@ -483,7 +498,7 @@ public class NotesListActivity extends AppCompatActivity {
                 }
             }
         }, itemTouchHelperPinned,notesRecyclerViewPinned);
-        notesRecyclerViewPinned.setAdapter(notesAdapterPinned);
+        notesRecyclerViewPinned.setAdapter(notesAdapterPinned);*/
         updatePinnedSectionVisibility();
 
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
@@ -784,7 +799,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
         notesAdapter.notifyDataSetChanged();
-
+/*
         // Sort the pinned notes
         Collections.sort(pinnedNotes, (note1, note2) -> {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
@@ -798,7 +813,7 @@ public class NotesListActivity extends AppCompatActivity {
                 return 0;
             }
         });
-        notesAdapterPinned.notifyDataSetChanged();
+        notesAdapterPinned.notifyDataSetChanged();*/
         Toast.makeText(this, R.string.notes_sorted_date, Toast.LENGTH_SHORT).show();
     }
 
@@ -813,14 +828,14 @@ public class NotesListActivity extends AppCompatActivity {
             return title1.compareToIgnoreCase(title2);
         });
         notesAdapter.notifyDataSetChanged();
-
+        /*
         // Sort the pinned notes
         Collections.sort(pinnedNotes, (note1, note2) -> {
             String title1 = note1.getTitle() != null ? note1.getTitle() : "";
             String title2 = note2.getTitle() != null ? note2.getTitle() : "";
             return title1.compareToIgnoreCase(title2);
         });
-        notesAdapterPinned.notifyDataSetChanged();
+        notesAdapterPinned.notifyDataSetChanged();*/
         Toast.makeText(this, R.string.notes_sorted_alphabetically, Toast.LENGTH_SHORT).show();
     }
     private void hideOptions(final Animation animation) {
@@ -852,6 +867,8 @@ public class NotesListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        LocalBroadcastManager.getInstance(this).registerReceiver(noteUpdateReceiver,
+                new IntentFilter("com.noteaiapp.ACTION_NOTE_UPDATED"));
         loadNotesFromDatabase();
     }
 
@@ -868,6 +885,11 @@ public class NotesListActivity extends AppCompatActivity {
         if (actionMode != null) {
             actionMode.finish();
         }
+    }
+    @Override
+    public void onPause(){
+        super.onPause();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(noteUpdateReceiver);
     }
     private void showOptions() {
         optionsLayout.setVisibility(View.VISIBLE);
@@ -899,19 +921,20 @@ public class NotesListActivity extends AppCompatActivity {
         new Thread(() -> {
             folderListArr = noteRepository.getAllFolder();
             allNotesFromDb = noteRepository.getAllNotes();
-            allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
+            //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
+            allNotesFromDb.addAll(noteRepository.getAllPinnedNotes());
             runOnUiThread(() -> {
                 allNotes.clear();
                 allNotes.addAll(allNotesFromDb);
 
-                pinnedNotes.clear();
-                pinnedNotes.addAll(allPinnedNotesFromDb);
+               // pinnedNotes.clear();
+               // pinnedNotes.addAll(allPinnedNotesFromDb);
 
                 notesList.clear();
                 notesList.addAll(allNotes);
 
                 notesAdapter.notifyDataSetChanged();
-                notesAdapterPinned.notifyDataSetChanged();
+               // notesAdapterPinned.notifyDataSetChanged();
                 updatePinnedSectionVisibility();
             });
         }).start();
@@ -920,7 +943,7 @@ public class NotesListActivity extends AppCompatActivity {
 
     private void filterNotes(String query) {
         List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
-        List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
+      //  List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
 
         // Create new lists to hold the filtered results.
         List<Note> filteredNotesList = new ArrayList<>();
@@ -929,7 +952,7 @@ public class NotesListActivity extends AppCompatActivity {
         if (query == null || query.isEmpty()) {
             // If the query is empty, add all notes back from the master lists.
             filteredNotesList.addAll(masterUnpinned);
-            filteredPinnedNotesList.addAll(masterPinned);
+          //  filteredPinnedNotesList.addAll(masterPinned);
         } else {
             String lowercaseQuery = query.toLowerCase();
 
@@ -943,7 +966,7 @@ public class NotesListActivity extends AppCompatActivity {
                 }
             }
 
-            // Filter pinned notes from the master list.
+            /* Filter pinned notes from the master list.
             for (Note note : allPinnedNotesFromDb) {
                 boolean titleMatches = note.getTitle() != null && note.getTitle().toLowerCase().contains(lowercaseQuery);
                 boolean contentMatches = note.getContent() != null && note.getContent().toLowerCase().contains(lowercaseQuery);
@@ -951,7 +974,7 @@ public class NotesListActivity extends AppCompatActivity {
                 if (titleMatches || contentMatches) {
                     filteredPinnedNotesList.add(note);
                 }
-            }
+            }*/
         }
 
         // Update the adapters with the filtered lists.
@@ -959,21 +982,21 @@ public class NotesListActivity extends AppCompatActivity {
         notesList.addAll(filteredNotesList);
         notesAdapter.notifyDataSetChanged();
 
-        pinnedNotes.clear();
-        pinnedNotes.addAll(filteredPinnedNotesList);
-        notesAdapterPinned.notifyDataSetChanged();
+       // pinnedNotes.clear();
+       // pinnedNotes.addAll(filteredPinnedNotesList);
+       // notesAdapterPinned.notifyDataSetChanged();
 
         updatePinnedSectionVisibility();
     }
 
     public void updatePinnedSectionVisibility(){
-        if(pinnedNotes.isEmpty()){
+       /* if(pinnedNotes.isEmpty()){
             pinnedNotesHeader.setVisibility(View.GONE);
         }
         else{
             pinnedNotesHeader.setVisibility(View.VISIBLE);
-        }
-        if(allNotes.size() == 0 && pinnedNotes.size() == 0){
+        }*/
+        if(allNotes.size() == 0){
             initialtext.setVisibility(View.VISIBLE);
         }
         else{
@@ -1156,9 +1179,9 @@ public class NotesListActivity extends AppCompatActivity {
 
                 mode.finish();
                 return true;
-            }  else if (id == R.id.action_pin) {
+            }  /*else if (id == R.id.action_pin) {
                 final List<Note> selectedNotesToPin = notesAdapter.getSelectedNotes();
-                final List<Note> selectedPinnedNotesToUnpin = notesAdapterPinned.getSelectedNotes();
+                //final List<Note> selectedPinnedNotesToUnpin = notesAdapterPinned.getSelectedNotes();
 
                 // Determine if we are pinning or unpinning.
                 boolean isPinning = !selectedNotesToPin.isEmpty();
@@ -1177,12 +1200,12 @@ public class NotesListActivity extends AppCompatActivity {
                     });
                 });
                 return true;
-            }
+            }*/
             else if (id == R.id.action_delete_note) {
                 final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
-                final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
+               // final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
 
-                if (selectedNotes.isEmpty() && selectedPinnedNotes.isEmpty()) {
+                if (selectedNotes.isEmpty()) {
                     mode.finish();
                     return true;
                 }
@@ -1193,11 +1216,11 @@ public class NotesListActivity extends AppCompatActivity {
                         notesRepositoryTrash.addNote(note);
                         noteRepository.deleteNote(note.getId());
                     }
-                    // Delete notes from the pinned list
+                    /* Delete notes from the pinned list
                     for (Note note : selectedPinnedNotes) {
                         notesRepositoryTrash.addNote(note);
                         noteRepository.deleteNote(note.getId());
-                    }
+                    }*/
 
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
@@ -1222,7 +1245,7 @@ public class NotesListActivity extends AppCompatActivity {
             drawerLayout.setBackgroundColor(Color.argb(71,0,0,0));
 
             notesAdapter.clearSelections();
-            notesAdapterPinned.clearSelections();
+           // notesAdapterPinned.clearSelections();
         }
     };
 }

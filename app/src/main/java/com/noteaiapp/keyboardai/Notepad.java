@@ -1592,7 +1592,22 @@ public class Notepad extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (speechRecognizer != null) {
-            speechRecognizer.destroy();
+            // Stop listening before destroying to ensure resources are released cleanly
+            try {
+                speechRecognizer.stopListening();
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping SpeechRecognizer before destroy: " + e.getMessage());
+                // Proceed with destroy even if stopListening fails
+            }
+
+            // Wrap the destroy call in try-catch to prevent the app crash
+            try {
+                speechRecognizer.destroy();
+            } catch (Exception e) {
+                // Log the exception but prevent the crash. The internal service unbinding
+                // is the likely culprit for the IllegalArgumentException.
+                Log.e(TAG, "Error destroying SpeechRecognizer: " + e.getMessage(), e);
+            }
         }
     }
 }

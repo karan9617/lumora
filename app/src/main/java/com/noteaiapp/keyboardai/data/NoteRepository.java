@@ -18,6 +18,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class NoteRepository {
 
@@ -416,8 +418,8 @@ public class NoteRepository {
      * @param filename The desired filename (e.g., "my_image.png").
      * @return The absolute path to the saved image file, or null if saving fails.
      */
-    public String saveImageToInternalStorage(Bitmap bitmap, String filename) {
 
+    public String saveImageToInternalStorage(Bitmap bitmap, String filename) {
         try {
             File rootDir = context.getFilesDir();
             String DRAWING_IMAGES_DIR = "drawing_notes";
