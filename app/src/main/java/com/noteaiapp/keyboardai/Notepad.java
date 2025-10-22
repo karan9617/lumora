@@ -98,6 +98,7 @@ import org.json.JSONObject;
 public class Notepad extends AppCompatActivity {
 
     private static final String TAG = "NotepadActivity";
+    ProgressBar correctionProgressBar;
 
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
@@ -1203,7 +1204,86 @@ public class Notepad extends AppCompatActivity {
             togglePinStatus();
             return true;
         }
+        else if (id == R.id.action_correct_text) { // NEW: Handle the correct text action
+            correctTextWithGemini();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
+    }
+    /**
+     * Takes the current text from the notepad, sends it to the Gemini API for correction,
+     * and updates the EditText with the result.
+     */
+    private void correctTextWithGemini() {
+        String originalText = resultText.getText().toString();
+        if (originalText.trim().isEmpty()) {
+            Toast.makeText(this, "Note is empty, nothing to correct.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show a loading indicator
+        correctionProgressBar.setVisibility(View.VISIBLE);
+
+        // The prompt is very important. We tell the AI exactly what to do.
+        String prompt = "Correct the spelling and grammar of the following text. " +
+                "Only return the corrected text, without any introductory phrases.\n\n" +
+                "Original text:\n\"" + originalText + "\"\n\nCorrected text:";
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            OkHttpClient client = new OkHttpClient();
+
+            try {
+                // Create the JSON payload for the Gemini API
+                JSONObject jsonBody = new JSONObject();
+                JSONObject contents = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", prompt);
+                parts.put(textPart);
+                contents.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(contents));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+                Request request = new Request.Builder()
+                        .url(API_URL) // You already have this defined
+                        .post(body)
+                        .build();
+
+                // Synchronous API call
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    JSONArray candidates = jsonResponse.getJSONArray("candidates");
+                    JSONObject firstCandidate = candidates.getJSONObject(0);
+                    JSONObject content = firstCandidate.getJSONObject("content");
+                    JSONArray partsArray = content.getJSONArray("parts");
+                    String correctedText = partsArray.getJSONObject(0).getString("text").trim();
+
+                    // Update the UI on the main thread
+                    runOnUiThread(() -> {
+                        resultText.setText(correctedText);
+                        isNoteModified = true; // Mark the note as modified
+                        correctionProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(Notepad.this, "Text corrected!", Toast.LENGTH_SHORT).show();
+                    });
+
+                } else {
+                    // Handle API errors on the main thread
+                    runOnUiThread(() -> {
+                        correctionProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(Notepad.this, "Error: Could not correct text.", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error during Gemini text correction: " + e.getMessage(), e);
+                runOnUiThread(() -> {
+                    correctionProgressBar.setVisibility(View.GONE);
+                    Toast.makeText(Notepad.this, "An error occurred.", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     // NEW: Method to handle toggling the pin status
@@ -1563,6 +1643,7 @@ public class Notepad extends AppCompatActivity {
         setContentView(R.layout.notepad_layout);
         voiceicon = findViewById(R.id.voiceicon);
         linkImage = findViewById(R.id.linkImage);
+        correctionProgressBar = findViewById(R.id.correction_progress_bar);
         leftAlignButton = findViewById(R.id.leftAlignButton);
         search_view = findViewById(R.id.search_view);
         rightAlignButton =findViewById(R.id.rightAlignButton);

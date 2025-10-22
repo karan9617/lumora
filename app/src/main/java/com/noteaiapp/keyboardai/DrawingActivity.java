@@ -190,7 +190,7 @@ public class DrawingActivity extends AppCompatActivity {
                             Note drawingNote = new Note();
                             drawingNote.setTitle("Sketch");
                             drawingNote.setColor(Color.WHITE);
-                            drawingNote.setDate(getCurrentDate());
+                            drawingNote.setDate(receivedDateFromActivities);
                             drawingNote.setContent("");
                             drawingNote.setPinned(false);
                             drawingNote.setImagePath(imagePath);

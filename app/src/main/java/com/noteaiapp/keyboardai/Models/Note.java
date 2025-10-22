@@ -17,7 +17,6 @@ public class Note implements Serializable {
     private String imagePath;
     // NEW FIELD: For selection state (not stored in database)
     private boolean isSelected = false;
-    private String folder;
     public Note(){}
 
     // Full constructor for loading notes from the database
@@ -31,7 +30,6 @@ public class Note implements Serializable {
         this.isPinned = isPinned;
         this.imagePath = imagePath;
         this.isSelected = false; // Default to not selected
-        this.folder = "";
     }
 
     // Constructor for creating a new note before insertion
@@ -43,7 +41,6 @@ public class Note implements Serializable {
         this.isPinned = isPinned;
         this.imagePath = imagePath;
         this.isSelected = false; // Default to not selected
-        this.folder = "";
     }
     public Note(String title, String content, String date, int color, int order, boolean isPinned, String imagePath) {
         this.title = title;
@@ -54,7 +51,6 @@ public class Note implements Serializable {
         this.isPinned = isPinned;
         this.imagePath = imagePath;
         this.isSelected = false; // Default to not selected
-        this.folder = "";
     }
     public Note(String title, String content, String date, int color, int order, boolean isPinned, String imagePath, String folder) {
         this.title = title;
@@ -65,7 +61,6 @@ public class Note implements Serializable {
         this.isPinned = isPinned;
         this.imagePath = imagePath;
         this.isSelected = false; // Default to not selected
-        this.folder = folder;
 
     }
     // --- Getters and Setters ---
@@ -140,11 +135,4 @@ public class Note implements Serializable {
     public boolean isSelected() { return isSelected; }
     public void setSelected(boolean selected) { this.isSelected = selected; }
 
-    public void setFolder(String folder) {
-        this.folder = folder;
-    }
-
-    public String getFolder() {
-        return folder;
-    }
 }

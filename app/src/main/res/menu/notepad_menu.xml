@@ -7,6 +7,13 @@
         android:icon="@drawable/baseline_brush_24"
         app:showAsAction="ifRoom"
         />
+    <item
+        android:id="@+id/action_correct_text"
+        android:title="Correct Text"
+        android:icon="@drawable/ic_spellcheck"
+        app:showAsAction="ifRoom"
+        android:contentDescription="Correct spelling and grammar" />
+
 
     <item
         android:id="@+id/action_save"

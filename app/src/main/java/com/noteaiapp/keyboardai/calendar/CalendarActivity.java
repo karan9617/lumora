@@ -2,8 +2,10 @@ package com.noteaiapp.keyboardai.calendar;
 
 
 import android.app.ActivityOptions;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -29,6 +31,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
@@ -67,6 +70,16 @@ import java.util.Set;
 public class CalendarActivity extends AppCompatActivity {
 
     private MaterialCalendarView calendarView;
+    public static final String ACTION_NOTE_SAVED = "com.noteaiapp.ACTION_NOTE_UPDATED";
+    private BroadcastReceiver noteSavedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(ACTION_NOTE_SAVED)) {
+                // This is the moment to update the adapter!
+                refreshNotesAndCalendar();
+            }
+        }
+    };
     private TextView selectedDateLabel;
     NoteRepository notesRepository;
     private RecyclerView recyclerViewNotes;
@@ -78,6 +91,7 @@ public class CalendarActivity extends AppCompatActivity {
     private Toolbar toolbar;
     // Formatter to compare dates (ignoring time component: "yyyy-MM-dd")
     private final SimpleDateFormat DATE_KEY_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
 
     // Renamed for clarity and added updateData method
     private static class NotesCalendarAdapter extends RecyclerView.Adapter<NotesCalendarAdapter.ViewHolder> {
@@ -447,6 +461,15 @@ public class CalendarActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         refreshNotesAndCalendar();
+        IntentFilter filter = new IntentFilter(ACTION_NOTE_SAVED);
+        LocalBroadcastManager.getInstance(this).registerReceiver(noteSavedReceiver, filter);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Unregister the receiver when the activity is not visible to prevent leaks
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(noteSavedReceiver);
     }
     private void refreshNotesAndCalendar() {
         // 1. Reload all notes

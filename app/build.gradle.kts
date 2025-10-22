@@ -11,8 +11,8 @@ android {
         applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.2"
+        versionCode = 13
+        versionName = "1.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -42,7 +42,7 @@ android {
     }
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/{AL2.0,LGPL2.1,DEPENDENCIES}"
         }
         jniLibs {
             useLegacyPackaging = false  // Important for 16KB support
@@ -81,4 +81,10 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.5.1") // Or the latest version
     implementation("androidx.camera:camera-lifecycle:1.5.1")
     implementation("androidx.camera:camera-view:1.5.1")
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
+    // google drives
+    implementation("com.google.apis:google-api-services-drive:v3-rev136-1.25.0")
+    implementation("com.google.android.gms:play-services-drive:17.0.0")
+// Note: This is a legacy API, but used here for simplicity. The modern approach uses the REST API with an HTTP client.
+    implementation("com.google.api-client:google-api-client-android:1.23.0")
 }

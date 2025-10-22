@@ -42,7 +42,6 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
         values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
-        values.put(NotesDbHelper.COLUMN_FOLDER_NAME,note.getFolder());
         //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
         //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
         //values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
@@ -73,7 +72,6 @@ public class NoteRepository {
                 note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-                note.setFolder(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FOLDER_NAME)));
              //   note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
              //   note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
              //   note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
@@ -85,59 +83,7 @@ public class NoteRepository {
        // db.close();
         return notes;
     }
-    public List<Label> getAllFolder(){
-        List<Label> foldersArr = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String query = "SELECT * FROM " + NotesDbHelper.TABLE_LABELS;
-        Cursor cursor = db.rawQuery(query, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                Label note = new Label();
-                note.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ID)));
-                note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_ID)));
-                note.setName(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_LABEL_NAME)));
-                foldersArr.add(note);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        //db.close();
-        return foldersArr;
-    }
-    public List<Note> getAllFolderNotes(String currentFolder) {
-        List<Note> notes = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-
-        String query = "SELECT * FROM " + NotesDbHelper.TABLE_NOTES +
-                " WHERE " + NotesDbHelper.COLUMN_PINNED + " = 0 AND " + NotesDbHelper.COLUMN_FOLDER_NAME +" = '"+currentFolder +"'"+
-                " ORDER BY " + NotesDbHelper.COLUMN_ORDER + " ASC;";
-        Cursor cursor = db.rawQuery(query, null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                Note note = new Note();
-                note.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ID)));
-                note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_TITLE)));
-                note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
-                note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
-                note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
-                note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
-                note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
-                note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-                note.setFolder(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FOLDER_NAME)));
-                //   note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
-                //   note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
-                //   note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
-
-                notes.add(note);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        //db.close();
-        return notes;
-    }
     public int removeLabel(String labelName) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         int deletedRows = 0;
@@ -176,7 +122,6 @@ public class NoteRepository {
                 note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-                note.setFolder(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FOLDER_NAME)));
                 // The font properties are commented out, assuming they are not in the database yet.
                 // note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
                 // note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
@@ -189,7 +134,7 @@ public class NoteRepository {
        // db.close();
         return notes;
     }
-
+/*
     public List<Note> getAllFolderNotesPinned(String currentFolder) {
         List<Note> notes = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -212,7 +157,6 @@ public class NoteRepository {
                 note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-                note.setFolder(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FOLDER_NAME)));
                 // The font properties are commented out, assuming they are not in the database yet.
                 // note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
                 // note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
@@ -224,7 +168,7 @@ public class NoteRepository {
         cursor.close();
         db.close();
         return notes;
-    }
+    }*/
     public Note getNoteById(long id) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.query(NotesDbHelper.TABLE_NOTES,
@@ -244,7 +188,6 @@ public class NoteRepository {
             note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
             note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
             note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-            note.setFolder(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FOLDER_NAME)));
           //  note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
           //  note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
           //  note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
@@ -272,25 +215,7 @@ public class NoteRepository {
         db.close();
         return updatedRows;
     }
-    public int updateNoteFolder(Note note) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
 
-        // 1. Only include the necessary field: the new folder name
-        // This value comes directly from note.getFolder(), which you just updated
-        values.put(NotesDbHelper.COLUMN_FOLDER_NAME, note.getFolder());
-
-        int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,
-                values,
-                NotesDbHelper.COLUMN_ID + " = ?",
-                new String[]{String.valueOf(note.getId())});
-
-        // Log the result for debugging!
-        Log.d("NoteRepo", "Updated note ID: " + note.getId() + " to folder: " + note.getFolder() + " - Rows affected: " + updatedRows);
-
-        db.close();
-        return updatedRows;
-    }
     public void updateNoteOrder(long noteId, int newOrder) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();

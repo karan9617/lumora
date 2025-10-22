@@ -183,4 +183,5 @@
     <!-- -->
     <string name="action_folder_text">Add folder</string>
     <string name="remove_from_folder">Remove from Folder</string>
+    <string name="backup_text">Backup Notes</string>
 </resources>
