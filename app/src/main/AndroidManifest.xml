@@ -96,6 +96,13 @@
 
         android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
         <activity
+            android:name=".imagenote.ImageNoteActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
             android:name=".OnboardingActivity"
             android:exported="true"
             android:label="@string/app_name"

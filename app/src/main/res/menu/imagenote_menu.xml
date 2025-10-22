@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/action_draw"
-        android:title="@string/draw_menu"
-        android:icon="@drawable/baseline_brush_24"
-        app:showAsAction="ifRoom"
-        />
+
     <item
         android:id="@+id/action_save"
         android:title="@string/save_menu"
@@ -14,6 +9,12 @@
 
         app:showAsAction="ifRoom"
         />
+    <item
+        android:id="@+id/action_color"
+        android:title="@string/color_menu"
+        android:icon="@drawable/ic_color_lens"
+        app:showAsAction="ifRoom" />
+
 
     <item
         android:id="@+id/action_translate"
@@ -35,11 +36,6 @@
         android:contentDescription="Summarize the current note" />
 
 
-    <item
-        android:id="@+id/action_color"
-        android:title="@string/color_menu"
-        android:icon="@drawable/ic_color_lens"
-        app:showAsAction="ifRoom" />
 
 
     <item

@@ -14,7 +14,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.Html;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -43,6 +46,7 @@ import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.noteaiapp.keyboardai.operationactivity.Feedback;
 import com.noteaiapp.keyboardai.operationactivity.InstructionsActivity;
@@ -53,6 +57,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -72,6 +77,8 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -93,12 +100,16 @@ public class NotesListActivity extends AppCompatActivity {
     private NoteRepository noteRepository;
     TextView initialtext;
     FloatingActionButton fabAddNote;
-    LinearLayout option_text_layout, option_drawings_layout,option_list_layout;
+    LinearLayout option_text_layout, option_drawings_layout,option_list_layout,option_image_layout;
     private DrawerLayout drawerLayout;
     ItemTouchHelper itemTouchHelper;//itemTouchHelperPinned;
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
 
     private SearchView searchView;
+    // Add these at the top of NotesListActivity.java
+    private ActivityResultLauncher<Intent> galleryLauncher;
+    private ActivityResultLauncher<Uri> cameraLauncher;
+    private Uri cameraImageUri; // To store the URI for the photo taken by the camera
     static public List<Note> allNotes;// pinnedNotes;
     private ActionMode actionMode;
     private Note selectedNote;
@@ -132,6 +143,43 @@ public class NotesListActivity extends AppCompatActivity {
                 hideOptions();
             }
         });
+        // Add this inside your onCreate method in NotesListActivity.java
+
+// Launcher for picking an image from the gallery
+        galleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri selectedImageUri = result.getData().getData();
+                        if (selectedImageUri != null) {
+                            // The image was selected from the gallery. Now, save a copy and launch ImageNoteActivity.
+                            String imagePath = saveImageToAppStorage(selectedImageUri);
+                            if (imagePath != null) {
+                                launchImageNoteActivity(imagePath);
+                            } else {
+                                Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                }
+        );
+
+// Launcher for taking a photo with the camera
+        cameraLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicture(),
+                isSuccess -> {
+                    if (isSuccess && cameraImageUri != null) {
+                        // The photo was taken successfully. The URI is in cameraImageUri.
+                        // Now, save a copy and launch ImageNoteActivity.
+                        String imagePath = saveImageToAppStorage(cameraImageUri);
+                        if (imagePath != null) {
+                            launchImageNoteActivity(imagePath);
+                        } else {
+                            Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+        );
         allNotesFromDb = new ArrayList<>();
         //allPinnedNotesFromDb = new ArrayList<>();
         noteRepository = new NoteRepository(this);
@@ -148,6 +196,7 @@ public class NotesListActivity extends AppCompatActivity {
         shuffle = findViewById(R.id.shuffle);
         //pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
         searchView = findViewById(R.id.search_view);
+        option_image_layout = findViewById(R.id.option_image_layout);
         fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
         //notesRecyclerViewPinned = findViewById(R.id.notesRecyclerViewPinned);
@@ -295,7 +344,51 @@ public class NotesListActivity extends AppCompatActivity {
                 hideOptions();
             }
         });
+        option_image_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //Intent intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
+                //startActivity(intent);
+                hideOptions();
 
+                final CharSequence[] options = {"Take Photo", "Choose from Gallery", "Cancel"};
+                AlertDialog.Builder builder = new AlertDialog.Builder(NotesListActivity.this);
+                builder.setTitle("Add an Image Note");
+
+                builder.setItems(options, (dialog, item) -> {
+                    if (options[item].equals("Take Photo")) {
+                        // Create a file to store the camera image
+                        File imageFile = null;
+                        try {
+                            imageFile = createImageFile();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                        if (imageFile != null) {
+                            // Get a content URI for the file using FileProvider
+                            cameraImageUri = FileProvider.getUriForFile(
+                                    NotesListActivity.this,
+                                    "com.noteaiapp.keyboardai.fileprovider", // Make sure this matches your manifest
+                                    imageFile
+                            );
+                            // Launch the camera
+                            cameraLauncher.launch(cameraImageUri);
+                        } else {
+                            Toast.makeText(NotesListActivity.this, "Could not create image file", Toast.LENGTH_SHORT).show();
+                        }
+
+                    } else if (options[item].equals("Choose from Gallery")) {
+                        // Launch the gallery
+                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                        galleryLauncher.launch(intent);
+
+                    } else if (options[item].equals("Cancel")) {
+                        dialog.dismiss();
+                    }
+                });
+                builder.show();
+            }
+        });
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
 
@@ -371,6 +464,9 @@ public class NotesListActivity extends AppCompatActivity {
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
                 if(isListNote){
                     intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
+                }
+                else if(note.getFontColor() != null && !note.getFontColor().isEmpty()){
+                    intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
                 }
                 else if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
@@ -1147,4 +1243,82 @@ public class NotesListActivity extends AppCompatActivity {
            // notesAdapterPinned.clearSelections();
         }
     };
+
+    private File createImageFile() throws IOException {
+        // 1. Create a unique file name with a timestamp
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+
+        // 2. Get the directory for storing the image.
+        //    Use getExternalFilesDir() for persistent media, or getExternalCacheDir() for temporary files.
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+
+        // 3. Ensure the directory exists.
+        //    This is the crucial step that prevents the "No such file or directory" error.
+        if (storageDir != null && !storageDir.exists()) {
+            if (!storageDir.mkdirs()) {
+                Log.d("NotesListActivity", "Failed to create directory");
+                return null; // Return null if directory creation fails
+            }
+        }
+
+        // 4. Create the temporary image file in the directory
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        // mCurrentPhotoPath = image.getAbsolutePath(); // If you need to save the path
+        return image;
+    }
+
+
+    /**
+     * Copies an image from a source URI (camera or gallery) to our app's private, permanent storage.
+     * @param sourceUri The URI of the image to copy.
+     * @return The absolute path of the newly saved image, or null on failure.
+     */
+    private String saveImageToAppStorage(Uri sourceUri) {
+        try {
+            // Create a destination file in the app's private files directory
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            File destinationFile = new File(getFilesDir(), "note_image_" + timeStamp + ".jpg");
+
+            // Open an input stream from the source URI
+            InputStream inputStream = getContentResolver().openInputStream(sourceUri);
+            // Open an output stream to the destination file
+            FileOutputStream outputStream = new FileOutputStream(destinationFile);
+
+            // Copy the bytes
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = inputStream.read(buf)) > 0) {
+                outputStream.write(buf, 0, len);
+            }
+
+            // Close the streams
+            outputStream.close();
+            inputStream.close();
+
+            // Return the absolute path of our new file
+            return destinationFile.getAbsolutePath();
+
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Starts the ImageNoteActivity with the path of the saved image.
+     * @param imagePath The path to the image in our app's storage.
+     */
+    private void launchImageNoteActivity(String imagePath) {
+        Intent intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
+        // We pass the image path so the activity knows which image to load.
+        // The note doesn't exist yet, so we don't pass a note_id.
+        intent.putExtra("image_path", imagePath);
+        startActivity(intent);
+    }
 }

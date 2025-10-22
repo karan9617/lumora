@@ -17,6 +17,7 @@ public class Note implements Serializable {
     private String imagePath;
     // NEW FIELD: For selection state (not stored in database)
     private boolean isSelected = false;
+    private String fontColor;
     public Note(){}
 
     // Full constructor for loading notes from the database
@@ -63,7 +64,38 @@ public class Note implements Serializable {
         this.isSelected = false; // Default to not selected
 
     }
+    public Note(String title, String content, String date, int color, int order, String fontColor, boolean isPinned, String imagePath) {
+        this.title = title;
+        this.content = content;
+        this.date = date;
+        this.color = color;
+        this.order = order;
+        this.isPinned = isPinned;
+        this.imagePath = imagePath;
+        this.isSelected = false; // Default to not selected
+        this.fontColor = fontColor;
+    }
+    public Note(long id, String title, String content, String date, int color, int order, String fontColor, boolean isPinned, String imagePath) {
+        this.title = title;
+        this.content = content;
+        this.date = date;
+        this.color = color;
+        this.order = order;
+        this.isPinned = isPinned;
+        this.imagePath = imagePath;
+        this.isSelected = false; // Default to not selected
+        this.fontColor = fontColor;
+    }
     // --- Getters and Setters ---
+
+
+    public void setFontColor(String getFontColor) {
+        this.fontColor = getFontColor;
+    }
+
+    public String getFontColor() {
+        return fontColor;
+    }
 
     public long getId() {
         return id;

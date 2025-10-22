@@ -50,7 +50,25 @@ public class NoteRepository {
         db.close();
         return newRowId;
     }
+    public long addImageNote(Note note) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(NotesDbHelper.COLUMN_TITLE, note.getTitle());
+        values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
+        values.put(NotesDbHelper.COLUMN_DATE, note.getDate());
+        values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
+        values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
+        values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
+        values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
+        values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
+        //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+        //values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
+        long newRowId = db.insert(NotesDbHelper.TABLE_NOTES, null, values);
+        db.close();
+        return newRowId;
+    }
     public List<Note> getAllNotes() {
         List<Note> notes = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -72,6 +90,7 @@ public class NoteRepository {
                 note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
+                note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
              //   note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
              //   note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
              //   note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
@@ -215,7 +234,24 @@ public class NoteRepository {
         db.close();
         return updatedRows;
     }
+    public int updateImageNote(Note note) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(NotesDbHelper.COLUMN_TITLE, note.getTitle());
+        values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
+        values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
+        values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
+        // values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+         values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
+        int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,
+                values,
+                NotesDbHelper.COLUMN_ID + " = ?",
+                new String[]{String.valueOf(note.getId())});
+        db.close();
+        return updatedRows;
+    }
     public void updateNoteOrder(long noteId, int newOrder) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
