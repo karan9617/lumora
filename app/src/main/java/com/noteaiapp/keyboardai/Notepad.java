@@ -1212,8 +1212,106 @@ public class Notepad extends AppCompatActivity {
             summarizeNoteWithGemini();
             return true;
         }
+        else if (id == R.id.action_translate) {
+            showLanguageSelectionDialog();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
+    private void showLanguageSelectionDialog() {
+        final String[] languages = {"Spanish", "French", "German", "Japanese", "Hindi", "Russian","English"};
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Translate to...")
+                .setItems(languages, (dialog, which) -> {
+                    String selectedLanguage = languages[which];
+                    translateNoteWithGemini(selectedLanguage);
+                });
+        builder.create().show();
+    }
+    /**
+     * Takes the current note text, translates it to the target language using the Gemini API,
+     * and replaces the content of the EditText with the result.
+     * @param targetLanguage The language to translate the text into (e.g., "Spanish").
+     */
+    private void translateNoteWithGemini(String targetLanguage) {
+        String originalText = resultText.getText().toString();
+        if (originalText.trim().isEmpty()) {
+            Toast.makeText(this, "Note is empty, nothing to translate.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Reuse the same progress bar you use for spell-check
+        if (correctionProgressBar != null) {
+            correctionProgressBar.setVisibility(View.VISIBLE);
+        }
+
+        // A very specific prompt for translation
+        String prompt = "Translate the following text into " + targetLanguage + ". " +
+                "Only return the translated text itself, without any extra phrases or explanations.\n\n" +
+                "Text to translate:\n\"" + originalText + "\"";
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            OkHttpClient client = new OkHttpClient();
+            try {
+                JSONObject jsonBody = new JSONObject();
+                JSONObject contents = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", prompt);
+                parts.put(textPart);
+                contents.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(contents));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+                Request request = new Request.Builder()
+                        .url(API_URL) // Your existing API_URL
+                        .post(body)
+                        .build();
+
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String translatedText = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
+
+                    // --- THIS IS THE MODIFIED PART ---
+                    runOnUiThread(() -> {
+                        if (correctionProgressBar != null) correctionProgressBar.setVisibility(View.GONE);
+
+                        // 1. Set the EditText to the new translated text
+                        resultText.setText(translatedText);
+
+                        // 2. Mark the note as modified so the user is prompted to save
+                        isNoteModified = true;
+
+                        // 3. Inform the user
+                        Toast.makeText(Notepad.this, "Note translated to " + targetLanguage, Toast.LENGTH_SHORT).show();
+                    });
+                    // --- END OF MODIFIED PART ---
+
+                } else {
+                    runOnUiThread(() -> {
+                        if (correctionProgressBar != null) correctionProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(Notepad.this, "Error: Translation failed.", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error during Gemini translation: " + e.getMessage(), e);
+                runOnUiThread(() -> {
+                    if (correctionProgressBar != null) correctionProgressBar.setVisibility(View.GONE);
+                    Toast.makeText(Notepad.this, "An error occurred.", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
     /**
      * Takes the current text from the notepad, sends it to the Gemini API for summarization,
      * and appends the result to the end of the note.

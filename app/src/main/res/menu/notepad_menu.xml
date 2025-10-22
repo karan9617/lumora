@@ -8,6 +8,12 @@
         app:showAsAction="ifRoom"
         />
     <item
+        android:id="@+id/action_translate"
+        android:title="Translate Note"
+        app:showAsAction="never"
+        android:contentDescription="Translate the current note" />
+
+    <item
         android:id="@+id/action_correct_text"
         android:title="Correct Text"
         android:icon="@drawable/ic_spellcheck"
