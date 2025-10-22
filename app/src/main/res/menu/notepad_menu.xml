@@ -14,6 +14,11 @@
         app:showAsAction="ifRoom"
         android:contentDescription="Correct spelling and grammar" />
 
+    <item
+        android:id="@+id/action_summarize_note"
+        android:title="Summarize Note"
+        app:showAsAction="never"
+        android:contentDescription="Summarize the current note" />
 
     <item
         android:id="@+id/action_save"

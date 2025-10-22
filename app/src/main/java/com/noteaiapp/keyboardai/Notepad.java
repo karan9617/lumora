@@ -1208,8 +1208,92 @@ public class Notepad extends AppCompatActivity {
             correctTextWithGemini();
             return true;
         }
+        else if (id == R.id.action_summarize_note) {
+            summarizeNoteWithGemini();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
+    /**
+     * Takes the current text from the notepad, sends it to the Gemini API for summarization,
+     * and appends the result to the end of the note.
+     */
+    private void summarizeNoteWithGemini() {
+        String originalText = resultText.getText().toString();
+        if (originalText.trim().isEmpty()) {
+            Toast.makeText(this, "Note is empty, nothing to summarize.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Reuse the same progress bar
+        correctionProgressBar.setVisibility(View.VISIBLE);
+
+        // A clear prompt for summarization
+        String prompt = "Summarize the following text into a few concise bullet points. " +
+                "Do not include any introductory phrases or headings.\n\n" +
+                "Original text:\n\"" + originalText + "\"";
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            OkHttpClient client = new OkHttpClient();
+
+            try {
+                // Create the JSON payload for the Gemini API
+                JSONObject jsonBody = new JSONObject();
+                JSONObject contents = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", prompt);
+                parts.put(textPart);
+                contents.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(contents));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+                Request request = new Request.Builder()
+                        .url(API_URL) // You already have this defined
+                        .post(body)
+                        .build();
+
+                // Synchronous API call
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    JSONArray candidates = jsonResponse.getJSONArray("candidates");
+                    JSONObject firstCandidate = candidates.getJSONObject(0);
+                    JSONObject content = firstCandidate.getJSONObject("content");
+                    JSONArray partsArray = content.getJSONArray("parts");
+                    String summary = partsArray.getJSONObject(0).getString("text").trim();
+
+                    // *** This is the key part: Append the summary to the existing text ***
+                    String textToAppend = "\n\n---\n\n**Summarized Note:**\n" + summary;
+                    Spannable summaryHtml = (Spannable) HtmlCompat.fromHtml(textToAppend, HtmlCompat.FROM_HTML_MODE_LEGACY);
+
+                    // Update the UI on the main thread
+                    runOnUiThread(() -> {
+                        resultText.append(summaryHtml);
+                        isNoteModified = true; // Mark the note as modified
+                        correctionProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(Notepad.this, "Summary appended!", Toast.LENGTH_SHORT).show();
+                    });
+
+                } else {
+                    // Handle API errors on the main thread
+                    runOnUiThread(() -> {
+                        correctionProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(Notepad.this, "Error: Could not get summary.", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error during Gemini summary: " + e.getMessage(), e);
+                runOnUiThread(() -> {
+                    correctionProgressBar.setVisibility(View.GONE);
+                    Toast.makeText(Notepad.this, "An error occurred.", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
     /**
      * Takes the current text from the notepad, sends it to the Gemini API for correction,
      * and updates the EditText with the result.
@@ -1266,7 +1350,7 @@ public class Notepad extends AppCompatActivity {
                         resultText.setText(correctedText);
                         isNoteModified = true; // Mark the note as modified
                         correctionProgressBar.setVisibility(View.GONE);
-                        Toast.makeText(Notepad.this, "Text corrected!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(Notepad.this, "Spellings corrected!", Toast.LENGTH_SHORT).show();
                     });
 
                 } else {
