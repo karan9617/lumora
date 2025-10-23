@@ -465,7 +465,7 @@ public class NotesListActivity extends AppCompatActivity {
                 if(isListNote){
                     intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
                 }
-                else if(note.getFontColor() != null && !note.getFontColor().isEmpty()){
+                else if(note.getFontColor() != null && !note.getFontColor().isEmpty() && note.getFontColor().equalsIgnoreCase("imagenote")){
                     intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
                 }
                 else if (note.getContent() != null && !note.getContent().isEmpty()) {

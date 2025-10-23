@@ -112,9 +112,7 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:cardElevation="8dp"
                         android:id="@+id/imageCard"
-                        app:cardCornerRadius="12dp"
                         android:visibility="gone"
                         app:cardUseCompatPadding="true"
                         app:cardBackgroundColor="@android:color/transparent">

@@ -130,6 +130,7 @@ public class ImageNoteActivity extends AppCompatActivity {
     private List<Integer> searchIndices = new ArrayList<>();
     LinearLayout linear_layout_main;
     private final int HIGHLIGHT_COLOR = Color.YELLOW;
+    private String imagePathFromIntent = "";
     private int selectedColor = Color.WHITE;
     private boolean isNoteModified = false,isDirty = false;
     MaterialToolbar toolbar;
@@ -279,6 +280,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         }
 
         noteId = getIntent().getLongExtra("note_id", -1);
+        imagePathFromIntent = getIntent().getStringExtra("image_path");
         Note currentNode = noteRepository.getNoteById(noteId);
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
         if(receivedDate != null && !receivedDate.isEmpty()){
@@ -300,8 +302,8 @@ public class ImageNoteActivity extends AppCompatActivity {
         String noteContent = (currentNode == null )? "":currentNode.getContent();
         noteDate = (currentNode == null )? "":currentNode.getDate();
         selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
-        imagePath = (currentNode == null )? "":currentNode.getImagePath();
-        drawingData = (currentNode == null )? null : FileUtils.loadFileFromPath(currentNode.getImagePath());
+        imagePath = (currentNode == null )? imagePathFromIntent:currentNode.getImagePath();
+        drawingData = (currentNode == null )? FileUtils.loadFileFromPath(imagePathFromIntent) : FileUtils.loadFileFromPath(currentNode.getImagePath());
         DrawingActivity.DrawingDataManager.clearDrawingData();
         /*
         // NEW: Retrieve the pinned status from the intent
@@ -312,9 +314,12 @@ public class ImageNoteActivity extends AppCompatActivity {
         noteOrder = (currentNode == null )? -1:currentNode.getOrder();
         // setting the imagesketch from the database
         if(drawingData != null && drawingData.length > 0){
+
             Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
             // Check if the bitmap was successfully created
             if (savedBitmap != null) {
+                Log.d(TAG, "insde drawing data 2= " + imagePathFromIntent);
+
                 // Assign the bitmap to your ImageView and make it visible
                 imagesketch.setImageBitmap(savedBitmap);
                 imageframelayout.setVisibility(View.VISIBLE);

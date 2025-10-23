@@ -207,7 +207,7 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                             String titleFromNotes = selectedNote.getTitle().split(";")[0].trim().toLowerCase();
                             String titleFromStrings = context.getString(R.string.sketch_text).trim().toLowerCase();
                             if (titleFromNotes.equalsIgnoreCase(titleFromStrings)) {
-                                Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+                                Bitmap bitmap = loadSampledBitmapFromFile(imageFile.getAbsolutePath(), 300, 300);
                                 views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle().split(";")[0]);
                                 views.setImageViewBitmap(R.id.image_drawing, bitmap);
                                 views.setViewVisibility(R.id.widget_single_note_content_layout, android.view.View.GONE);
@@ -216,7 +216,7 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                                 views.setViewVisibility(R.id.widget_empty_view, android.view.View.GONE);
                             } else {
                                 if(imageFile.exists()){
-                                    Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+                                    Bitmap bitmap = loadSampledBitmapFromFile(imageFile.getAbsolutePath(), 300, 300);
                                     views.setTextViewText(R.id.widget_note_title, selectedNote.getTitle().split(";")[0]);
                                     views.setViewVisibility(R.id.image_drawing_with_content, View.VISIBLE);
                                     views.setTextViewText(R.id.widget_note_content, loadNote(selectedNote.getContent()));
@@ -279,4 +279,50 @@ public class NotesWidgetProvider extends AppWidgetProvider {
             updateAppWidget(context, appWidgetManager, widgetId);
         }
     }
+
+    // Add these two methods inside the NotesWidgetProvider class, but outside of any inner classes.
+
+    /**
+     * Loads a scaled-down bitmap from a file path to avoid memory errors in widgets.
+     * @param imagePath The path to the full-size image.
+     * @param reqWidth The required width for the output bitmap.
+     * @param reqHeight The required height for the output bitmap.
+     * @return A memory-efficient, scaled-down Bitmap.
+     */
+    private static Bitmap loadSampledBitmapFromFile(String imagePath, int reqWidth, int reqHeight) {
+        // First, decode with inJustDecodeBounds=true to check dimensions without loading the image into memory
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(imagePath, options);
+
+        // Calculate inSampleSize (how much to scale down the image)
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false; // Now, actually load the scaled-down image
+        return BitmapFactory.decodeFile(imagePath, options);
+    }
+
+    /**
+     * Calculates the largest inSampleSize value that is a power of 2 and keeps both
+     * height and width larger than the requested height and width.
+     */
+    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+        return inSampleSize;
+    }
+
 }
