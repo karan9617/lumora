@@ -87,4 +87,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-drive:17.0.0")
 // Note: This is a legacy API, but used here for simplicity. The modern approach uses the REST API with an HTTP client.
     implementation("com.google.api-client:google-api-client-android:1.23.0")
+    implementation("com.github.bumptech.glide:glide:4.14.2")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.14.2")
+
 }

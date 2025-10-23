@@ -15,6 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
@@ -109,9 +110,9 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             e.printStackTrace();
             holder.noteDate.setText(note.getDate());
         }
-
-        byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
-        if (drawingData != null && drawingData.length > 0) {
+        String imagePath = note.getImagePath();
+        //byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
+        if (imagePath != null && imagePath.length() > 0) {
             if(note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)){
                 holder.labeltext1.setVisibility(View.GONE);
                 holder.labeltext2.setVisibility(View.GONE);
@@ -121,15 +122,18 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 holder.labeltext2.setVisibility(View.VISIBLE);
             }
             try {
-                Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-                if (drawingBitmap != null) {
-                    holder.noteDrawing.setImageBitmap(drawingBitmap);
+                //Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+                //if (drawingBitmap != null) {
+                    Glide.with(context)
+                            .load(imagePath) // Tell Glide to load the image from this file path
+                            .into(holder.noteDrawing);
+                   // holder.noteDrawing.setImageBitmap(drawingBitmap);
                     holder.noteDrawing.setVisibility(View.VISIBLE);
                     holder.noteContent.setVisibility(View.GONE);
-                } else {
-                    holder.noteDrawing.setVisibility(View.GONE);
-                    holder.noteContent.setVisibility(View.GONE);
-                }
+               /// } else {
+                   // holder.noteDrawing.setVisibility(View.GONE);
+                   // holder.noteContent.setVisibility(View.GONE);
+                //}
             } catch (Exception e) {
                 e.printStackTrace();
                 holder.noteDrawing.setVisibility(View.GONE);
