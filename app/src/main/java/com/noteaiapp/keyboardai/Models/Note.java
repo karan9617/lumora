@@ -76,6 +76,7 @@ public class Note implements Serializable {
         this.fontColor = fontColor;
     }
     public Note(long id, String title, String content, String date, int color, int order, String fontColor, boolean isPinned, String imagePath) {
+        this.id = id;
         this.title = title;
         this.content = content;
         this.date = date;
