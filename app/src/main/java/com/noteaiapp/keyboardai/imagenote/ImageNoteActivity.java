@@ -163,6 +163,15 @@ public class ImageNoteActivity extends AppCompatActivity {
         postponeEnterTransition();
         init();
         registerListeners();
+        clearImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingData = null;
+                imagePath = null;
+                imageframelayout.setVisibility(View.GONE);
+                saveNote();
+            }
+        });
         pdfFileLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -981,14 +990,7 @@ public class ImageNoteActivity extends AppCompatActivity {
             // Set the listener to apply the LINK to selected text
             linkCreationButton.setOnClickListener(v -> applyLinkToSelection());
         }
-        clearImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                drawingData = null;
-                imageframelayout.setVisibility(View.GONE);
-                saveNote();
-            }
-        });
+
         black_pen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

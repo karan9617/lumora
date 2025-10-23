@@ -17,6 +17,7 @@ public class Note implements Serializable {
     private String imagePath;
     // NEW FIELD: For selection state (not stored in database)
     private boolean isSelected = false;
+    private String fontFamily;
     private String fontColor;
     public Note(){}
 
@@ -89,6 +90,14 @@ public class Note implements Serializable {
     }
     // --- Getters and Setters ---
 
+
+    public String getFontFamily() {
+        return fontFamily;
+    }
+
+    public void setFontFamily(String fontFamily) {
+        this.fontFamily = fontFamily;
+    }
 
     public void setFontColor(String getFontColor) {
         this.fontColor = getFontColor;

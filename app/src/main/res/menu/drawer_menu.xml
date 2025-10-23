@@ -17,6 +17,10 @@
             android:id="@+id/nav_trash"
             android:icon="@drawable/baseline_auto_delete_24"
             android:title="@string/drawer_menu_Trash" />
+        <item
+            android:id="@+id/nav_archive"
+            android:icon="@drawable/baseline_archive_24"
+            android:title="@string/nav_archive" />
     </group>
 
     <item android:title="@string/communicate_text">

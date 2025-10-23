@@ -116,10 +116,18 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             if(note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)){
                 holder.labeltext1.setVisibility(View.GONE);
                 holder.labeltext2.setVisibility(View.GONE);
+                holder.noteContent.setVisibility(View.GONE);
+                if(titleArr[0].equalsIgnoreCase("sketch")){
+                    holder.noteTitle.setVisibility(View.GONE);
+                }
+                else{
+                    holder.noteTitle.setVisibility(View.VISIBLE);
+                }
             }
             else{
                 holder.labeltext1.setVisibility(View.VISIBLE);
                 holder.labeltext2.setVisibility(View.VISIBLE);
+                holder.noteContent.setVisibility(View.VISIBLE);
             }
             try {
                 //Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
@@ -129,7 +137,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                             .into(holder.noteDrawing);
                    // holder.noteDrawing.setImageBitmap(drawingBitmap);
                     holder.noteDrawing.setVisibility(View.VISIBLE);
-                    holder.noteContent.setVisibility(View.GONE);
+
                /// } else {
                    // holder.noteDrawing.setVisibility(View.GONE);
                    // holder.noteContent.setVisibility(View.GONE);

@@ -196,4 +196,6 @@
     <string name="russian_text">Russian</string>
     <string name="french_text">French</string>
     <string name="translate_to">Translate to...</string>
+    <string name="nav_archive">Archives</string>
+    <string name="no_arvhives_message">No notes currently archived.</string>
 </resources>

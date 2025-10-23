@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="#B4000000"
+    tools:openDrawer="left"
+    >
+    <!-- tools:openDrawer="left"
+     <TextView
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:id="@+id/initialtext"
+         android:textColor="@color/white"
+         android:gravity="center"
+         android:background="@drawable/rounded_purple_background"
+         android:text="NotesAI helps you create creative notes. Click on the plus button to get started. Happy noting :)"
+
+         />
+ -->
+
+    <!-- This is the main content area of the screen -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/initialtext"
+            android:textColor="@color/white"
+            android:gravity="center"
+
+            android:layout_centerInParent="true"
+            android:background="@drawable/rounded_purple_background"
+            android:padding="24dp"
+            android:elevation="8dp"
+            android:layout_marginLeft="10dp"
+            android:fontFamily="@font/latoregular"
+            android:layout_marginRight="10dp"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="@string/no_arvhives_message"
+            />
+        <!-- Toolbar is at the top -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#1F1F1F"
+            android:elevation="4dp"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+
+            <!-- The Search Bar -->
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/search_view"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                app:queryHint="Search your notes"
+                app:queryBackground="@android:color/transparent"
+                android:textColorHint="@android:color/darker_gray"
+                android:textColor="@android:color/white"
+                android:layout_gravity="right"
+                />
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_shuffle"
+                android:id="@+id/shuffle"
+                android:layout_gravity="right"
+                android:background="@drawable/button_background_transparent"
+                android:layout_marginEnd="5dp"
+                />
+        </androidx.appcompat.widget.Toolbar>
+
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="74dp"
+            android:padding="8dp">
+
+            <!-- RecyclerView for Regular Notes -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/notesRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                tools:itemCount="10"
+                tools:listitem="@layout/note_item_layout"/>
+        </LinearLayout>
+
+
+    </RelativeLayout>
+
+    <!-- The Navigation View for the side menu-->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:fitsSystemWindows="true"
+        app:menu="@menu/drawer_menu"
+        app:itemIconTint="@color/white"
+        app:itemTextColor="@color/white"
+        android:background="#1F1F1F"/>
+
+</androidx.drawerlayout.widget.DrawerLayout>

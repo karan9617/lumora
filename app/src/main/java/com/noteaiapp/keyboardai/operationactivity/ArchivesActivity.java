@@ -1,11 +1,9 @@
-package com.noteaiapp.keyboardai;
+package com.noteaiapp.keyboardai.operationactivity;
 
-import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
@@ -27,41 +25,16 @@ import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.EditText;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.DriveScopes;
-import com.noteaiapp.keyboardai.Models.Label;
-import com.noteaiapp.keyboardai.Models.Note;
-import com.noteaiapp.keyboardai.adapter.NotesAdapter;
-import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
-import com.noteaiapp.keyboardai.calendar.CalendarActivity;
-import com.noteaiapp.keyboardai.data.NoteRepository;
-import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
-import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
-import com.noteaiapp.keyboardai.operationactivity.ArchivesActivity;
-import com.noteaiapp.keyboardai.operationactivity.Feedback;
-import com.noteaiapp.keyboardai.operationactivity.InstructionsActivity;
-import com.noteaiapp.keyboardai.operationactivity.PoliciesActivity;
-import com.noteaiapp.keyboardai.operationactivity.TrashActivity;
-import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.navigation.NavigationView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
@@ -76,6 +49,20 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.navigation.NavigationView;
+import com.noteaiapp.keyboardai.DrawingActivity;
+import com.noteaiapp.keyboardai.Models.Note;
+import com.noteaiapp.keyboardai.Notepad;
+import com.noteaiapp.keyboardai.NotesListActivity;
+import com.noteaiapp.keyboardai.R;
+import com.noteaiapp.keyboardai.adapter.NotesAdapter;
+import com.noteaiapp.keyboardai.calendar.CalendarActivity;
+import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
+import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
+import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -83,43 +70,32 @@ import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 
-public class NotesListActivity extends AppCompatActivity {
+public class ArchivesActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView;/// notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
-   // private NotesAdapterPinned notesAdapterPinned;
-    View transparentOverlay;
     private List<Note> notesList;
     List<Note> allNotesFromDb;// allPinnedNotesFromDb;
     Toolbar toolbar;
     private NoteRepository noteRepository;
     TextView initialtext;
-    FloatingActionButton fabAddNote;
-    LinearLayout option_text_layout, option_drawings_layout,option_list_layout,option_image_layout;
     private DrawerLayout drawerLayout;
     ItemTouchHelper itemTouchHelper;//itemTouchHelperPinned;
-    public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
 
     private SearchView searchView;
-    // Add these at the top of NotesListActivity.java
-    private ActivityResultLauncher<Intent> galleryLauncher;
-    private ActivityResultLauncher<Uri> cameraLauncher;
-    private Uri cameraImageUri; // To store the URI for the photo taken by the camera
+
     static public List<Note> allNotes;// pinnedNotes;
     private ActionMode actionMode;
     private Note selectedNote;
     //TextView pinnedNotesHeader;
     public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
-    private LinearLayout optionsLayout;
     NotesRepositoryTrash notesRepositoryTrash;
-    private boolean isOptionsVisible = false;
-    ImageButton shuffle,themeColor;
+    ImageButton shuffle;
     NavigationView navigationView;
     private enum DriveAction { BACKUP, RESTORE }
 
@@ -134,71 +110,24 @@ public class NotesListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_notes_list_main);
+        setContentView(R.layout.activity_archives);
 
         getWindow().setAllowEnterTransitionOverlap(false);
         getWindow().setAllowReturnTransitionOverlap(false);
-        transparentOverlay = findViewById(R.id.transparent_overlay);
-        transparentOverlay.setOnClickListener(v -> {
-            if (isOptionsVisible) {
-                hideOptions();
-            }
-        });
         // Add this inside your onCreate method in NotesListActivity.java
 
-// Launcher for picking an image from the gallery
-        galleryLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Uri selectedImageUri = result.getData().getData();
-                        if (selectedImageUri != null) {
-                            // The image was selected from the gallery. Now, save a copy and launch ImageNoteActivity.
-                            String imagePath = saveImageToAppStorage(selectedImageUri);
-                            if (imagePath != null) {
-                                launchImageNoteActivity(imagePath);
-                            } else {
-                                Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-                }
-        );
-
-// Launcher for taking a photo with the camera
-        cameraLauncher = registerForActivityResult(
-                new ActivityResultContracts.TakePicture(),
-                isSuccess -> {
-                    if (isSuccess && cameraImageUri != null) {
-                        // The photo was taken successfully. The URI is in cameraImageUri.
-                        // Now, save a copy and launch ImageNoteActivity.
-                        String imagePath = saveImageToAppStorage(cameraImageUri);
-                        if (imagePath != null) {
-                            launchImageNoteActivity(imagePath);
-                        } else {
-                            Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                }
-        );
         allNotesFromDb = new ArrayList<>();
         //allPinnedNotesFromDb = new ArrayList<>();
         noteRepository = new NoteRepository(this);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
-        option_list_layout = findViewById(R.id.option_list_layout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         initialtext = findViewById(R.id.initialtext);
-        option_drawings_layout = findViewById(R.id.option_drawings_layout);
-        themeColor = findViewById(R.id.themeColor);
-        option_text_layout = findViewById(R.id.option_text_layout);
         shuffle = findViewById(R.id.shuffle);
         //pinnedNotesHeader = findViewById(R.id.pinnedNotesHeader);
         searchView = findViewById(R.id.search_view);
-        option_image_layout = findViewById(R.id.option_image_layout);
-        fabAddNote = findViewById(R.id.fabAddNote);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
         //notesRecyclerViewPinned = findViewById(R.id.notesRecyclerViewPinned);
         //notesRecyclerViewPinned.setLayoutManager(new LinearLayoutManager(this));
@@ -207,10 +136,6 @@ public class NotesListActivity extends AppCompatActivity {
         loadAndApplyBackgroundColor();
         final Animation slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         final Animation slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
-
-        optionsLayout = findViewById(R.id.options_layout);
-        TextView optionText = findViewById(R.id.option_text);
-        TextView optionDrawing = findViewById(R.id.option_drawings);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -247,16 +172,13 @@ public class NotesListActivity extends AppCompatActivity {
                 startActivity(new Intent(this, Feedback.class));
             }
             else if(id == R.id.calendar_option){
-                Intent intent = new Intent(NotesListActivity.this, CalendarActivity.class);
+                Intent intent = new Intent(ArchivesActivity.this, CalendarActivity.class);
                 startActivity(intent);
             }
-         else if (id == R.id.nav_archive) {
-             startActivity(new Intent(this, ArchivesActivity.class));
-
-        }
-
-
-        drawerLayout.closeDrawers();
+            else if (id == R.id.nav_archive) {
+                return true;
+            }
+            drawerLayout.closeDrawers();
             return true;
         });
         shuffle.setOnClickListener(new View.OnClickListener() {
@@ -265,12 +187,7 @@ public class NotesListActivity extends AppCompatActivity {
                 showSortDialog();
             }
         });
-        themeColor.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showThemeColorDialog();
-            }
-        });
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -287,121 +204,15 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
 
-        fabAddNote.setOnClickListener(v -> {
-            if (isOptionsVisible) {
-                optionsLayout.setVisibility(View.VISIBLE);
-                optionsLayout.startAnimation(slideUpAnimation);
-                hideOptions();
-            } else {
-                optionsLayout.startAnimation(slideDownAnimation);
-                slideDownAnimation.setAnimationListener(new Animation.AnimationListener() {
-                    @Override
-                    public void onAnimationStart(Animation animation) {
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animation animation) {
-                        optionsLayout.setVisibility(View.GONE);
-                        optionsLayout.clearAnimation();
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animation animation) {
-                    }
-                });
-                showOptions();
-            }
-        });
-
-        optionText.setOnClickListener(v -> {
-            Intent intent = new Intent(NotesListActivity.this, Notepad.class);
-            startActivity(intent);
-            hideOptions();
-        });
-
-        optionDrawing.setOnClickListener(v -> {
-            Intent intent = new Intent(NotesListActivity.this, DrawingActivity.class);
-            startActivity(intent);
-            hideOptions();
-        });
-        option_list_layout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
-                startActivity(intent);
-                hideOptions();
-            }
-        });
-        option_drawings_layout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(NotesListActivity.this, DrawingActivity.class);
-                startActivity(intent);
-                hideOptions();
-            }
-        });
-        option_text_layout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(NotesListActivity.this, Notepad.class);
-                startActivity(intent);
-                hideOptions();
-            }
-        });
-        option_image_layout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //Intent intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
-                //startActivity(intent);
-                hideOptions();
-
-                final CharSequence[] options = {"Take Photo", "Choose from Gallery", "Cancel"};
-                AlertDialog.Builder builder = new AlertDialog.Builder(NotesListActivity.this);
-                builder.setTitle("Add an Image Note");
-
-                builder.setItems(options, (dialog, item) -> {
-                    if (options[item].equals("Take Photo")) {
-                        // Create a file to store the camera image
-                        File imageFile = null;
-                        try {
-                            imageFile = createImageFile();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                        if (imageFile != null) {
-                            // Get a content URI for the file using FileProvider
-                            cameraImageUri = FileProvider.getUriForFile(
-                                    NotesListActivity.this,
-                                    "com.noteaiapp.keyboardai.fileprovider", // Make sure this matches your manifest
-                                    imageFile
-                            );
-                            // Launch the camera
-                            cameraLauncher.launch(cameraImageUri);
-                        } else {
-                            Toast.makeText(NotesListActivity.this, "Could not create image file", Toast.LENGTH_SHORT).show();
-                        }
-
-                    } else if (options[item].equals("Choose from Gallery")) {
-                        // Launch the gallery
-                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                        galleryLauncher.launch(intent);
-
-                    } else if (options[item].equals("Cancel")) {
-                        dialog.dismiss();
-                    }
-                });
-                builder.show();
-            }
-        });
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
 
         //StaggeredGridLayoutManager layoutManagerPinned = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-       // notesRecyclerViewPinned.setLayoutManager(layoutManagerPinned);
+        // notesRecyclerViewPinned.setLayoutManager(layoutManagerPinned);
 
         notesList = new ArrayList<>();
         allNotes = new ArrayList<>();
-       // pinnedNotes = new ArrayList<>();
+        // pinnedNotes = new ArrayList<>();
 
         ItemTouchHelper.Callback callback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
             @Override
@@ -467,17 +278,17 @@ public class NotesListActivity extends AppCompatActivity {
                 String noteContent = note.getContent();
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
                 if(isListNote){
-                    intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
+                    intent = new Intent(ArchivesActivity.this, ListItemsActivity.class);
                 }
                 else if(note.getFontColor() != null && !note.getFontColor().isEmpty() && note.getFontColor().equalsIgnoreCase("imagenote")){
-                    intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
+                    intent = new Intent(ArchivesActivity.this, ImageNoteActivity.class);
                 }
                 else if (note.getContent() != null && !note.getContent().isEmpty()) {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
+                    intent = new Intent(ArchivesActivity.this, Notepad.class);
                 } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
-                    intent = new Intent(NotesListActivity.this, DrawingActivity.class);
+                    intent = new Intent(ArchivesActivity.this, DrawingActivity.class);
                 } else {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
+                    intent = new Intent(ArchivesActivity.this, Notepad.class);
                 }
                 intent.putExtra("note_id", note.getId());
                 intent.putExtra("note_title", note.getTitle());
@@ -490,7 +301,7 @@ public class NotesListActivity extends AppCompatActivity {
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
                     ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
-                            NotesListActivity.this,
+                            ArchivesActivity.this,
                             sharedView,
                             transitionName
                     );
@@ -510,281 +321,8 @@ public class NotesListActivity extends AppCompatActivity {
             }
         }, itemTouchHelper,notesRecyclerView);
         notesRecyclerView.setAdapter(notesAdapter);
-      /*
-        ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
-            @Override
-            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
-                return makeMovementFlags(dragFlags, 0);
-            }
-            @Override
-            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-                int fromPosition = viewHolder.getAdapterPosition();
-                int toPosition = target.getAdapterPosition();
-                notesAdapterPinned.onItemMove(fromPosition, toPosition);
-                return true;
-            }
-            @Override
-            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-            }
-            @Override
-            public void onMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y) {
-                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
-                notesAdapterPinned.onItemsMoved();
-            }
-            @Override
-            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
-                super.onSelectedChanged(viewHolder, actionState);
-                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
-                    notesAdapterPinned.onItemsMoved();
-                } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    if (actionMode == null) {
-                        actionMode = startSupportActionMode(actionModeCallback);
-                    }
-                    int position = viewHolder.getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        selectedNote = pinnedNotes.get(position);
-                        //selectedNote.setSelected(true);
-                    }
-                }
-            }
-            @Override
-            public boolean isLongPressDragEnabled() {
-                // Enable long press drag
-                return false;
-            }
-        };
-
-        itemTouchHelperPinned = new ItemTouchHelper(callbackPinned);
-        itemTouchHelperPinned.attachToRecyclerView(notesRecyclerViewPinned);
-
-        notesAdapterPinned = new NotesAdapterPinned(this, pinnedNotes, new NotesAdapterPinned.OnNoteClickListener() {
-            @Override
-            public void onNoteClick(Note note, View sharedView) {
-                if (actionMode != null) {
-                    actionMode.finish();
-                    return;
-                }
-                Intent intent;
-                String noteContent = note.getContent();
-                boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
-                if(isListNote){
-                    intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
-                }
-                else if (note.getContent() != null && !note.getContent().isEmpty()) {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
-                } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
-                    intent = new Intent(NotesListActivity.this, DrawingActivity.class);
-                } else {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
-                }
-                intent.putExtra("note_id", note.getId());
-                intent.putExtra("note_title", note.getTitle());
-                intent.putExtra("note_content", note.getContent());
-                intent.putExtra("note_date", note.getDate());
-                intent.putExtra("note_color", note.getColor());
-                intent.putExtra("note_image_path",note.getImagePath());
-
-                String transitionName = ViewCompat.getTransitionName(sharedView);
-                if (transitionName != null) {
-                    intent.putExtra("TRANSITION_NAME", transitionName);
-                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
-                            NotesListActivity.this,
-                            sharedView,
-                            transitionName
-                    );
-                    startActivity(intent, options.toBundle());
-                } else {
-                    startActivity(intent);
-                }
-            }
-        }, new NotesAdapterPinned.OnNoteLongClickListener() {
-            @Override
-            public void onNoteLongClick(View view, Note note, View sharedView) {
-                if (actionMode == null) {
-                    selectedNote = note;
-                    actionMode = startSupportActionMode(actionModeCallback);
-                }
-            }
-        }, itemTouchHelperPinned,notesRecyclerViewPinned);
-        notesRecyclerViewPinned.setAdapter(notesAdapterPinned);*/
         updatePinnedSectionVisibility();
 
-        drawerLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (isOptionsVisible && event.getAction() == MotionEvent.ACTION_DOWN) {
-                    if (!isTouchInsideView(optionsLayout, event)) {
-                        hideOptions(slideDownAnimation);
-                        return true;
-                    }
-                }
-                return false;
-            }
-        });
-
-    }
-
-    private int getCurrentBackgroundColor() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                .getInt(BACKGROUND_COLOR_KEY, DEFAULT_BACKGROUND_COLOR);
-    }
-    private void showThemeColorDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select Background Color");
-
-        // 1. Create the custom view layout for the dialog
-        LinearLayout dialogLayout = new LinearLayout(this);
-        dialogLayout.setOrientation(LinearLayout.VERTICAL);
-        // Use density-independent units (dp) for padding via multiplication
-        int padding = (int) (getResources().getDisplayMetrics().density * 16);
-        dialogLayout.setPadding(padding * 2, padding * 2, padding * 2, padding * 2);
-
-        // --- Fixed Major Colors ---
-        final int COLOR_BLACK = Color.BLACK;
-        final int COLOR_WHITE = Color.WHITE;
-        final int COLOR_BROWN = Color.rgb(139, 69, 19);
-        final int COLOR_MAROON = Color.rgb(128, 0, 0);
-        final int[] fixedColors = {COLOR_BLACK, COLOR_WHITE, COLOR_BROWN, COLOR_MAROON};
-
-        // 2. Add a horizontal layout for major colors
-        LinearLayout majorColorsLayout = new LinearLayout(this);
-        majorColorsLayout.setOrientation(LinearLayout.HORIZONTAL);
-        majorColorsLayout.setGravity(Gravity.CENTER_HORIZONTAL);
-        majorColorsLayout.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-
-        int colorSize = (int) (getResources().getDisplayMetrics().density * 40);
-        int colorMargin = (int) (getResources().getDisplayMetrics().density * 12);
-
-        for (int color : fixedColors) {
-            View colorView = new View(this);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(colorSize, colorSize);
-            params.setMargins(colorMargin, colorMargin / 2, colorMargin, colorMargin / 2);
-            colorView.setLayoutParams(params);
-
-            colorView.setBackgroundColor(color);
-            colorView.setTag(color); // Store the color in the tag for retrieval in the listener
-
-            // Add a temporary border for white color visibility against a white dialog background
-            if (color == Color.WHITE) {
-                // A simple trick to show a slight border using padding/background if custom drawables are unavailable
-                colorView.setPadding(1, 1, 1, 1);
-                // Cannot easily draw border without custom drawable or new view, rely on visual.
-            }
-
-            majorColorsLayout.addView(colorView);
-        }
-
-        dialogLayout.addView(majorColorsLayout);
-
-        // Add a separator space
-        View separator = new View(this);
-        LinearLayout.LayoutParams separatorParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                padding / 2
-        );
-        separator.setLayoutParams(separatorParams);
-        dialogLayout.addView(separator);
-
-        // 3. Add a TextView for the color preview
-        TextView colorPreview = new TextView(this);
-        colorPreview.setText(R.string.sliding_text_dialog);
-        colorPreview.setTextColor(Color.BLACK); // Ensure text visibility
-        colorPreview.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        colorPreview.setPadding(padding, padding, padding, padding);
-        LinearLayout.LayoutParams previewParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                (int) (getResources().getDisplayMetrics().density * 60) // Slightly smaller height
-        );
-        previewParams.setMargins(0, 0, 0, padding); // 16dp margin bottom
-        colorPreview.setLayoutParams(previewParams);
-        colorPreview.setBackgroundColor(getCurrentBackgroundColor());
-        dialogLayout.addView(colorPreview);
-
-
-        // 4. Add a SeekBar for Hue selection (0 to 360 degrees)
-        SeekBar hueSeekBar = new SeekBar(this);
-        // Max progress of 360 to represent 360 degrees of hue
-        hueSeekBar.setMax(360);
-        // Set initial progress to current background color's hue
-        float[] hsv = new float[3];
-        Color.colorToHSV(getCurrentBackgroundColor(), hsv);
-        hueSeekBar.setProgress((int) hsv[0]);
-
-        LinearLayout.LayoutParams seekBarParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        hueSeekBar.setLayoutParams(seekBarParams);
-        dialogLayout.addView(hueSeekBar);
-
-
-        // 5. Build the dialog
-        builder.setView(dialogLayout);
-
-        // Add a CLOSE button that also resets the color if the user closed it mid-drag without stopping the touch
-        builder.setNeutralButton(R.string.close_dialog, (dialog, which) -> {
-            dialog.dismiss();
-            // Re-apply the last permanently saved color
-            loadAndApplyBackgroundColor();
-        });
-
-        final AlertDialog dialog = builder.create();
-
-        // 6. Set click listeners for the fixed color views now that 'dialog' is defined
-        for (int i = 0; i < majorColorsLayout.getChildCount(); i++) {
-            View colorView = majorColorsLayout.getChildAt(i);
-            colorView.setOnClickListener(v -> {
-                int selectedColor = (int) v.getTag();
-                saveAndApplyBackgroundColor(selectedColor);
-                dialog.dismiss();
-                Toast.makeText(NotesListActivity.this, R.string.successful_save_theme_color, Toast.LENGTH_SHORT).show();
-            });
-        }
-
-        // 7. Set the listener for real-time updates for the SeekBar
-        hueSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            private int currentColor = getCurrentBackgroundColor();
-            // Fixed Saturation and Value to ensure the colors are soft/pastel, not neon
-            private final float SATURATION = 0.2f;
-            private final float VALUE = 1.0f;
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser) {
-                    float hue = (float) progress;
-                    // Generate color using HSV
-                    float[] hsv = {hue, SATURATION, VALUE};
-                    currentColor = Color.HSVToColor(hsv);
-
-                    // Update the preview in the dialog
-                    colorPreview.setBackgroundColor(currentColor);
-
-                    // Temporarily apply to activity background for real-time feedback
-                    if (drawerLayout != null) {
-                        drawerLayout.setBackgroundColor(currentColor);
-                    }
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                // Not saving here, just tracking the start of the interaction
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                // User finished selecting the color, save it permanently
-                saveAndApplyBackgroundColor(currentColor);
-                Toast.makeText(NotesListActivity.this, R.string.successful_save_theme_color, Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // 8. Show the dialog
-        dialog.show();
     }
     // --- Background Color Persistence Variables ---
     private static final String PREFS_NAME = "NotesPrefs";
@@ -885,23 +423,7 @@ public class NotesListActivity extends AppCompatActivity {
         notesAdapterPinned.notifyDataSetChanged();*/
         Toast.makeText(this, R.string.notes_sorted_alphabetically, Toast.LENGTH_SHORT).show();
     }
-    private void hideOptions(final Animation animation) {
-        animation.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {}
 
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                optionsLayout.setVisibility(View.GONE);
-                optionsLayout.clearAnimation();
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-        });
-        optionsLayout.startAnimation(animation);
-        isOptionsVisible = false;
-    }
     private boolean isTouchInsideView(View view, MotionEvent event) {
         int[] location = new int[2];
         view.getLocationOnScreen(location);
@@ -922,7 +444,6 @@ public class NotesListActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        finishAffinity();  // closes all activities in the task
     }
 
     @Override
@@ -938,62 +459,36 @@ public class NotesListActivity extends AppCompatActivity {
         super.onPause();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(noteUpdateReceiver);
     }
-    private void showOptions() {
-        optionsLayout.setVisibility(View.VISIBLE);
-        AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
-        fadeIn.setDuration(250);
-        optionsLayout.startAnimation(fadeIn);
-        transparentOverlay.setVisibility(View.VISIBLE);
-        isOptionsVisible = true;
-    }
-    private void hideOptions() {
-        Animation animation = AnimationUtils.loadAnimation(this, R.anim.fab_options_slide_down);
-        animation.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {}
 
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                optionsLayout.setVisibility(View.GONE);
-                transparentOverlay.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-        });
-        optionsLayout.startAnimation(animation);
-        isOptionsVisible = false;
-    }
     private void loadNotesFromDatabase() {
         new Thread(() -> {
-            List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
             allNotesFromDb.clear();
-            for(Note note : allNotesFromDb1){
-
-                if(note.getFontFamily()== null || note.getFontFamily().length() == 0 || (!note.getFontFamily().equalsIgnoreCase("archived"))){
+            List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
+            //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
+            for(Note note: allNotesFromDb1){
+                if(note.getFontFamily() != null && note.getFontFamily().length() > 0 && note.getFontFamily().equalsIgnoreCase("archived")){
                     allNotesFromDb.add(note);
                 }
             }
-            //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
             List<Note> allPinnedArchivedNotes = noteRepository.getAllPinnedNotes();
             for(Note currentNote: allPinnedArchivedNotes){
-                if(currentNote.getFontFamily() != null || currentNote.getFontFamily().length() == 0 || (!currentNote.getFontFamily().equalsIgnoreCase("archived"))){
+                if(currentNote.getFontFamily() != null && currentNote.getFontFamily().length() > 0 && currentNote.getFontFamily().equalsIgnoreCase("archived")){
                     allNotesFromDb.add(currentNote);
                 }
             }
-
+            //allNotesFromDb.addAll(noteRepository.getAllPinnedNotes());
             runOnUiThread(() -> {
                 allNotes.clear();
                 allNotes.addAll(allNotesFromDb);
 
-               // pinnedNotes.clear();
-               // pinnedNotes.addAll(allPinnedNotesFromDb);
+                // pinnedNotes.clear();
+                // pinnedNotes.addAll(allPinnedNotesFromDb);
 
                 notesList.clear();
                 notesList.addAll(allNotes);
 
                 notesAdapter.notifyDataSetChanged();
-               // notesAdapterPinned.notifyDataSetChanged();
+                // notesAdapterPinned.notifyDataSetChanged();
                 updatePinnedSectionVisibility();
             });
         }).start();
@@ -1002,7 +497,7 @@ public class NotesListActivity extends AppCompatActivity {
 
     private void filterNotes(String query) {
         List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
-      //  List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
+        //  List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
 
         // Create new lists to hold the filtered results.
         List<Note> filteredNotesList = new ArrayList<>();
@@ -1039,9 +534,9 @@ public class NotesListActivity extends AppCompatActivity {
         notesList.addAll(filteredNotesList);
         notesAdapter.notifyDataSetChanged();
 
-       // pinnedNotes.clear();
-       // pinnedNotes.addAll(filteredPinnedNotesList);
-       // notesAdapterPinned.notifyDataSetChanged();
+        // pinnedNotes.clear();
+        // pinnedNotes.addAll(filteredPinnedNotesList);
+        // notesAdapterPinned.notifyDataSetChanged();
 
         updatePinnedSectionVisibility();
     }
@@ -1066,13 +561,10 @@ public class NotesListActivity extends AppCompatActivity {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             MenuInflater inflater = mode.getMenuInflater();
-            inflater.inflate(R.menu.menu_contextual_action_bar, menu);
+            inflater.inflate(R.menu.menu_contextual_archive_action_bar, menu);
             searchView.setVisibility(View.GONE);
             toolbar.setVisibility(View.GONE);
             drawerLayout.setBackgroundColor(Color.argb(43,135,73,251));
-            fabAddNote.setVisibility(View.GONE);
-            optionsLayout.setVisibility(View.GONE);
-
             return true;
         }
 
@@ -1134,7 +626,7 @@ public class NotesListActivity extends AppCompatActivity {
 
                         // Get content URI using FileProvider
                         Uri contentUri = FileProvider.getUriForFile(
-                                NotesListActivity.this,
+                                ArchivesActivity.this,
                                 getApplicationContext().getPackageName() + ".fileprovider",
                                 newImageFile
                         );
@@ -1215,7 +707,7 @@ public class NotesListActivity extends AppCompatActivity {
             }*/
             else if (id == R.id.action_delete_note) {
                 final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
-               // final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
+                // final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
 
                 if (selectedNotes.isEmpty()) {
                     mode.finish();
@@ -1237,13 +729,12 @@ public class NotesListActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
                         loadNotesFromDatabase();
-                        Toast.makeText(NotesListActivity.this, "Notes Deleted", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ArchivesActivity.this, "Notes Deleted", Toast.LENGTH_SHORT).show();
                         mode.finish();
                     });
                 });
                 return true;
-            }
-            else if(id == R.id.action_archive){
+            } else if(id == R.id.action_archive){
                 final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
                 // final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
                 if (selectedNotes.isEmpty()) {
@@ -1253,13 +744,13 @@ public class NotesListActivity extends AppCompatActivity {
                 Executors.newSingleThreadExecutor().execute(() -> {
                     // Delete notes from the main list
                     for (Note note : selectedNotes) {
-                        note.setFontFamily("archived");
+                        note.setFontFamily("");
                         noteRepository.updateNote(note);
                     }
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
                         loadNotesFromDatabase();
-                        Toast.makeText(NotesListActivity.this, "Notes Archived", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ArchivesActivity.this, "Notes unarchived", Toast.LENGTH_SHORT).show();
                         mode.finish();
                     });
                 });
@@ -1274,12 +765,9 @@ public class NotesListActivity extends AppCompatActivity {
             actionMode = null;
             selectedNote = null;
             searchView.setVisibility(View.VISIBLE);
-            fabAddNote.setVisibility(View.VISIBLE);
             toolbar.setVisibility(View.VISIBLE);
             drawerLayout.setBackgroundColor(Color.argb(71,0,0,0));
-
             notesAdapter.clearSelections();
-           // notesAdapterPinned.clearSelections();
         }
     };
 
@@ -1354,7 +842,7 @@ public class NotesListActivity extends AppCompatActivity {
      * @param imagePath The path to the image in our app's storage.
      */
     private void launchImageNoteActivity(String imagePath) {
-        Intent intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
+        Intent intent = new Intent(ArchivesActivity.this, ImageNoteActivity.class);
         // We pass the image path so the activity knows which image to load.
         // The note doesn't exist yet, so we don't pass a note_id.
         intent.putExtra("image_path", imagePath);
