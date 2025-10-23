@@ -44,7 +44,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
         //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
         //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
-        //values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
+        values.put(NotesDbHelper.COLUMN_FONT_COLOR, (note.getFontColor()==null)?"":note.getFontColor());
 
         long newRowId = db.insert(NotesDbHelper.TABLE_NOTES, null, values);
         db.close();

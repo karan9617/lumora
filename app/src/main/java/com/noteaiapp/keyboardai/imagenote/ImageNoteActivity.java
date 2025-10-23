@@ -1542,6 +1542,8 @@ public class ImageNoteActivity extends AppCompatActivity {
             supportFinishAfterTransition();
             return;
         }
+        ProgressBar saveProgressBar = findViewById(R.id.saveProgressBar);
+        saveProgressBar.setVisibility(View.VISIBLE);
 
         // --- Step 3: Show a loading indicator (optional but recommended) ---
         // If you have a ProgressBar with id 'saveProgressBar', uncomment the next line
@@ -1597,6 +1599,7 @@ public class ImageNoteActivity extends AppCompatActivity {
 
                 // Update UI elements if needed
                 this.drawingData = drawingDataFromView; // Update the activity's drawing data state
+                saveProgressBar.setVisibility(View.GONE);
                 if (this.drawingData != null && this.drawingData.length > 0) {
                     Bitmap savedBitmap = BitmapFactory.decodeByteArray(this.drawingData, 0, this.drawingData.length);
                     if (savedBitmap != null) {
