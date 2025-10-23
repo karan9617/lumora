@@ -185,4 +185,15 @@
     <string name="remove_from_folder">Remove from Folder</string>
     <string name="backup_text">Backup Notes</string>
     <string name="image_text">Image</string>
+    <string name="translate_text">Translate Note</string>
+    <string name="correct_text_values">Correct Text</string>
+    <string name="summarize_notes">Summarize Note</string>
+    <string name="spanish_text">Spanish</string>
+    <string name="english_text">English</string>
+    <string name="german_text">German</string>
+    <string name="japanese_text">Japanese</string>
+    <string name="hindi_text">Hindi</string>
+    <string name="russian_text">Russian</string>
+    <string name="french_text">French</string>
+    <string name="translate_to">Translate to...</string>
 </resources>

@@ -1528,98 +1528,100 @@ public class ImageNoteActivity extends AppCompatActivity {
     public void saveNote() {
         clearHighlights();
         NotesWidgetProvider.refreshWidget(getApplicationContext());
-        String content = saveNoteContent();
-        //String content = resultText.getText().toString().trim();
-        WordTokenizer tokenizer = new WordTokenizer(content);
-        List<String> labels = tokenizer.getTokenizedWords();
-        if(labels == null) {
-            Log.d(TAG, "LABELS is actually NULL!");
-        } else if(labels.size() == 0) {
-            labels.add("quick-note");labels.add("brief");
-            Log.d(TAG, "LABELS is empty (size=0) with content: '" + content + "'");
-        } else if(labels.size() == 1) {
-            labels.add("note");
-            Log.d(TAG, "LABELS has 1 item: " + labels.get(0) + " with content: '" + content + "'");
-        } else {
-            Log.d(TAG, "LABELS: " + labels.get(0) + " : " + labels.get(1) + " (total=" + labels.size() + ")");
-        }
-        String title = titleText.getText().toString().trim() + ";"+ labels.get(0) + ";" + labels.get(1);
-        byte[] drawingDataToSave = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
-        byte[] drawingData = (drawingView.getDrawingData() == null || drawingView.getDrawingData().length == 0) ? this.drawingData: drawingView.getDrawingData() ;
-        if (title.isEmpty() && content.isEmpty() && (imagePath == null || imagePath.isEmpty())) {
+
+        // --- Step 1: Immediately get all necessary data from the UI thread ---
+        final String currentTitle = titleText.getText().toString().trim();
+        final String currentContent = saveNoteContent();
+        final byte[] drawingDataFromView = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
+        final int currentColor = selectedColor; // Use the class variable we fixed before
+
+        // --- Step 2: Perform a quick check to see if there's anything to save ---
+        if (currentTitle.isEmpty() && currentContent.isEmpty() && (imagePath == null || imagePath.isEmpty()) && (drawingDataFromView == null || drawingDataFromView.length == 0)) {
             Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
             isNoteModified = false;
             supportFinishAfterTransition();
             return;
         }
-        String newimagePath = "";
-        if(drawingData != null && drawingData.length > 0){
-            Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-            if(drawingBitmap != null){
-                String filename = "drawing_" + System.currentTimeMillis() + ".png";
 
-                newimagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+        // --- Step 3: Show a loading indicator (optional but recommended) ---
+        // If you have a ProgressBar with id 'saveProgressBar', uncomment the next line
+        // findViewById(R.id.saveProgressBar).setVisibility(View.VISIBLE);
 
-            }
-        }
-        int colorToSave = Color.WHITE;
-        Drawable background = mainContentLayout.getBackground();
-        if (background instanceof ColorDrawable) {
-            colorToSave = ((ColorDrawable) background).getColor();
-        }
 
-        final int finalColorToSave = colorToSave;
-        final String imagepathfinal = newimagePath;
+        // --- Step 4: Execute all heavy operations on a background thread ---
         Executors.newSingleThreadExecutor().execute(() -> {
-            if (noteId != -1) {
-                // Update existing note with the new imagePath
-                Note existingNote = new Note(noteId, title, content, receivedDateFromActivities, finalColorToSave, noteOrder, "imagenote",isPinned, imagepathfinal);
-                existingNote.setFontColor("imagenote");
-                noteRepository.updateImageNote(existingNote);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show();
-                    isNoteModified = false;
-                    supportFinishAfterTransition();
-                });
-            } else {
-                // Create a new note with the new imagePath
-                Note newNote = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, "imagenote",isPinned, imagepathfinal);
-                newNote.setFontColor("imagenote");
-                noteRepository.addImageNote(newNote);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show();
-                    isNoteModified = false;
-                    supportFinishAfterTransition();
-                });
+            // --- Background Task: Heavy Lifting ---
+
+            // 1. Process text to get labels
+            WordTokenizer tokenizer = new WordTokenizer(currentContent);
+            List<String> labels = tokenizer.getTokenizedWords();
+            if (labels == null || labels.size() < 2) {
+                if (labels == null) labels = new java.util.ArrayList<>();
+                if (labels.size() == 0) labels.add("quick-note");
+                if (labels.size() == 1) labels.add("brief");
             }
-        });
-        this.drawingData = drawingDataToSave;
+            String finalTitle = currentTitle + ";" + labels.get(0) + ";" + labels.get(1);
 
-        if (drawingData != null && drawingData.length > 0) {
-            if(drawingDataToSave != null && drawingDataToSave.length > 0){
-                Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
-                noteRepository.saveBytesToFile(drawingDataToSave,imagePath);
-                if (savedBitmap != null) {
-                    imagesketch.setImageBitmap(savedBitmap);
-                    imagesketch.setVisibility(View.VISIBLE);
-                    imageCard.setVisibility(View.VISIBLE);
-
-                    imageframelayout.setVisibility(View.VISIBLE);
-                    clearImageButton.setVisibility(View.VISIBLE);
+            // 2. Process image/drawing data and save to a file
+            String finalImagePath = this.imagePath; // Start with the existing path
+            if (drawingDataFromView != null && drawingDataFromView.length > 0) {
+                Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
+                if (drawingBitmap != null) {
+                    String filename = "drawing_" + System.currentTimeMillis() + ".png";
+                    // Save the new drawing and get its path. This is file I/O.
+                    finalImagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
                 }
             }
 
-        } else {
-            imagesketch.setImageDrawable(null);
-            imagesketch.setVisibility(View.GONE);
-            imageCard.setVisibility(View.GONE);
-            imageframelayout.setVisibility(View.GONE);
-            clearImageButton.setVisibility(View.GONE);
-        }
+            // 3. Save the note to the database
+            String toastMessage;
+            if (noteId != -1) {
+                // Update existing note
+                Note existingNote = new Note(noteId, finalTitle, currentContent, receivedDateFromActivities, currentColor, noteOrder, "imagenote", isPinned, finalImagePath);
+                existingNote.setFontColor("imagenote");
+                noteRepository.updateImageNote(existingNote);
+                toastMessage = "Note updated!";
+            } else {
+                // Create a new note
+                Note newNote = new Note(finalTitle, currentContent, receivedDateFromActivities, currentColor, 0, "imagenote", isPinned, finalImagePath);
+                newNote.setFontColor("imagenote");
+                noteRepository.addImageNote(newNote);
+                toastMessage = "Note saved!";
+            }
 
-        isNoteModified = false;
-        supportFinishAfterTransition();
+
+            // --- Step 5: Update the UI on the main thread after all work is done ---
+            runOnUiThread(() -> {
+                // Hide loading indicator
+                // findViewById(R.id.saveProgressBar).setVisibility(View.GONE);
+
+                // Update UI elements if needed
+                this.drawingData = drawingDataFromView; // Update the activity's drawing data state
+                if (this.drawingData != null && this.drawingData.length > 0) {
+                    Bitmap savedBitmap = BitmapFactory.decodeByteArray(this.drawingData, 0, this.drawingData.length);
+                    if (savedBitmap != null) {
+                        imagesketch.setImageBitmap(savedBitmap);
+                        imagesketch.setVisibility(View.VISIBLE);
+                        imageCard.setVisibility(View.VISIBLE);
+                        imageframelayout.setVisibility(View.VISIBLE);
+                        clearImageButton.setVisibility(View.VISIBLE);
+                    }
+                } else {
+                    imagesketch.setImageDrawable(null);
+                    imagesketch.setVisibility(View.GONE);
+                    imageCard.setVisibility(View.GONE);
+                    imageframelayout.setVisibility(View.GONE);
+                    clearImageButton.setVisibility(View.GONE);
+                }
+
+                // Show confirmation and finish
+                Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
+                isNoteModified = false;
+                supportFinishAfterTransition();
+            });
+        });
     }
+
     private String getHtmlContent() {
         if (resultText.getText() != null) {
             // TO_HTML_PARAGRAPH_LINES_CONSECUTIVE is essential for preserving

@@ -243,7 +243,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
         // values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
         //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
-         values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
+        values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
         int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,
                 values,

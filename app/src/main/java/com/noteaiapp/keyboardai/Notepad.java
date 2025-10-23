@@ -1036,7 +1036,7 @@ public class Notepad extends AppCompatActivity {
                                         startActivity(intent);
                                     }
                                 })
-                                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                .setNegativeButton(R.string.cancel_text, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.dismiss();
@@ -1219,9 +1219,15 @@ public class Notepad extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
     private void showLanguageSelectionDialog() {
-        final String[] languages = {"Spanish", "French", "German", "Japanese", "Hindi", "Russian","English"};
+        final String[] languages = {getApplicationContext().getString(R.string.spanish_text),
+                getApplicationContext().getString(R.string.french_text),
+                getApplicationContext().getString(R.string.german_text),
+                getApplicationContext().getString(R.string.japanese_text),
+                getApplicationContext().getString(R.string.hindi_text),
+                getApplicationContext().getString(R.string.russian_text)
+               };
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Translate to...")
+        builder.setTitle(R.string.translate_to)
                 .setItems(languages, (dialog, which) -> {
                     String selectedLanguage = languages[which];
                     translateNoteWithGemini(selectedLanguage);
