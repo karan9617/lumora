@@ -1215,7 +1215,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             MenuInflater inflater = mode.getMenuInflater();
-            inflater.inflate(R.menu.menu_contextual_action_bar, menu);
+            inflater.inflate(R.menu.menu_contextual_folder_action_bar, menu);
             searchView.setVisibility(View.GONE);
             toolbar.setVisibility(View.GONE);
             drawerLayout.setBackgroundColor(Color.argb(43,135,73,251));
@@ -1409,6 +1409,28 @@ public class FolderNotesActivity extends AppCompatActivity {
                         // Reload data to reflect changes
                         loadNotesFromDatabase();
                         Toast.makeText(FolderNotesActivity.this, "Notes Archived", Toast.LENGTH_SHORT).show();
+                        mode.finish();
+                    });
+                });
+                return true;
+            }
+            else if(id == R.id.action_remove_note){
+                final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
+                // final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
+                if (selectedNotes.isEmpty()) {
+                    mode.finish();
+                    return true;
+                }
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    // Delete notes from the main list
+                    for (Note note : selectedNotes) {
+                        note.setFontFamily("");
+                        noteRepository.updateNote(note);
+                    }
+                    runOnUiThread(() -> {
+                        // Reload data to reflect changes
+                        loadNotesFromDatabase();
+                        Toast.makeText(FolderNotesActivity.this, "Notes removed from folder", Toast.LENGTH_SHORT).show();
                         mode.finish();
                     });
                 });

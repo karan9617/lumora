@@ -69,6 +69,92 @@ public class NoteRepository {
         db.close();
         return newRowId;
     }
+    // Add this method to your NoteRepository.java file
+
+    /**
+     * Deletes all notes that belong to a specific folder.
+     * It queries the database for notes where the COLUMN_FONT_FAMILY
+     * matches the provided folderName.
+     *
+     * @param folderName The name of the folder whose notes should be deleted.
+     * @return The number of notes deleted.
+     */
+    public int deleteNotesByFolder(String folderName) {
+        // Get a writable instance of the database.
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        // Define the WHERE clause to find notes matching the folder name.
+        // We are using the font_family column for this, as specified.
+        String selection = NotesDbHelper.COLUMN_FONT_FAMILY + " = ?";
+        String[] selectionArgs = { folderName };
+
+        try {
+            // Execute the delete operation on the notes table.
+            deletedRows = db.delete(
+                    NotesDbHelper.TABLE_NOTES, // The table to delete from
+                    selection,                 // The "WHERE" clause (e.g., "font_family = ?")
+                    selectionArgs              // The value for the placeholder '?' (the folderName)
+            );
+            Log.d("NoteRepository", "Deleted " + deletedRows + " notes from folder: " + folderName);
+        } catch (Exception e) {
+            Log.e("NoteRepository", "Error deleting notes by folder: " + e.getMessage());
+        } finally {
+            // It's good practice to close the database connection when you're done.
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+        // Return the count of deleted notes.
+        return deletedRows;
+    }
+// Add this method to your NoteRepository.java file
+
+    /**
+     * Finds all notes belonging to a specific folder and unassigns them
+     * by setting their folder (font_family column) to an empty string.
+     * This effectively moves them out of the folder without deleting them.
+     *
+     * @param folderName The name of the folder to unassign from notes.
+     * @return The number of notes that were updated.
+     */
+    public int unassignFolderFromNotes(String folderName) {
+        // Get a writable instance of the database.
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int updatedRows = 0;
+
+        // 1. Create a ContentValues object to hold the new value.
+        //    We want to set the font_family column to an empty string.
+        ContentValues values = new ContentValues();
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, "");
+
+        // 2. Define the WHERE clause to find all notes in the specified folder.
+        String selection = NotesDbHelper.COLUMN_FONT_FAMILY + " = ?";
+        String[] selectionArgs = { folderName };
+
+        try {
+            // 3. Execute the update operation on the notes table.
+            updatedRows = db.update(
+                    NotesDbHelper.TABLE_NOTES, // The table to update
+                    values,                    // The new values to set (font_family = "")
+                    selection,                 // The "WHERE" clause (e.g., "font_family = ?")
+                    selectionArgs              // The value for the placeholder '?' (the folderName)
+            );
+            Log.d("NoteRepository", "Unassigned " + updatedRows + " notes from folder: " + folderName);
+        } catch (Exception e) {
+            Log.e("NoteRepository", "Error unassigning notes from folder: " + e.getMessage());
+        } finally {
+            // 4. Ensure the database connection is closed to prevent leaks.
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+        // Return the count of updated notes.
+        return updatedRows;
+    }
+
     public List<Note> getAllNotes() {
         List<Note> notes = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();

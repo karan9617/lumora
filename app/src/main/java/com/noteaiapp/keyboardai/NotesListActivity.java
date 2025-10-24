@@ -649,9 +649,16 @@ public class NotesListActivity extends AppCompatActivity {
             // Validate the input
             if (folderName.isEmpty()) {
                 Toast.makeText(this, "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
-            } else {
+            } else if(folderName.equalsIgnoreCase("archived")){
+                Toast.makeText(this, "Folder name cannot be archived", Toast.LENGTH_SHORT).show();
+            }
+            // check if the folder name contains only numbers, alphabets and space
+            else if (!folderName.matches("^[a-zA-Z0-9 ]+$")) {
+                Toast.makeText(this, "Folder name can only contain alphabets, numbers and spaces", Toast.LENGTH_SHORT).show();
+            }
+            else {
                 // Save the folder and refresh the navigation drawer
-                saveFolder(folderName);
+                saveFolder(folderName.trim());
                 Toast.makeText(this, "Folder '" + folderName + "' created", Toast.LENGTH_SHORT).show();
             }
         });
@@ -733,7 +740,7 @@ public class NotesListActivity extends AppCompatActivity {
                 // Button 1: Delete folder AND all notes within it
                 .setPositiveButton("Delete Everything", (dialog, which) -> {
                     // TODO: Implement logic to find and delete all notes in this folder
-                    // noteRepository.deleteNotesByFolder(folderName);
+                     noteRepository.deleteNotesByFolder(folderName);
 
                     // Then, delete the folder itself
                     deleteFolderAndRefresh(folderName);
@@ -742,12 +749,20 @@ public class NotesListActivity extends AppCompatActivity {
 
                 // Button 2: Remove folder but KEEP the notes (move them to uncategorized)
                 .setNegativeButton("Keep Notes, Remove Folder", (dialog, which) -> {
-                    // TODO: Implement logic to find notes in this folder and remove their folder association
-                    // noteRepository.unassignFolderFromNotes(folderName);
+                    new Thread(() -> {
+                        noteRepository.unassignFolderFromNotes(folderName);
 
-                    // Then, delete the folder itself
-                    deleteFolderAndRefresh(folderName);
-                    Toast.makeText(this, "Folder removed, notes kept", Toast.LENGTH_SHORT).show();
+                        // 2. After the database is updated, refresh the UI on the main thread.
+                        runOnUiThread(() -> {
+                            // 3. Delete the folder from SharedPreferences and refresh the drawer.
+                            deleteFolderAndRefresh(folderName);
+
+                            // 4. THIS IS THE FIX: Refresh the main RecyclerView to show the unassigned notes.
+                            loadNotesFromDatabase();
+
+                            Toast.makeText(this, "Folder removed, notes kept", Toast.LENGTH_SHORT).show();
+                        });
+                    }).start();
                 })
 
                 // Button 3: Cancel the operation

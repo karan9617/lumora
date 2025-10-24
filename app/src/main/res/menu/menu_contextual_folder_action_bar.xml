@@ -33,5 +33,8 @@
         android:id="@+id/action_delete_note"
         android:title="@string/delete_menu"
         app:showAsAction="ifRoom" />
-
+    <item
+        android:id="@+id/action_remove_note"
+        android:title="@string/remove_note_from_folder"
+        app:showAsAction="ifRoom" />
 </menu>
