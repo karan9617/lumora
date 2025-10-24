@@ -164,4 +164,42 @@
     <string name="list_trash_text">सूची नोट ट्रैश में डाला गया।</string>
     <string name="notes_discarded">नोट त्याग दिया गया।</string>
     <string name="cancel_list">रद्द करें</string>
+
+    <string name="action_folder_text">फ़ोल्डर जोड़ें</string>
+    <string name="remove_from_folder">फ़ोल्डर से हटाएँ</string>
+    <string name="backup_text">नोट्स का बैकअप लें</string>
+    <string name="image_text">छवि</string>
+    <string name="translate_text">नोट का अनुवाद करें</string>
+    <string name="correct_text_values">पाठ ठीक करें</string>
+    <string name="summarize_notes">नोट का सारांश बनाएं</string>
+    <string name="spanish_text">स्पेनिश</string>
+    <string name="english_text">अंग्रेज़ी</string>
+    <string name="german_text">जर्मन</string>
+    <string name="japanese_text">जापानी</string>
+    <string name="hindi_text">हिंदी</string>
+    <string name="russian_text">रूसी</string>
+    <string name="french_text">फ़्रेंच</string>
+    <string name="translate_to">अनुवाद करें...</string>
+    <string name="nav_archive">संग्रह</string>
+    <string name="no_arvhives_message">वर्तमान में कोई नोट संग्रहित नहीं है।</string>
+    <string name="create_newnotes_folder">फ़ोल्डर में नए नोट्स बनाएं!</string>
+    <string name="remove_note_from_folder">फ़ोल्डर से नोट हटाएँ</string>
+
+    <string name="note_updated">नोट अपडेट किया गया!</string>
+    <string name="note_unarchived">नोट्स अनआर्काइव किए गए</string>
+    <string name="note_deleted_text">नोट्स हटाए गए</string>
+    <string name="note_saved_text">नोट सहेजा गया!</string>
+    <string name="choose_from_gallery">गैलरी से चुनें</string>
+    <string name="take_photo">फ़ोटो लें</string>
+    <string name="add_image">छवि नोट जोड़ें</string>
+    <string name="new_folder_text">नया फ़ोल्डर</string>
+    <string name="failed_image_text">छवि सहेजने में विफल</string>
+    <string name="no_alpha">फ़ोल्डर का नाम केवल अक्षर, अंक और रिक्त स्थान शामिल कर सकता है</string>
+    <string name="create_positive_button">बनाएं</string>
+    <string name="folder_name_archived">फ़ोल्डर का नाम संग्रहित नहीं किया जा सकता</string>
+    <string name="folder_name_empty">फ़ोल्डर का नाम खाली नहीं हो सकता</string>
+    <string name="notes_kept">फ़ोल्डर हटाया गया, नोट्स रखे गए</string>
+    <string name="keep_notes_folder">नोट्स रखें, फ़ोल्डर हटाएं</string>
+    <string name="folder_deleted_toast">फ़ोल्डर और उसके सभी नोट्स हटा दिए गए</string>
+    <string name="folder_remove_desc">आप इस फ़ोल्डर के अंदर मौजूद नोट्स के साथ क्या करना चाहते हैं?</string>
 </resources>

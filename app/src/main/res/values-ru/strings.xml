@@ -165,4 +165,41 @@
     <string name="note_preview">Предварительный просмотр содержимого заметки...</string>
     <string name="select_text">Выберите заметку для виджета</string>
 
+    <string name="action_folder_text">Добавить папку</string>
+    <string name="remove_from_folder">Удалить из папки</string>
+    <string name="backup_text">Резервное копирование заметок</string>
+    <string name="image_text">Изображение</string>
+    <string name="translate_text">Перевести заметку</string>
+    <string name="correct_text_values">Исправить текст</string>
+    <string name="summarize_notes">Суммировать заметку</string>
+    <string name="spanish_text">Испанский</string>
+    <string name="english_text">Английский</string>
+    <string name="german_text">Немецкий</string>
+    <string name="japanese_text">Японский</string>
+    <string name="hindi_text">Хинди</string>
+    <string name="russian_text">Русский</string>
+    <string name="french_text">Французский</string>
+    <string name="translate_to">Перевести на...</string>
+    <string name="nav_archive">Архивы</string>
+    <string name="no_arvhives_message">Нет архивированных заметок.</string>
+    <string name="create_newnotes_folder">Создайте новые заметки в папке!</string>
+    <string name="remove_note_from_folder">Удалить заметку из папки</string>
+
+    <string name="note_updated">Заметка обновлена!</string>
+    <string name="note_unarchived">Заметки разархивированы</string>
+    <string name="note_deleted_text">Заметки удалены</string>
+    <string name="note_saved_text">Заметка сохранена!</string>
+    <string name="choose_from_gallery">Выбрать из галереи</string>
+    <string name="take_photo">Сделать фото</string>
+    <string name="add_image">Добавить заметку с изображением</string>
+    <string name="new_folder_text">Новая папка</string>
+    <string name="failed_image_text">Не удалось сохранить изображение</string>
+    <string name="no_alpha">Имя папки может содержать только буквы, цифры и пробелы</string>
+    <string name="create_positive_button">Создать</string>
+    <string name="folder_name_archived">Имя папки не может быть архивировано</string>
+    <string name="folder_name_empty">Имя папки не может быть пустым</string>
+    <string name="notes_kept">Папка удалена, заметки сохранены</string>
+    <string name="keep_notes_folder">Сохранить заметки, удалить папку</string>
+    <string name="folder_deleted_toast">Папка и все её заметки удалены</string>
+    <string name="folder_remove_desc">Что вы хотите сделать с заметками в этой папке?</string>
 </resources>

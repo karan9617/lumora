@@ -200,4 +200,22 @@
     <string name="no_arvhives_message">No notes currently archived.</string>
     <string name="create_newnotes_folder">Create new notes in the folder!</string>
     <string name="remove_note_from_folder">Remove note from folder</string>
+
+    <string name="note_updated">Note updated!</string>
+    <string name="note_unarchived">Notes unarchived</string>
+    <string name="note_deleted_text">Notes Deleted</string>
+    <string name="note_saved_text">Note saved!</string>
+    <string name="choose_from_gallery">Choose from Gallery</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="add_image">Add an Image Note</string>
+    <string name="new_folder_text">New Folder</string>
+    <string name="failed_image_text">Failed to save image</string>
+    <string name="no_alpha">Folder name can only contain alphabets, numbers and spaces</string>
+    <string name="create_positive_button">Create</string>
+    <string name="folder_name_archived">Folder name cannot be archived</string>
+    <string name="folder_name_empty">Folder name cannot be empty</string>
+    <string name="notes_kept">Folder removed, notes kept</string>
+    <string name="keep_notes_folder">Keep Notes, Remove Folder</string>
+    <string name="folder_deleted_toast">Folder and all its notes deleted</string>
+    <string name="folder_remove_desc">What would you like to do with the notes inside this folder?</string>
 </resources>

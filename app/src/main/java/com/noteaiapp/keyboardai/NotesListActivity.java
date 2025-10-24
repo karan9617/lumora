@@ -358,9 +358,9 @@ public class NotesListActivity extends AppCompatActivity {
                 //startActivity(intent);
                 hideOptions();
 
-                final CharSequence[] options = {"Take Photo", "Choose from Gallery", "Cancel"};
+                final CharSequence[] options = {getApplicationContext().getString(R.string.take_photo), getApplicationContext().getString(R.string.choose_from_gallery), getApplicationContext().getString(R.string.cancel_text)};
                 AlertDialog.Builder builder = new AlertDialog.Builder(NotesListActivity.this);
-                builder.setTitle("Add an Image Note");
+                builder.setTitle(getApplicationContext().getString(R.string.add_image));
 
                 builder.setItems(options, (dialog, item) -> {
                     if (options[item].equals("Take Photo")) {
@@ -633,7 +633,7 @@ public class NotesListActivity extends AppCompatActivity {
     private void showNewFolderDialog() {
         // 1. Create an AlertDialog Builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("New Folder");
+        builder.setTitle(R.string.new_folder_text);
 
         // 2. Inflate a custom layout containing an EditText
         //    We'll create this layout file in the next step.
@@ -642,19 +642,19 @@ public class NotesListActivity extends AppCompatActivity {
         builder.setView(dialogView);
 
         // 3. Set up the dialog buttons ("Create" and "Cancel")
-        builder.setPositiveButton("Create", (dialog, which) -> {
+        builder.setPositiveButton(R.string.create_positive_button, (dialog, which) -> {
             // This code executes when the user clicks "Create"
             String folderName = folderNameEditText.getText().toString().trim();
 
             // Validate the input
             if (folderName.isEmpty()) {
-                Toast.makeText(this, "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.folder_name_empty, Toast.LENGTH_SHORT).show();
             } else if(folderName.equalsIgnoreCase("archived")){
-                Toast.makeText(this, "Folder name cannot be archived", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.folder_name_archived, Toast.LENGTH_SHORT).show();
             }
             // check if the folder name contains only numbers, alphabets and space
             else if (!folderName.matches("^[a-zA-Z0-9 ]+$")) {
-                Toast.makeText(this, "Folder name can only contain alphabets, numbers and spaces", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.no_alpha, Toast.LENGTH_SHORT).show();
             }
             else {
                 // Save the folder and refresh the navigation drawer
@@ -663,7 +663,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
 
-        builder.setNegativeButton("Cancel", (dialog, which) -> {
+        builder.setNegativeButton(R.string.cancel_text, (dialog, which) -> {
             // This code executes when the user clicks "Cancel"
             dialog.dismiss();
         });
@@ -705,8 +705,6 @@ public class NotesListActivity extends AppCompatActivity {
                 MenuItem folderItem = foldersSubMenu.add(R.id.folders_group, Menu.NONE, 0, folderName)
                         .setIcon(R.drawable.baseline_folder_24);
 
-                // --- THIS IS THE NEW PART ---
-
                 // Set a regular click listener to open the folder
                 folderItem.setOnMenuItemClickListener(item -> {
                     // TODO: Implement logic to show notes for this folder
@@ -735,7 +733,7 @@ public class NotesListActivity extends AppCompatActivity {
     private void showDeleteFolderDialog(String folderName) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Delete Folder: '" + folderName + "'")
-                .setMessage("What would you like to do with the notes inside this folder?")
+                .setMessage(R.string.folder_remove_desc)
 
                 // Button 1: Delete folder AND all notes within it
                 .setPositiveButton("Delete Everything", (dialog, which) -> {
@@ -744,11 +742,11 @@ public class NotesListActivity extends AppCompatActivity {
 
                     // Then, delete the folder itself
                     deleteFolderAndRefresh(folderName);
-                    Toast.makeText(this, "Folder and all its notes deleted", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.folder_deleted_toast, Toast.LENGTH_SHORT).show();
                 })
 
                 // Button 2: Remove folder but KEEP the notes (move them to uncategorized)
-                .setNegativeButton("Keep Notes, Remove Folder", (dialog, which) -> {
+                .setNegativeButton(R.string.keep_notes_folder, (dialog, which) -> {
                     new Thread(() -> {
                         noteRepository.unassignFolderFromNotes(folderName);
 
@@ -760,13 +758,13 @@ public class NotesListActivity extends AppCompatActivity {
                             // 4. THIS IS THE FIX: Refresh the main RecyclerView to show the unassigned notes.
                             loadNotesFromDatabase();
 
-                            Toast.makeText(this, "Folder removed, notes kept", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.notes_kept, Toast.LENGTH_SHORT).show();
                         });
                     }).start();
                 })
 
                 // Button 3: Cancel the operation
-                .setNeutralButton("Cancel", (dialog, which) -> dialog.dismiss());
+                .setNeutralButton(R.string.cancel_text, (dialog, which) -> dialog.dismiss());
 
         builder.create().show();
     }

@@ -163,4 +163,42 @@
     <string name="note_title_widget">Notiztitel</string>
     <string name="note_preview">Notizinhalt Vorschau...</string>
     <string name="select_text">Wähle eine Notiz für das Widget</string>
+
+    <string name="action_folder_text">Ordner hinzufügen</string>
+    <string name="remove_from_folder">Aus Ordner entfernen</string>
+    <string name="backup_text">Notizen sichern</string>
+    <string name="image_text">Bild</string>
+    <string name="translate_text">Notiz übersetzen</string>
+    <string name="correct_text_values">Text korrigieren</string>
+    <string name="summarize_notes">Notiz zusammenfassen</string>
+    <string name="spanish_text">Spanisch</string>
+    <string name="english_text">Englisch</string>
+    <string name="german_text">Deutsch</string>
+    <string name="japanese_text">Japanisch</string>
+    <string name="hindi_text">Hindi</string>
+    <string name="russian_text">Russisch</string>
+    <string name="french_text">Französisch</string>
+    <string name="translate_to">Übersetzen in...</string>
+    <string name="nav_archive">Archive</string>
+    <string name="no_arvhives_message">Derzeit keine archivierten Notizen.</string>
+    <string name="create_newnotes_folder">Erstelle neue Notizen im Ordner!</string>
+    <string name="remove_note_from_folder">Notiz aus Ordner entfernen</string>
+
+    <string name="note_updated">Notiz aktualisiert!</string>
+    <string name="note_unarchived">Notizen entarchiviert</string>
+    <string name="note_deleted_text">Notizen gelöscht</string>
+    <string name="note_saved_text">Notiz gespeichert!</string>
+    <string name="choose_from_gallery">Aus Galerie wählen</string>
+    <string name="take_photo">Foto aufnehmen</string>
+    <string name="add_image">Bildnotiz hinzufügen</string>
+    <string name="new_folder_text">Neuer Ordner</string>
+    <string name="failed_image_text">Bild konnte nicht gespeichert werden</string>
+    <string name="no_alpha">Ordnername darf nur Buchstaben, Zahlen und Leerzeichen enthalten</string>
+    <string name="create_positive_button">Erstellen</string>
+    <string name="folder_name_archived">Ordnername kann nicht archiviert werden</string>
+    <string name="folder_name_empty">Ordnername darf nicht leer sein</string>
+    <string name="notes_kept">Ordner gelöscht, Notizen behalten</string>
+    <string name="keep_notes_folder">Notizen behalten, Ordner entfernen</string>
+    <string name="folder_deleted_toast">Ordner und alle Notizen gelöscht</string>
+    <string name="folder_remove_desc">Was möchten Sie mit den Notizen in diesem Ordner machen?</string>
 </resources>

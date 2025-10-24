@@ -165,4 +165,41 @@
     <string name="select_text">Selecione uma nota para o widget</string>
     <string name="sliding_text_dialog">Arraste o controle deslizante ou selecione uma cor fixa na parte superior</string>
 
+    <string name="action_folder_text">Adicionar pasta</string>
+    <string name="remove_from_folder">Remover da pasta</string>
+    <string name="backup_text">Fazer backup das notas</string>
+    <string name="image_text">Imagem</string>
+    <string name="translate_text">Traduzir nota</string>
+    <string name="correct_text_values">Corrigir texto</string>
+    <string name="summarize_notes">Resumir nota</string>
+    <string name="spanish_text">Espanhol</string>
+    <string name="english_text">Inglês</string>
+    <string name="german_text">Alemão</string>
+    <string name="japanese_text">Japonês</string>
+    <string name="hindi_text">Hindi</string>
+    <string name="russian_text">Russo</string>
+    <string name="french_text">Francês</string>
+    <string name="translate_to">Traduzir para...</string>
+    <string name="nav_archive">Arquivos</string>
+    <string name="no_arvhives_message">Nenhuma nota arquivada no momento.</string>
+    <string name="create_newnotes_folder">Crie novas notas na pasta!</string>
+    <string name="remove_note_from_folder">Remover nota da pasta</string>
+
+    <string name="note_updated">Nota atualizada!</string>
+    <string name="note_unarchived">Notas desarquivadas</string>
+    <string name="note_deleted_text">Notas excluídas</string>
+    <string name="note_saved_text">Nota salva!</string>
+    <string name="choose_from_gallery">Escolher da galeria</string>
+    <string name="take_photo">Tirar foto</string>
+    <string name="add_image">Adicionar nota com imagem</string>
+    <string name="new_folder_text">Nova pasta</string>
+    <string name="failed_image_text">Falha ao salvar imagem</string>
+    <string name="no_alpha">O nome da pasta pode conter apenas letras, números e espaços</string>
+    <string name="create_positive_button">Criar</string>
+    <string name="folder_name_archived">O nome da pasta não pode ser arquivado</string>
+    <string name="folder_name_empty">O nome da pasta não pode estar vazio</string>
+    <string name="notes_kept">Pasta removida, notas mantidas</string>
+    <string name="keep_notes_folder">Manter notas, remover pasta</string>
+    <string name="folder_deleted_toast">Pasta e todas as suas notas excluídas</string>
+    <string name="folder_remove_desc">O que você gostaria de fazer com as notas dentro desta pasta?</string>
 </resources>

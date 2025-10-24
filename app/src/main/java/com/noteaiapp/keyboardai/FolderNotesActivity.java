@@ -161,7 +161,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                             if (imagePath != null) {
                                 launchImageNoteActivity(imagePath);
                             } else {
-                                Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, R.string.failed_image_text, Toast.LENGTH_SHORT).show();
                             }
                         }
                     }
@@ -179,7 +179,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                         if (imagePath != null) {
                             launchImageNoteActivity(imagePath);
                         } else {
-                            Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.failed_image_text, Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
@@ -360,9 +360,9 @@ public class FolderNotesActivity extends AppCompatActivity {
                 //startActivity(intent);
                 hideOptions();
 
-                final CharSequence[] options = {"Take Photo", "Choose from Gallery", "Cancel"};
+                final CharSequence[] options = {getApplicationContext().getString(R.string.take_photo), getApplicationContext().getString(R.string.choose_from_gallery), getApplicationContext().getString(R.string.cancel_text)};
                 AlertDialog.Builder builder = new AlertDialog.Builder(FolderNotesActivity.this);
-                builder.setTitle("Add an Image Note");
+                builder.setTitle(getApplicationContext().getString(R.string.add_image));
 
                 builder.setItems(options, (dialog, item) -> {
                     if (options[item].equals("Take Photo")) {

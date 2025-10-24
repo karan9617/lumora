@@ -729,7 +729,7 @@ public class ArchivesActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
                         loadNotesFromDatabase();
-                        Toast.makeText(ArchivesActivity.this, "Notes Deleted", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ArchivesActivity.this, R.string.note_deleted_text, Toast.LENGTH_SHORT).show();
                         mode.finish();
                     });
                 });
@@ -750,7 +750,7 @@ public class ArchivesActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
                         loadNotesFromDatabase();
-                        Toast.makeText(ArchivesActivity.this, "Notes unarchived", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ArchivesActivity.this, R.string.note_unarchived, Toast.LENGTH_SHORT).show();
                         mode.finish();
                     });
                 });

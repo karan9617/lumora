@@ -1590,7 +1590,7 @@ public class Notepad extends AppCompatActivity {
                 }
                 noteRepository.updateNote(existingNote);
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.note_updated, Toast.LENGTH_SHORT).show();
                     isNoteModified = false;
                     supportFinishAfterTransition();
                 });
@@ -1602,7 +1602,7 @@ public class Notepad extends AppCompatActivity {
                 }
                 noteRepository.addNote(newNote);
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.note_saved_text, Toast.LENGTH_SHORT).show();
                     isNoteModified = false;
                     supportFinishAfterTransition();
                 });

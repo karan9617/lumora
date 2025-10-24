@@ -164,4 +164,42 @@
     <string name="note_title_widget">笔记标题</string>
     <string name="note_preview">笔记内容预览...</string>
     <string name="select_text">选择一个笔记用于小部件</string>
+
+    <string name="action_folder_text">添加文件夹</string>
+    <string name="remove_from_folder">从文件夹中移除</string>
+    <string name="backup_text">备份笔记</string>
+    <string name="image_text">图片</string>
+    <string name="translate_text">翻译笔记</string>
+    <string name="correct_text_values">校正文本</string>
+    <string name="summarize_notes">总结笔记</string>
+    <string name="spanish_text">西班牙语</string>
+    <string name="english_text">英语</string>
+    <string name="german_text">德语</string>
+    <string name="japanese_text">日语</string>
+    <string name="hindi_text">印地语</string>
+    <string name="russian_text">俄语</string>
+    <string name="french_text">法语</string>
+    <string name="translate_to">翻译为...</string>
+    <string name="nav_archive">归档</string>
+    <string name="no_arvhives_message">当前没有已归档的笔记。</string>
+    <string name="create_newnotes_folder">在文件夹中创建新笔记！</string>
+    <string name="remove_note_from_folder">从文件夹中删除笔记</string>
+
+    <string name="note_updated">笔记已更新！</string>
+    <string name="note_unarchived">笔记已取消归档</string>
+    <string name="note_deleted_text">笔记已删除</string>
+    <string name="note_saved_text">笔记已保存！</string>
+    <string name="choose_from_gallery">从图库选择</string>
+    <string name="take_photo">拍照</string>
+    <string name="add_image">添加图片笔记</string>
+    <string name="new_folder_text">新文件夹</string>
+    <string name="failed_image_text">保存图片失败</string>
+    <string name="no_alpha">文件夹名称只能包含字母、数字和空格</string>
+    <string name="create_positive_button">创建</string>
+    <string name="folder_name_archived">文件夹名称不能被归档</string>
+    <string name="folder_name_empty">文件夹名称不能为空</string>
+    <string name="notes_kept">文件夹已删除，笔记已保留</string>
+    <string name="keep_notes_folder">保留笔记，删除文件夹</string>
+    <string name="folder_deleted_toast">文件夹及其所有笔记已删除</string>
+    <string name="folder_remove_desc">您希望如何处理此文件夹中的笔记？</string>
 </resources>

@@ -166,4 +166,41 @@
     <string name="note_preview">Aperçu du contenu de la note...</string>
     <string name="select_text">Sélectionnez une note pour le widget</string>
 
+    <string name="action_folder_text">Ajouter un dossier</string>
+    <string name="remove_from_folder">Supprimer du dossier</string>
+    <string name="backup_text">Sauvegarder les notes</string>
+    <string name="image_text">Image</string>
+    <string name="translate_text">Traduire la note</string>
+    <string name="correct_text_values">Corriger le texte</string>
+    <string name="summarize_notes">Résumer la note</string>
+    <string name="spanish_text">Espagnol</string>
+    <string name="english_text">Anglais</string>
+    <string name="german_text">Allemand</string>
+    <string name="japanese_text">Japonais</string>
+    <string name="hindi_text">Hindi</string>
+    <string name="russian_text">Russe</string>
+    <string name="french_text">Français</string>
+    <string name="translate_to">Traduire en...</string>
+    <string name="nav_archive">Archives</string>
+    <string name="no_arvhives_message">Aucune note archivée pour le moment.</string>
+    <string name="create_newnotes_folder">Créez de nouvelles notes dans le dossier !</string>
+    <string name="remove_note_from_folder">Supprimer la note du dossier</string>
+
+    <string name="note_updated">Note mise à jour !</string>
+    <string name="note_unarchived">Notes désarchivées</string>
+    <string name="note_deleted_text">Notes supprimées</string>
+    <string name="note_saved_text">Note enregistrée !</string>
+    <string name="choose_from_gallery">Choisir dans la galerie</string>
+    <string name="take_photo">Prendre une photo</string>
+    <string name="add_image">Ajouter une note avec image</string>
+    <string name="new_folder_text">Nouveau dossier</string>
+    <string name="failed_image_text">Échec de l’enregistrement de l’image</string>
+    <string name="no_alpha">Le nom du dossier ne peut contenir que des lettres, des chiffres et des espaces</string>
+    <string name="create_positive_button">Créer</string>
+    <string name="folder_name_archived">Le nom du dossier ne peut pas être archivé</string>
+    <string name="folder_name_empty">Le nom du dossier ne peut pas être vide</string>
+    <string name="notes_kept">Dossier supprimé, notes conservées</string>
+    <string name="keep_notes_folder">Conserver les notes, supprimer le dossier</string>
+    <string name="folder_deleted_toast">Dossier et toutes ses notes supprimés</string>
+    <string name="folder_remove_desc">Que souhaitez-vous faire des notes contenues dans ce dossier ?</string>
 </resources>

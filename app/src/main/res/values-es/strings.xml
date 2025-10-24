@@ -164,4 +164,41 @@
     <string name="note_preview">Vista previa del contenido de la nota...</string>
     <string name="select_text">Selecciona una nota para el widget</string>
 
+    <string name="action_folder_text">Agregar carpeta</string>
+    <string name="remove_from_folder">Quitar de la carpeta</string>
+    <string name="backup_text">Respaldar notas</string>
+    <string name="image_text">Imagen</string>
+    <string name="translate_text">Traducir nota</string>
+    <string name="correct_text_values">Corregir texto</string>
+    <string name="summarize_notes">Resumir nota</string>
+    <string name="spanish_text">Español</string>
+    <string name="english_text">Inglés</string>
+    <string name="german_text">Alemán</string>
+    <string name="japanese_text">Japonés</string>
+    <string name="hindi_text">Hindi</string>
+    <string name="russian_text">Ruso</string>
+    <string name="french_text">Francés</string>
+    <string name="translate_to">Traducir a...</string>
+    <string name="nav_archive">Archivos</string>
+    <string name="no_arvhives_message">No hay notas archivadas actualmente.</string>
+    <string name="create_newnotes_folder">¡Crea nuevas notas en la carpeta!</string>
+    <string name="remove_note_from_folder">Eliminar nota de la carpeta</string>
+
+    <string name="note_updated">¡Nota actualizada!</string>
+    <string name="note_unarchived">Notas desarchivadas</string>
+    <string name="note_deleted_text">Notas eliminadas</string>
+    <string name="note_saved_text">¡Nota guardada!</string>
+    <string name="choose_from_gallery">Elegir de la galería</string>
+    <string name="take_photo">Tomar foto</string>
+    <string name="add_image">Agregar nota con imagen</string>
+    <string name="new_folder_text">Nueva carpeta</string>
+    <string name="failed_image_text">No se pudo guardar la imagen</string>
+    <string name="no_alpha">El nombre de la carpeta solo puede contener letras, números y espacios</string>
+    <string name="create_positive_button">Crear</string>
+    <string name="folder_name_archived">El nombre de la carpeta no puede archivarse</string>
+    <string name="folder_name_empty">El nombre de la carpeta no puede estar vacío</string>
+    <string name="notes_kept">Carpeta eliminada, notas conservadas</string>
+    <string name="keep_notes_folder">Conservar notas, eliminar carpeta</string>
+    <string name="folder_deleted_toast">Carpeta y todas sus notas eliminadas</string>
+    <string name="folder_remove_desc">¿Qué te gustaría hacer con las notas dentro de esta carpeta?</string>
 </resources>
