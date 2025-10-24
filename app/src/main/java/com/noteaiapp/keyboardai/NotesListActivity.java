@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -23,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -86,8 +88,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 public class NotesListActivity extends AppCompatActivity {
@@ -221,7 +225,7 @@ public class NotesListActivity extends AppCompatActivity {
         //loadFoldersToDrawer();
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
-/*
+
             if (id == R.id.new_folder) {
                 // 1. Handle the "New folder" action
                 showNewFolderDialog();
@@ -236,8 +240,7 @@ public class NotesListActivity extends AppCompatActivity {
 
                 Toast.makeText(this, "Loading notes from folder: " + folderName, Toast.LENGTH_SHORT).show();
                 // TODO: Implement actual data filtering logic here
-            }else */
-            if (id == R.id.nav_instructions) {
+            }else if (id == R.id.nav_instructions) {
                 startActivity(new Intent(this, InstructionsActivity.class));
             } else if (id == R.id.nav_trash) {
                 startActivity(new Intent(this, TrashActivity.class));
@@ -510,6 +513,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
         }, itemTouchHelper,notesRecyclerView);
         notesRecyclerView.setAdapter(notesAdapter);
+        loadFoldersToDrawer();
       /*
         ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
             @Override
@@ -624,6 +628,149 @@ public class NotesListActivity extends AppCompatActivity {
         });
 
     }
+// Add this entire method inside your NotesListActivity.java class
+
+    private void showNewFolderDialog() {
+        // 1. Create an AlertDialog Builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("New Folder");
+
+        // 2. Inflate a custom layout containing an EditText
+        //    We'll create this layout file in the next step.
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_new_folder, null);
+        final EditText folderNameEditText = dialogView.findViewById(R.id.folder_name_edit_text);
+        builder.setView(dialogView);
+
+        // 3. Set up the dialog buttons ("Create" and "Cancel")
+        builder.setPositiveButton("Create", (dialog, which) -> {
+            // This code executes when the user clicks "Create"
+            String folderName = folderNameEditText.getText().toString().trim();
+
+            // Validate the input
+            if (folderName.isEmpty()) {
+                Toast.makeText(this, "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
+            } else {
+                // Save the folder and refresh the navigation drawer
+                saveFolder(folderName);
+                Toast.makeText(this, "Folder '" + folderName + "' created", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            // This code executes when the user clicks "Cancel"
+            dialog.dismiss();
+        });
+
+        // 4. Create and show the dialog
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+// Add these methods inside your NotesListActivity.java class
+
+    private void saveFolder(String folderName) {
+        // Get the existing set of folders from SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
+        Set<String> folders = new HashSet<>(prefs.getStringSet("folder_set", new HashSet<>()));
+
+        // Add the new folder and save the updated set
+        folders.add(folderName);
+        prefs.edit().putStringSet("folder_set", folders).apply();
+
+        // Refresh the navigation drawer to show the new folder
+        loadFoldersToDrawer();
+    }
+
+    // In NotesListActivity.java
+
+    private void loadFoldersToDrawer() {
+        SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);Set<String> folders = prefs.getStringSet("folder_set", null);
+
+        Menu menu = navigationView.getMenu();
+        SubMenu foldersSubMenu = menu.findItem(R.id.folders_group_item).getSubMenu();
+        foldersSubMenu.clear(); // Clear existing folders to prevent duplicates
+
+        // Add the static "New folder" button first
+        foldersSubMenu.add(R.id.folders_group, R.id.new_folder, Menu.NONE, "New folder")
+                .setIcon(R.drawable.baseline_add_24);
+
+        if (folders != null) {
+            for (String folderName : folders) {
+                MenuItem folderItem = foldersSubMenu.add(R.id.folders_group, Menu.NONE, 0, folderName)
+                        .setIcon(R.drawable.baseline_folder_24);
+
+                // --- THIS IS THE NEW PART ---
+
+                // Set a regular click listener to open the folder
+                folderItem.setOnMenuItemClickListener(item -> {
+                    // TODO: Implement logic to show notes for this folder
+                    Toast.makeText(this, "Opening folder: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(NotesListActivity.this, FolderNotesActivity.class);
+                    intent.putExtra(EXTRA_FOLDER_NAME, item.getTitle().toString());
+                    startActivity(intent);
+                    drawerLayout.closeDrawers();
+                    return true;
+                });
+
+                // Set a long-click listener to trigger the delete dialog
+                View actionView = new View(this); // Create a dummy view
+                actionView.setOnLongClickListener(v -> {
+                    showDeleteFolderDialog(folderName);
+                    return true;
+                });
+                folderItem.setActionView(actionView);
+
+                // --- END OF NEW PART ---
+            }
+        }
+    }
+// Add this method to NotesListActivity.java
+
+    private void showDeleteFolderDialog(String folderName) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Delete Folder: '" + folderName + "'")
+                .setMessage("What would you like to do with the notes inside this folder?")
+
+                // Button 1: Delete folder AND all notes within it
+                .setPositiveButton("Delete Everything", (dialog, which) -> {
+                    // TODO: Implement logic to find and delete all notes in this folder
+                    // noteRepository.deleteNotesByFolder(folderName);
+
+                    // Then, delete the folder itself
+                    deleteFolderAndRefresh(folderName);
+                    Toast.makeText(this, "Folder and all its notes deleted", Toast.LENGTH_SHORT).show();
+                })
+
+                // Button 2: Remove folder but KEEP the notes (move them to uncategorized)
+                .setNegativeButton("Keep Notes, Remove Folder", (dialog, which) -> {
+                    // TODO: Implement logic to find notes in this folder and remove their folder association
+                    // noteRepository.unassignFolderFromNotes(folderName);
+
+                    // Then, delete the folder itself
+                    deleteFolderAndRefresh(folderName);
+                    Toast.makeText(this, "Folder removed, notes kept", Toast.LENGTH_SHORT).show();
+                })
+
+                // Button 3: Cancel the operation
+                .setNeutralButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        builder.create().show();
+    }
+// Add this method to NotesListActivity.java
+
+    private void deleteFolderAndRefresh(String folderName) {
+        SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
+        Set<String> folders = new HashSet<>(prefs.getStringSet("folder_set", new HashSet<>()));
+
+        // Remove the folder from the set
+        folders.remove(folderName);
+
+        // Save the updated set back to SharedPreferences
+        prefs.edit().putStringSet("folder_set", folders).apply();
+
+        // Refresh the navigation drawer to reflect the deletion
+        loadFoldersToDrawer();
+    }
+
 
     private int getCurrentBackgroundColor() {
         return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -968,16 +1115,22 @@ public class NotesListActivity extends AppCompatActivity {
         new Thread(() -> {
             List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
             allNotesFromDb.clear();
+            // get all folder names from sharepreference
+            SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
+            // get folder names from prefs
+            Set<String> folders = prefs.getStringSet("folder_set", new HashSet<>());
+
             for(Note note : allNotesFromDb1){
 
-                if(note.getFontFamily()== null || note.getFontFamily().length() == 0 || (!note.getFontFamily().equalsIgnoreCase("archived"))){
+                if(note.getFontFamily()== null || note.getFontFamily().length() == 0 || (!note.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(note.getFontFamily()))){
+                    //check if the note.getFontFamily is not the name of any folder
                     allNotesFromDb.add(note);
                 }
             }
             //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
             List<Note> allPinnedArchivedNotes = noteRepository.getAllPinnedNotes();
             for(Note currentNote: allPinnedArchivedNotes){
-                if(currentNote.getFontFamily() != null || currentNote.getFontFamily().length() == 0 || (!currentNote.getFontFamily().equalsIgnoreCase("archived"))){
+                if(currentNote.getFontFamily() != null || currentNote.getFontFamily().length() == 0 || (!currentNote.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(currentNote.getFontFamily()))){
                     allNotesFromDb.add(currentNote);
                 }
             }

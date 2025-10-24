@@ -40,6 +40,8 @@ import java.util.Locale;
 
 public class DrawingActivity extends AppCompatActivity {
     private RelativeLayout saveDiscardDialog;
+    public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
+
     private static final int PICK_IMAGE_REQUEST = 1;
     private DrawingView drawingView;
 
@@ -55,6 +57,7 @@ public class DrawingActivity extends AppCompatActivity {
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
+    private String folderName = "";
 
     // This static class will temporarily hold the drawing data to bypass the Intent size limit
     public static class DrawingDataManager {
@@ -85,6 +88,13 @@ public class DrawingActivity extends AppCompatActivity {
 
         // Check if we are editing an existing note
         Intent intent = getIntent();
+        String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
+        if(receivedFolder != null && !receivedFolder.isEmpty()){
+            folderName = receivedFolder;
+        }
+        else{
+            folderName ="";
+        }
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
         if(receivedDate != null && !receivedDate.isEmpty()){
             dateReceived = true;
@@ -184,6 +194,7 @@ public class DrawingActivity extends AppCompatActivity {
                             Note existingNote = noteRepository.getNoteById(currentNoteId);
                             if (existingNote != null) {
                                 existingNote.setImagePath(imagePath);
+                                existingNote.setFontFamily(this.folderName);
                                 noteRepository.updateNote(existingNote);
                             }
                         } else {
@@ -194,6 +205,8 @@ public class DrawingActivity extends AppCompatActivity {
                             drawingNote.setContent("");
                             drawingNote.setPinned(false);
                             drawingNote.setImagePath(imagePath);
+                            if(this.folderName.length() != 0)
+                                drawingNote.setFontFamily(this.folderName);
                             noteRepository.addNote(drawingNote);
                             Log.d("NoteApp", "Saved drawing successfully");
                         }

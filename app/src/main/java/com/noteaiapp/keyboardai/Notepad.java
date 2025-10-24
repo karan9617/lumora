@@ -99,13 +99,12 @@ public class Notepad extends AppCompatActivity {
 
     private static final String TAG = "NotepadActivity";
     ProgressBar correctionProgressBar;
-
+    public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
     private static final int CAMERA_PERMISSION_CODE = 100;
 
     private static final int REQUEST_CAMERA_PERMISSION = 100;
-
     ImageButton cameraScanButton;
 
     //speach
@@ -133,6 +132,7 @@ public class Notepad extends AppCompatActivity {
     private List<Integer> searchIndices = new ArrayList<>();
     LinearLayout linear_layout_main;
     private final int HIGHLIGHT_COLOR = Color.YELLOW;
+    private String folderName = "";
     private int selectedColor = Color.WHITE;
     private boolean isNoteModified = false,isDirty = false;
     MaterialToolbar toolbar;
@@ -284,6 +284,13 @@ public class Notepad extends AppCompatActivity {
         noteId = getIntent().getLongExtra("note_id", -1);
         Note currentNode = noteRepository.getNoteById(noteId);
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
+        String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
+        if(receivedFolder != null && !receivedFolder.isEmpty()){
+            folderName = receivedFolder;
+        }
+        else{
+            folderName ="";
+        }
         if(receivedDate != null && !receivedDate.isEmpty()){
             dateReceived = true;
             this.receivedDateFromActivities = receivedDate;
@@ -1578,6 +1585,9 @@ public class Notepad extends AppCompatActivity {
             if (noteId != -1) {
                 // Update existing note with the new imagePath
                 Note existingNote = new Note(noteId, title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
+                if(this.folderName.length() != 0){
+                    existingNote.setFontFamily(this.folderName);
+                }
                 noteRepository.updateNote(existingNote);
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Note updated!", Toast.LENGTH_SHORT).show();
@@ -1587,6 +1597,9 @@ public class Notepad extends AppCompatActivity {
             } else {
                 // Create a new note with the new imagePath
                 Note newNote = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
+                if(this.folderName.length() != 0){
+                    newNote.setFontFamily(this.folderName);
+                }
                 noteRepository.addNote(newNote);
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show();

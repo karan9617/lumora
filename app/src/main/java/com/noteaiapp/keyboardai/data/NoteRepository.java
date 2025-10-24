@@ -42,7 +42,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
         values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
-        //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily()== null)?"":note.getFontFamily());
         //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
         values.put(NotesDbHelper.COLUMN_FONT_COLOR, (note.getFontColor()==null)?"":note.getFontColor());
 
@@ -61,7 +61,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
         values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
-        //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily() == null)?"":note.getFontFamily());
         //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
         //values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
@@ -241,7 +241,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
         values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
-        // values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily() == null)?"":note.getFontFamily());
         //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
         values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 

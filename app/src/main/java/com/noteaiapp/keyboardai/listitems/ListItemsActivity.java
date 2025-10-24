@@ -47,6 +47,10 @@ public class ListItemsActivity extends AppCompatActivity {
 
     private EditText noteTitleEditText;
     private RecyclerView recyclerViewList;
+    public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
+    private String folderName = "";
+
+
     private Toolbar toolbar;
     private NoteRepository noteRepository;
     NotesRepositoryTrash notesRepositoryTrash;
@@ -89,6 +93,13 @@ public class ListItemsActivity extends AppCompatActivity {
 
         toolbar = findViewById(R.id.list_toolbar);
         setSupportActionBar(toolbar);
+        String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
+        if(receivedFolder != null && !receivedFolder.isEmpty()){
+            this.folderName = receivedFolder;
+        }
+        else{
+            this.folderName ="";
+        }
         // Set up the toolbar to act as the action bar and add a back/close icon
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         // Assuming you have an ic_close drawable
@@ -292,7 +303,9 @@ public class ListItemsActivity extends AppCompatActivity {
 
         // Note: The 'imagePath' is null as this is a list note
         Note note = new Note(title, finalContent, receivedDateFromActivities, noteColor, false, "");
-
+        if(this.folderName.length() != 0){
+            note.setFontFamily(this.folderName);
+        }
         if (noteId == -1) {
             // New Note
             noteRepository.addNote(note);
@@ -300,6 +313,9 @@ public class ListItemsActivity extends AppCompatActivity {
         } else {
             // Existing Note
             note.setId(noteId);
+            if(this.folderName.length() != 0){
+                note.setFontFamily(this.folderName);
+            }
             noteRepository.updateNote(note);
             Toast.makeText(this, "List note updated!", Toast.LENGTH_SHORT).show();
         }

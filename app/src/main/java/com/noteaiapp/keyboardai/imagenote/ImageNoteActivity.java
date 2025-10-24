@@ -96,6 +96,8 @@ public class ImageNoteActivity extends AppCompatActivity {
 
     private static final String TAG = "ImageNoteActivity";
     ProgressBar correctionProgressBar;
+    public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
+    private String folderName = "";
 
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
@@ -289,6 +291,13 @@ public class ImageNoteActivity extends AppCompatActivity {
         }
 
         noteId = getIntent().getLongExtra("note_id", -1);
+        String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
+        if(receivedFolder != null && !receivedFolder.isEmpty()){
+            this.folderName = receivedFolder;
+        }
+        else{
+            this.folderName ="";
+        }
         imagePathFromIntent = getIntent().getStringExtra("image_path");
         Note currentNode = noteRepository.getNoteById(noteId);
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
@@ -1582,13 +1591,20 @@ public class ImageNoteActivity extends AppCompatActivity {
             if (noteId != -1) {
                 // Update existing note
                 Note existingNote = new Note(noteId, finalTitle, currentContent, receivedDateFromActivities, currentColor, noteOrder, "imagenote", isPinned, finalImagePath);
+
                 existingNote.setFontColor("imagenote");
+                if(this.folderName.length() != 0){
+                    existingNote.setFontFamily(this.folderName);
+                }
                 noteRepository.updateImageNote(existingNote);
                 toastMessage = "Note updated!";
             } else {
                 // Create a new note
                 Note newNote = new Note(finalTitle, currentContent, receivedDateFromActivities, currentColor, 0, "imagenote", isPinned, finalImagePath);
                 newNote.setFontColor("imagenote");
+                if(this.folderName.length() != 0){
+                    newNote.setFontFamily(this.folderName);
+                }
                 noteRepository.addImageNote(newNote);
                 toastMessage = "Note saved!";
             }

@@ -36,17 +36,26 @@
 
         </menu>
     </item>
-    <!--
-    <item android:title="Folders">
+
+    <item
+        android:id="@+id/folders_group_item"
+        android:title="Folders">
         <menu>
-            <item
-                android:id="@+id/new_folder"
-                android:icon="@drawable/baseline_add_24"
-                android:title="New folder" />
+            <!-- The group where dynamic folders will be added -->
+            <group
+                android:id="@+id/folders_group"
+                android:checkableBehavior="single">
+
+                <!-- Your "New folder" button is now the first static item in this group -->
+                <item
+                    android:id="@+id/new_folder"
+                    android:icon="@drawable/baseline_add_24"
+                    android:title="New folder" />
+
+                <!-- Your Java code will add the other folders here dynamically -->
+
+            </group>
         </menu>
     </item>
-    <item android:id="@+id/folders_group" android:title="Existing Folders" android:checkableBehavior="single">
-        <menu android:id="@+id/dynamic_folders_menu" />
-    </item>
--->
+
 </menu>

@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="#B4000000"
+    tools:openDrawer="left"
     >
     <!-- tools:openDrawer="left"
      <TextView
@@ -43,7 +44,7 @@
             android:layout_marginRight="10dp"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:text="@string/notes_main_message"
+            android:text="@string/create_newnotes_folder"
             />
         <!-- Toolbar is at the top -->
         <androidx.appcompat.widget.Toolbar
@@ -66,7 +67,15 @@
                 android:textColor="@android:color/white"
                 android:layout_gravity="right"
                 />
-
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_shuffle"
+                android:id="@+id/shuffle"
+                android:layout_gravity="right"
+                android:background="@drawable/button_background_transparent"
+                android:layout_marginEnd="5dp"
+                />
             <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -76,64 +85,71 @@
                 android:background="@drawable/button_background_transparent"
                 android:layout_marginEnd="17dp"
                 />
-            <ImageButton
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/baseline_auto_delete_24"
-                android:id="@+id/deleteLabel"
-                android:layout_gravity="right"
-                android:background="@drawable/button_background_transparent"
-                android:layout_marginEnd="17dp"
-                />
         </androidx.appcompat.widget.Toolbar>
 
-        <!-- NestedScrollView for unified scrolling of all note lists -->
-        <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/toolbar">
 
-            <LinearLayout
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="74dp"
+            android:padding="8dp">
+
+            <!-- Header for Pinned Notes
+            <TextView
+                android:id="@+id/pinnedNotesHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/notes_pinned_heading"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/notesRecyclerViewPinned"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:clipToPadding="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:nestedScrollingEnabled="false"
+                tools:itemCount="3"
+                tools:listitem="@layout/note_item_layout"/>
 
+            <View
+                android:id="@+id/separatorLine"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="#333333"/>
 
+            <TextView
+                android:id="@+id/otherNotesHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/all_notes_heading"
+                android:layout_marginStart="8dp"
+                android:layout_marginBottom="8dp"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />-->
 
-                <!-- Separator line -->
-                <View
-                    android:id="@+id/separatorLine"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:background="#333333"/>
+            <!-- RecyclerView for Regular Notes -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/notesRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                tools:itemCount="10"
+                tools:listitem="@layout/note_item_layout"/>
+        </LinearLayout>
 
-                <!-- Header for Other Notes -->
-                <TextView
-                    android:id="@+id/otherNotesHeader"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/all_notes_heading"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:textSize="20sp"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold" />
-
-                <!-- RecyclerView for Regular Notes -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/notesRecyclerView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clipToPadding="false"
-                    android:nestedScrollingEnabled="false"
-                    tools:itemCount="10"
-                    tools:listitem="@layout/note_item_layout"/>
-            </LinearLayout>
-
-        </androidx.core.widget.NestedScrollView>
         <View
             android:id="@+id/transparent_overlay"
             android:layout_width="match_parent"
@@ -219,6 +235,34 @@
                         android:layout_marginStart="8dp"
                         android:src="@drawable/baseline_brush_24"
                         android:id="@+id/draw_icon"
+                        app:tint="@android:color/white"
+                        android:contentDescription="Draw note icon" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/option_image_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="7dp"
+                    android:background="@drawable/rounded_background"
+                    android:padding="12dp"
+
+                    android:elevation="4dp">
+                    <TextView
+                        android:id="@+id/option_image"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/image_text"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp" />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/outline_animated_images_24"
+                        android:id="@+id/image_icon"
                         app:tint="@android:color/white"
                         android:contentDescription="Draw note icon" />
                 </LinearLayout>
