@@ -13,6 +13,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -62,6 +63,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
+import androidx.exifinterface.media.ExifInterface;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.noteaiapp.keyboardai.DrawingActivity;
@@ -336,10 +338,14 @@ public class ImageNoteActivity extends AppCompatActivity {
             Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
             // Check if the bitmap was successfully created
             if (savedBitmap != null) {
-                Log.d(TAG, "insde drawing data 2= " + imagePathFromIntent);
+                try {
+                    Bitmap rotatedBitmap = rotateImageIfRequired(savedBitmap, imagePath);
+                    imagesketch.setImageBitmap(rotatedBitmap);
 
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 // Assign the bitmap to your ImageView and make it visible
-                imagesketch.setImageBitmap(savedBitmap);
                 imageframelayout.setVisibility(View.VISIBLE);
                 imagesketch.setVisibility(View.VISIBLE);
                 imageCard.setVisibility(View.VISIBLE);
@@ -813,6 +819,30 @@ public class ImageNoteActivity extends AppCompatActivity {
             }
         }
     }
+    // Add this method inside your ImageNoteActivity.java class
+    private Bitmap rotateImageIfRequired(Bitmap img, String imagePath) throws IOException {
+        // Use the androidx ExifInterface
+        ExifInterface ei = new ExifInterface(imagePath);
+        int orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                return rotateImage(img, 90);
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                return rotateImage(img, 180);
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                return rotateImage(img, 270);
+            default:
+                return img;
+        }
+    }
+
+    private static Bitmap rotateImage(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(),
+                matrix, true);
+    }
     private void openPdfFilePicker() {
         // Use Intent.ACTION_OPEN_DOCUMENT to allow persistent access to the URI
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -1092,13 +1122,14 @@ public class ImageNoteActivity extends AppCompatActivity {
         });
 
         // NEW: OnClickListener for imagesketch
+        /*
         imagesketch.setOnClickListener(v -> {
             // Check if there is an image loaded to the ImageView
             if (imagesketch.getDrawable() != null) {
                 drawOnDrawingView();
                 toggleMode();
             }
-        });
+        });*/
         red_pen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1580,9 +1611,16 @@ public class ImageNoteActivity extends AppCompatActivity {
             if (drawingDataFromView != null && drawingDataFromView.length > 0) {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
                 if (drawingBitmap != null) {
+
                     String filename = "drawing_" + System.currentTimeMillis() + ".png";
                     // Save the new drawing and get its path. This is file I/O.
-                    finalImagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+                    try {
+                        Bitmap bitmapToSave = rotateImageIfRequired(drawingBitmap, finalImagePath);
+                        finalImagePath = noteRepository.saveImageToInternalStorage(bitmapToSave, filename);
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
 

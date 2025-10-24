@@ -89,5 +89,5 @@ dependencies {
     implementation("com.google.api-client:google-api-client-android:1.23.0")
     implementation("com.github.bumptech.glide:glide:4.14.2")
     annotationProcessor("com.github.bumptech.glide:compiler:4.14.2")
-
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 }

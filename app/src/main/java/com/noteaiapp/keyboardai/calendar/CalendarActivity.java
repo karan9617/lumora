@@ -2,6 +2,7 @@ package com.noteaiapp.keyboardai.calendar;
 
 
 import android.app.ActivityOptions;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,7 +11,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -25,10 +29,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
+import androidx.core.content.FileProvider;
 import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -47,12 +54,17 @@ import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.DayViewDecorator;
 import com.prolificinteractive.materialcalendarview.DayViewFacade;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -70,6 +82,9 @@ import java.util.Set;
 public class CalendarActivity extends AppCompatActivity {
 
     private MaterialCalendarView calendarView;
+    private ActivityResultLauncher<Intent> galleryLauncher;
+    private ActivityResultLauncher<Uri> cameraLauncher;
+    private Uri cameraImageUri;
     public static final String ACTION_NOTE_SAVED = "com.noteaiapp.ACTION_NOTE_UPDATED";
     private BroadcastReceiver noteSavedReceiver = new BroadcastReceiver() {
         @Override
@@ -294,7 +309,7 @@ public class CalendarActivity extends AppCompatActivity {
     FloatingActionButton fabAddNote;
     LinearLayout optionsLayout;
     private boolean isOptionsVisible = false;
-    LinearLayout option_text_layout, option_drawings_layout,option_list_layout;
+    LinearLayout option_text_layout, option_drawings_layout,option_list_layout,option_image_layout;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     SelectedDayDecorator selectedDayDecorator;
     private TextView tvNoNotesMessage;
@@ -317,6 +332,7 @@ public class CalendarActivity extends AppCompatActivity {
         tvNoNotesMessage.setGravity(Gravity.CENTER_HORIZONTAL);
         tvNoNotesMessage.setVisibility(View.GONE); // Start hidden
         option_text_layout = findViewById(R.id.option_text_layout);
+        option_image_layout = findViewById(R.id.option_image_layout);
         option_drawings_layout = findViewById(R.id.option_drawings_layout);
         option_list_layout = findViewById(R.id.option_list_layout);
         selectedDayDecorator = new SelectedDayDecorator(this);
@@ -325,6 +341,38 @@ public class CalendarActivity extends AppCompatActivity {
                 hideOptions();
             }
         });
+        galleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri selectedImageUri = result.getData().getData();
+                        if (selectedImageUri != null) {
+                            // The image was selected from the gallery. Now, save a copy and launch ImageNoteActivity.
+                            String imagePath = saveImageToAppStorage(selectedImageUri);
+                            if (imagePath != null) {
+                                launchImageNoteActivity(imagePath);
+                            } else {
+                                Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                }
+        );
+        cameraLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicture(),
+                isSuccess -> {
+                    if (isSuccess && cameraImageUri != null) {
+                        // The photo was taken successfully. The URI is in cameraImageUri.
+                        // Now, save a copy and launch ImageNoteActivity.
+                        String imagePath = saveImageToAppStorage(cameraImageUri);
+                        if (imagePath != null) {
+                            launchImageNoteActivity(imagePath);
+                        } else {
+                            Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+        );
         slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
         // 1. Setup Toolbar
@@ -574,6 +622,51 @@ public class CalendarActivity extends AppCompatActivity {
                 hideOptions();
             }
         });
+        option_image_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //Intent intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
+                //startActivity(intent);
+                hideOptions();
+
+                final CharSequence[] options = {"Take Photo", "Choose from Gallery", "Cancel"};
+                AlertDialog.Builder builder = new AlertDialog.Builder(CalendarActivity.this);
+                builder.setTitle("Add an Image Note");
+
+                builder.setItems(options, (dialog, item) -> {
+                    if (options[item].equals("Take Photo")) {
+                        // Create a file to store the camera image
+                        File imageFile = null;
+                        try {
+                            imageFile = createImageFile();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                        if (imageFile != null) {
+                            // Get a content URI for the file using FileProvider
+                            cameraImageUri = FileProvider.getUriForFile(
+                                    CalendarActivity.this,
+                                    "com.noteaiapp.keyboardai.fileprovider", // Make sure this matches your manifest
+                                    imageFile
+                            );
+                            // Launch the camera
+                            cameraLauncher.launch(cameraImageUri);
+                        } else {
+                            Toast.makeText(CalendarActivity.this, "Could not create image file", Toast.LENGTH_SHORT).show();
+                        }
+
+                    } else if (options[item].equals("Choose from Gallery")) {
+                        // Launch the gallery
+                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                        galleryLauncher.launch(intent);
+
+                    } else if (options[item].equals("Cancel")) {
+                        dialog.dismiss();
+                    }
+                });
+                builder.show();
+            }
+        });
         option_text_layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -644,6 +737,78 @@ public class CalendarActivity extends AppCompatActivity {
         transparent_overlay.setVisibility(View.VISIBLE);
         isOptionsVisible = true;
     }
+    private void launchImageNoteActivity(String imagePath) {
+        Intent intent = new Intent(CalendarActivity.this, ImageNoteActivity.class);
+        // We pass the image path so the activity knows which image to load.
+        // The note doesn't exist yet, so we don't pass a note_id.
+        intent.putExtra("image_path", imagePath);
+        startActivity(intent);
+    }
+    /**
+     * Copies an image from a source URI (camera or gallery) to our app's private, permanent storage.
+     * @param sourceUri The URI of the image to copy.
+     * @return The absolute path of the newly saved image, or null on failure.
+     */
+    private String saveImageToAppStorage(Uri sourceUri) {
+        try {
+            // Create a destination file in the app's private files directory
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            File destinationFile = new File(getFilesDir(), "note_image_" + timeStamp + ".jpg");
+
+            // Open an input stream from the source URI
+            InputStream inputStream = getContentResolver().openInputStream(sourceUri);
+            // Open an output stream to the destination file
+            FileOutputStream outputStream = new FileOutputStream(destinationFile);
+
+            // Copy the bytes
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = inputStream.read(buf)) > 0) {
+                outputStream.write(buf, 0, len);
+            }
+
+            // Close the streams
+            outputStream.close();
+            inputStream.close();
+
+            // Return the absolute path of our new file
+            return destinationFile.getAbsolutePath();
+
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    private File createImageFile() throws IOException {
+        // 1. Create a unique file name with a timestamp
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+
+        // 2. Get the directory for storing the image.
+        //    Use getExternalFilesDir() for persistent media, or getExternalCacheDir() for temporary files.
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+
+        // 3. Ensure the directory exists.
+        //    This is the crucial step that prevents the "No such file or directory" error.
+        if (storageDir != null && !storageDir.exists()) {
+            if (!storageDir.mkdirs()) {
+                Log.d("NotesListActivity", "Failed to create directory");
+                return null; // Return null if directory creation fails
+            }
+        }
+
+        // 4. Create the temporary image file in the directory
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        // mCurrentPhotoPath = image.getAbsolutePath(); // If you need to save the path
+        return image;
+    }
+
+
     private void hideOptions(final Animation animation) {
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override

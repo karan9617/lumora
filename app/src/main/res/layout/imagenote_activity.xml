@@ -134,7 +134,7 @@
                         <ImageView
                             android:id="@+id/imagesketch"
                             android:layout_width="match_parent"
-                            android:layout_height="300dp"
+                            android:layout_height="500dp"
                             android:soundEffectsEnabled="true"
                             android:visibility="invisible" />
                         <ImageButton
