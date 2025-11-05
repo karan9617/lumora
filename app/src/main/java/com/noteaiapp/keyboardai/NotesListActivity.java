@@ -1,5 +1,6 @@
 package com.noteaiapp.keyboardai;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
@@ -9,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -38,14 +40,18 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.Models.Label;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
+import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
@@ -69,6 +75,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -99,6 +106,10 @@ public class NotesListActivity extends AppCompatActivity {
     private NotesAdapter notesAdapter;
    // private NotesAdapterPinned notesAdapterPinned;
     View transparentOverlay;
+    // In NotesListActivity.java, with your other class variables
+// In NotesListActivity.java, with your other class variables
+    private FirebaseUser currentUser;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
     private List<Note> notesList;
     List<Note> allNotesFromDb;// allPinnedNotesFromDb;
     Toolbar toolbar;
@@ -139,7 +150,15 @@ public class NotesListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notes_list_main);
-
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "No user logged in. Redirecting to login.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(NotesListActivity.this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return; // Stop executing onCreate
+        }
         getWindow().setAllowEnterTransitionOverlap(false);
         getWindow().setAllowReturnTransitionOverlap(false);
         transparentOverlay = findViewById(R.id.transparent_overlay);
@@ -147,6 +166,14 @@ public class NotesListActivity extends AppCompatActivity {
             if (isOptionsVisible) {
                 hideOptions();
             }
+        });
+        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {    if (isGranted) {
+            // Permission is granted. Now, we can safely launch the camera.
+            launchCamera();
+        } else {
+            // Permission is denied. Explain to the user why the feature is unavailable.
+            Toast.makeText(this, "Camera permission is required to take photos.", Toast.LENGTH_LONG).show();
+        }
         });
         // Add this inside your onCreate method in NotesListActivity.java
 
@@ -248,6 +275,24 @@ public class NotesListActivity extends AppCompatActivity {
                 startActivity(new Intent(this, PoliciesActivity.class));
             } else if (id == R.id.nav_feedback) {
                 startActivity(new Intent(this, Feedback.class));
+            }
+            else if(id == R.id.option_logout){
+                FirebaseAuth.getInstance().signOut();
+
+                //2. Sign out from Google. This is important to allow the user to choose a different
+                //    Google account next time they sign in.
+                GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build();
+                GoogleSignIn.getClient(this, gso).signOut();
+
+                // 3. Navigate the user back to the LoginActivity
+                Intent intent = new Intent(NotesListActivity.this, LoginActivity.class);
+                // Add flags to clear the activity stack, so the user can't press "back" to get into the app.
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
             }
             else if(id == R.id.calendar_option){
                 Intent intent = new Intent(NotesListActivity.this, CalendarActivity.class);
@@ -364,7 +409,18 @@ public class NotesListActivity extends AppCompatActivity {
 
                 builder.setItems(options, (dialog, item) -> {
                     if (options[item].equals("Take Photo")) {
+                        // Check if the CAMERA permission has already been granted.
+                        if (ContextCompat.checkSelfPermission(
+                                NotesListActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            // If permission is already granted, launch the camera directly.
+                            launchCamera();
+                        } else {
+                            // If permission is not granted, request it.
+                            // The result will be handled by the 'requestPermissionLauncher' you defined in onCreate.
+                            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
+                        }
                         // Create a file to store the camera image
+                        /*
                         File imageFile = null;
                         try {
                             imageFile = createImageFile();
@@ -383,7 +439,7 @@ public class NotesListActivity extends AppCompatActivity {
                         } else {
                             Toast.makeText(NotesListActivity.this, "Could not create image file", Toast.LENGTH_SHORT).show();
                         }
-
+*/
                     } else if (options[item].equals("Choose from Gallery")) {
                         // Launch the gallery
                         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -627,6 +683,29 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
 
+    }
+    private void launchCamera() {
+        File imageFile = null;
+        try {
+            imageFile = createImageFile();
+        } catch (IOException e) {
+            // Log the error or show a more detailed toast
+            Toast.makeText(this, "Error creating image file: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            return; // Stop if the file can't be created
+        }
+
+        if (imageFile != null) {
+            // Get a content URI for the file using FileProvider
+            cameraImageUri = FileProvider.getUriForFile(
+                    NotesListActivity.this,
+                    "com.noteaiapp.keyboardai.fileprovider", // Make sure this matches your manifest
+                    imageFile
+            );
+            // Launch the camera now that we know we have permission
+            cameraLauncher.launch(cameraImageUri);
+        } else {
+            Toast.makeText(NotesListActivity.this, "Could not create image file", Toast.LENGTH_SHORT).show();
+        }
     }
 // Add this entire method inside your NotesListActivity.java class
 
@@ -1126,42 +1205,46 @@ public class NotesListActivity extends AppCompatActivity {
     }
     private void loadNotesFromDatabase() {
         new Thread(() -> {
-            List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
-            allNotesFromDb.clear();
-            // get all folder names from sharepreference
-            SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
-            // get folder names from prefs
-            Set<String> folders = prefs.getStringSet("folder_set", new HashSet<>());
+            if (currentUser != null) {
+                String userId = currentUser.getUid();
+                List<Note> allNotesFromDb1 = noteRepository.getAllNotesForUser(userId);
+                allNotesFromDb.clear();
+                // get all folder names from sharepreference
+                SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
+                // get folder names from prefs
+                Set<String> folders = prefs.getStringSet("folder_set", new HashSet<>());
 
-            for(Note note : allNotesFromDb1){
+                for (Note note : allNotesFromDb1) {
 
-                if(note.getFontFamily()== null || note.getFontFamily().length() == 0 || (!note.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(note.getFontFamily()))){
-                    //check if the note.getFontFamily is not the name of any folder
-                    allNotesFromDb.add(note);
+                    if (note.getFontFamily() == null || note.getFontFamily().length() == 0 || (!note.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(note.getFontFamily()))) {
+                        //check if the note.getFontFamily is not the name of any folder
+                        allNotesFromDb.add(note);
+                    }
                 }
-            }
-            //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
-            List<Note> allPinnedArchivedNotes = noteRepository.getAllPinnedNotes();
-            for(Note currentNote: allPinnedArchivedNotes){
-                if(currentNote.getFontFamily() != null || currentNote.getFontFamily().length() == 0 || (!currentNote.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(currentNote.getFontFamily()))){
-                    allNotesFromDb.add(currentNote);
+                //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
+                List<Note> allPinnedArchivedNotes = noteRepository.getAllPinnedNotes();
+                for (Note currentNote : allPinnedArchivedNotes) {
+                    if (currentNote.getFontFamily() == null || currentNote.getFontFamily().length() == 0 || (!currentNote.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(currentNote.getFontFamily()))) {
+                        allNotesFromDb.add(currentNote);
+                    }
+
                 }
-            }
 
-            runOnUiThread(() -> {
-                allNotes.clear();
-                allNotes.addAll(allNotesFromDb);
+                runOnUiThread(() -> {
+                    allNotes.clear();
+                    allNotes.addAll(allNotesFromDb);
 
-               // pinnedNotes.clear();
-               // pinnedNotes.addAll(allPinnedNotesFromDb);
+                    // pinnedNotes.clear();
+                    // pinnedNotes.addAll(allPinnedNotesFromDb);
 
-                notesList.clear();
-                notesList.addAll(allNotes);
+                    notesList.clear();
+                    notesList.addAll(allNotes);
 
-                notesAdapter.notifyDataSetChanged();
-               // notesAdapterPinned.notifyDataSetChanged();
-                updatePinnedSectionVisibility();
-            });
+                    notesAdapter.notifyDataSetChanged();
+                    // notesAdapterPinned.notifyDataSetChanged();
+                    updatePinnedSectionVisibility();
+                });
+        }
         }).start();
 
     }

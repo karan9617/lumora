@@ -462,8 +462,12 @@ public class DrawingView extends View {
         }
     }
     public void setBackgroundImage(Bitmap image) {
+        if (image == null) {
+            this.backgroundImage = null;
+            invalidate(); // Redraw the view without a background
+            return; // Exit the method early
+        }
         this.backgroundImage = image;
-
         // Make a new bitmap to combine the background image and existing drawing
         Bitmap combinedBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
         Canvas combinedCanvas = new Canvas(combinedBitmap);

@@ -27,6 +27,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
@@ -44,6 +46,7 @@ public class DrawingActivity extends AppCompatActivity {
 
     private static final int PICK_IMAGE_REQUEST = 1;
     private DrawingView drawingView;
+    private FirebaseUser currentUser;
 
     private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen, sprayPaintBtn, rectangleBtn,
             color_blue, color_green, color_yellow, color_orange, color_purple, color_teal, color_pink, color_maroon, color_color1,
@@ -83,6 +86,7 @@ public class DrawingActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_drawing);
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
         init();
         listeners();
 
@@ -194,6 +198,7 @@ public class DrawingActivity extends AppCompatActivity {
                             Note existingNote = noteRepository.getNoteById(currentNoteId);
                             if (existingNote != null) {
                                 existingNote.setImagePath(imagePath);
+                                existingNote.setUserFirebaseId(currentUser.getUid());
                                 existingNote.setFontFamily(this.folderName);
                                 noteRepository.updateNote(existingNote);
                             }
@@ -203,6 +208,7 @@ public class DrawingActivity extends AppCompatActivity {
                             drawingNote.setColor(Color.WHITE);
                             drawingNote.setDate(receivedDateFromActivities);
                             drawingNote.setContent("");
+                            drawingNote.setUserFirebaseId(currentUser.getUid());
                             drawingNote.setPinned(false);
                             drawingNote.setImagePath(imagePath);
                             if(this.folderName.length() != 0)
@@ -540,8 +546,16 @@ public class DrawingActivity extends AppCompatActivity {
                 // Get the bitmap from the URI
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
                 // Set the bitmap as the background in the DrawingView
-                drawingView.setBackgroundImage(bitmap);
-                Toast.makeText(this, R.string.image_load_text, Toast.LENGTH_SHORT).show();
+                if (bitmap != null) {
+                    // It's safe to use the bitmap now.
+                    drawingView.setBackgroundImage(bitmap);
+                    Toast.makeText(this, R.string.image_load_text, Toast.LENGTH_SHORT).show();
+
+                } else {
+                    // The bitmap is null. Handle the error gracefully.
+                    Toast.makeText(this, "Failed to load image. Please try another one.", Toast.LENGTH_LONG).show();
+                }
+
             } catch (IOException e) {
                 e.printStackTrace();
                 Toast.makeText(this, R.string.image_failed, Toast.LENGTH_SHORT).show();

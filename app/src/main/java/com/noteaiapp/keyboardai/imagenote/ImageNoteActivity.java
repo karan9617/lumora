@@ -66,6 +66,8 @@ import androidx.core.view.ViewCompat;
 import androidx.exifinterface.media.ExifInterface;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
@@ -99,6 +101,8 @@ public class ImageNoteActivity extends AppCompatActivity {
     private static final String TAG = "ImageNoteActivity";
     ProgressBar correctionProgressBar;
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
+    private FirebaseUser currentUser;
+
     private String folderName = "";
 
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -163,6 +167,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         EdgeToEdge.enable(this);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        this.currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
         postponeEnterTransition();
         init();
@@ -1611,7 +1616,6 @@ public class ImageNoteActivity extends AppCompatActivity {
             if (drawingDataFromView != null && drawingDataFromView.length > 0) {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
                 if (drawingBitmap != null) {
-
                     String filename = "drawing_" + System.currentTimeMillis() + ".png";
                     // Save the new drawing and get its path. This is file I/O.
                     try {
@@ -1634,6 +1638,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                 if(this.folderName.length() != 0){
                     existingNote.setFontFamily(this.folderName);
                 }
+                existingNote.setUserFirebaseId(currentUser.getUid());
                 noteRepository.updateImageNote(existingNote);
                 toastMessage = "Note updated!";
             } else {
@@ -1643,6 +1648,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                 if(this.folderName.length() != 0){
                     newNote.setFontFamily(this.folderName);
                 }
+                newNote.setUserFirebaseId(currentUser.getUid());
                 noteRepository.addImageNote(newNote);
                 toastMessage = "Note saved!";
             }

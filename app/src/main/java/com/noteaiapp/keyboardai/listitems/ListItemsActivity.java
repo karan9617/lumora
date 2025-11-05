@@ -29,6 +29,8 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
@@ -49,7 +51,7 @@ public class ListItemsActivity extends AppCompatActivity {
     private RecyclerView recyclerViewList;
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
     private String folderName = "";
-
+    private FirebaseUser currentUser;
 
     private Toolbar toolbar;
     private NoteRepository noteRepository;
@@ -93,6 +95,7 @@ public class ListItemsActivity extends AppCompatActivity {
 
         toolbar = findViewById(R.id.list_toolbar);
         setSupportActionBar(toolbar);
+        this.currentUser = FirebaseAuth.getInstance().getCurrentUser();
         String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
         if(receivedFolder != null && !receivedFolder.isEmpty()){
             this.folderName = receivedFolder;
@@ -306,6 +309,7 @@ public class ListItemsActivity extends AppCompatActivity {
         if(this.folderName.length() != 0){
             note.setFontFamily(this.folderName);
         }
+        note.setUserFirebaseId(currentUser.getUid());
         if (noteId == -1) {
             // New Note
             noteRepository.addNote(note);

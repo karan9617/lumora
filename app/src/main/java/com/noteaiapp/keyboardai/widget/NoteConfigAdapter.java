@@ -95,6 +95,7 @@ public class NoteConfigAdapter extends RecyclerView.Adapter<NoteConfigAdapter.No
 
             byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
             if (drawingData != null && drawingData.length > 0) {
+
                 if (note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)) {
                     holder.labeltext1.setVisibility(View.GONE);
                     holder.labeltext2.setVisibility(View.GONE);

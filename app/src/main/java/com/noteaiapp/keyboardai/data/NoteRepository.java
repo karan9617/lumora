@@ -43,7 +43,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
         values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily()== null)?"":note.getFontFamily());
-        //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getUserFirebaseId());
         values.put(NotesDbHelper.COLUMN_FONT_COLOR, (note.getFontColor()==null)?"":note.getFontColor());
 
         long newRowId = db.insert(NotesDbHelper.TABLE_NOTES, null, values);
@@ -62,7 +62,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
         values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
         values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily() == null)?"":note.getFontFamily());
-        //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getUserFirebaseId());
         //values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
         long newRowId = db.insert(NotesDbHelper.TABLE_NOTES, null, values);
@@ -178,7 +178,7 @@ public class NoteRepository {
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
                 note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
                 note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
-             //   note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+                note.setUserFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
              //   note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
 
                 notes.add(note);
@@ -301,6 +301,88 @@ public class NoteRepository {
         db.close();
         return note;
     }
+// Add this new method to NoteRepository.java
+
+    /**
+     * Retrieves all notes from the local database that belong to a specific user.
+     *
+     * @param userId The Firebase UID of the user whose notes are to be fetched.
+     * @return A list of notes for that user.
+     */
+    // Add this new method to NoteRepository.java
+
+    /**
+     * Retrieves all notes from the local database that are relevant to a specific user.
+     * This includes notes that match the given userId AND any notes that have a
+     * null or empty userId (unclaimed notes from a previous app version).
+     *
+     * @param userId The Firebase UID of the user whose notes are to be fetched.
+     * @return A list of all relevant notes for that user.
+     */
+    public List<Note> getAllNotesForUser(String userId) {
+        List<Note> notes = new ArrayList<>();
+        SQLiteDatabase database = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+
+        // Define the WHERE clause. This is the core logic:
+        // It selects rows WHERE the user ID column (stored in FONT_SIZE) either:
+        // 1. Exactly matches the provided userId.
+        // 2. Is NULL (for very old notes before the column was used).
+        // 3. Is an empty string (for notes saved with an empty user ID).
+        String selection = NotesDbHelper.COLUMN_FONT_SIZE + " = ? OR " +
+                NotesDbHelper.COLUMN_FONT_SIZE + " IS NULL OR " +
+                NotesDbHelper.COLUMN_FONT_SIZE + " = ''";
+
+        // The argument for the '?' placeholder in the selection.
+        String[] selectionArgs = { userId };
+
+        try {
+            // Query the database with the selection criteria.
+            cursor = database.query(
+                    NotesDbHelper.TABLE_NOTES,
+                    null, // Passing null here selects all columns.
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    NotesDbHelper.COLUMN_PINNED + " DESC, " + NotesDbHelper.COLUMN_ORDER + " ASC" // Order by pinned status then custom order
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    // --- Manually creating the Note object from the cursor ---
+                    // This replaces the non-existent cursorToNote() helper.
+                    Note note = new Note();
+                    note.setId(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ID)));
+                    note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_TITLE)));
+                    note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_CONTENT)));
+                    note.setDate(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_DATE)));
+                    note.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_COLOR)));
+                    note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
+                    note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
+                    note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
+
+                    // For the folder name
+                    note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+
+                    // For the user ID (stored in the FONT_SIZE column)
+                    note.setUserFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+
+                    notes.add(note);
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.e("NoteRepository", "Error getting notes for user", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            database.close(); // Close the database connection
+        }
+
+        return notes;
+    }
+
 
     public int updateNote(Note note) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -310,7 +392,7 @@ public class NoteRepository {
         values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
         values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily() == null)?"":note.getFontFamily());
-      //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getUserFirebaseId());
       //  values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
         int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,

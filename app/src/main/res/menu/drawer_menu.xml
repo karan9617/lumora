@@ -33,7 +33,10 @@
                 android:id="@+id/nav_feedback"
                 android:icon="@drawable/ic_menu_send"
                 android:title="@string/drawer_feedback_text" />
-
+            <item
+                android:id="@+id/option_logout"
+                android:icon="@drawable/logout_vector"
+                android:title="@string/drawer_logout_text" />
         </menu>
     </item>
 

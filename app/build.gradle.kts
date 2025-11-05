@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -11,8 +12,8 @@ android {
         applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.4.1"
+        versionCode = 16
+        versionName = "1.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -90,4 +91,13 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.14.2")
     annotationProcessor("com.github.bumptech.glide:compiler:4.14.2")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation(platform("com.google.firebase:firebase-bom:34.2.0"))
+    implementation("com.google.firebase:firebase-analytics")
+
+    // 1. Add the dependency for Firebase Authentication
+    implementation("com.google.firebase:firebase-auth")
+
+    // 2. Add the dependency for Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.1.0")
+
 }

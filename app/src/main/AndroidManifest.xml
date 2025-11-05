@@ -110,6 +110,20 @@
 
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
         <activity
+            android:name=".auth.LoginActivity"
+            android:exported="true"
+            android:label="@string/login_label"
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".auth.SignUpActivity"
+            android:exported="true"
+            android:label="@string/login_label"
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
             android:name=".OnboardingActivity"
             android:exported="true"
             android:label="@string/app_name"

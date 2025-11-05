@@ -5,6 +5,7 @@ public class Note implements Serializable {
 
     // Unique identifier for the note in the database
     private long id;
+    private String userFirebaseId;
     private String title;
     private String content;
     private String date;
@@ -90,7 +91,13 @@ public class Note implements Serializable {
     }
     // --- Getters and Setters ---
 
+    public String getUserFirebaseId() {
+        return userFirebaseId;
+    }
 
+    public void setUserFirebaseId(String userFirebaseId) {
+        this.userFirebaseId = userFirebaseId;
+    }
     public String getFontFamily() {
         return fontFamily;
     }

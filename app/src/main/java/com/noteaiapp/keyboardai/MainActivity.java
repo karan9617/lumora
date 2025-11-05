@@ -7,6 +7,9 @@ import android.os.Bundle;
 
 import androidx.activity.ComponentActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
 
@@ -36,8 +39,17 @@ public class MainActivity extends ComponentActivity {
             editor.apply();
         } else {
             // Not the first run, proceed to the main app
-            Intent mainAppIntent = new Intent(MainActivity.this, NotesListActivity.class);
-            startActivity(mainAppIntent);
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (currentUser != null) {
+                // User is already signed in, go directly to the main notes list.
+                Intent mainAppIntent = new Intent(MainActivity.this, NotesListActivity.class);
+                startActivity(mainAppIntent);
+            } else {
+                // No user is signed in, they need to go to the Login screen.
+                Intent loginIntent = new Intent(MainActivity.this, LoginActivity.class);
+                startActivity(loginIntent);
+            }
+            finish();
         }
     }
 

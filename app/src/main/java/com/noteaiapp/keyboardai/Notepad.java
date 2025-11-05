@@ -66,6 +66,8 @@ import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.camera.CameraActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
@@ -99,6 +101,8 @@ public class Notepad extends AppCompatActivity {
 
     private static final String TAG = "NotepadActivity";
     ProgressBar correctionProgressBar;
+    private FirebaseUser currentUser;
+
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
@@ -161,7 +165,7 @@ public class Notepad extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         EdgeToEdge.enable(this);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
         postponeEnterTransition();
         init();
         registerListeners();
@@ -1588,6 +1592,7 @@ public class Notepad extends AppCompatActivity {
                 if(this.folderName.length() != 0){
                     existingNote.setFontFamily(this.folderName);
                 }
+                existingNote.setUserFirebaseId(currentUser.getUid());
                 noteRepository.updateNote(existingNote);
                 runOnUiThread(() -> {
                     Toast.makeText(this, R.string.note_updated, Toast.LENGTH_SHORT).show();
@@ -1600,6 +1605,7 @@ public class Notepad extends AppCompatActivity {
                 if(this.folderName.length() != 0){
                     newNote.setFontFamily(this.folderName);
                 }
+                newNote.setUserFirebaseId(currentUser.getUid());
                 noteRepository.addNote(newNote);
                 runOnUiThread(() -> {
                     Toast.makeText(this, R.string.note_saved_text, Toast.LENGTH_SHORT).show();

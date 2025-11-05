@@ -65,7 +65,7 @@ public class OnboardingActivity extends AppCompatActivity {
     }
 
     private void startMainActivity() {
-        Intent intent = new Intent(OnboardingActivity.this, NotesListActivity.class);
+        Intent intent = new Intent(OnboardingActivity.this, MainActivity.class);
         startActivity(intent);
         finish();
     }
