@@ -29,6 +29,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
@@ -47,6 +49,10 @@ public class DrawingActivity extends AppCompatActivity {
     private static final int PICK_IMAGE_REQUEST = 1;
     private DrawingView drawingView;
     private FirebaseUser currentUser;
+
+    // --- START: ADD THESE LINES ---
+    private FirebaseFirestore db;
+    private FirebaseStorage storage;
 
     private ImageButton blackBtn, redBtn, blueBtn, smallPen, eraser, largePen, sprayPaintBtn, rectangleBtn,
             color_blue, color_green, color_yellow, color_orange, color_purple, color_teal, color_pink, color_maroon, color_color1,
@@ -87,6 +93,8 @@ public class DrawingActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_drawing);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
         init();
         listeners();
 
@@ -194,26 +202,28 @@ public class DrawingActivity extends AppCompatActivity {
                     String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
 
                     if (imagePath != null) {
+                        Note noteToSync;
                         if (currentNoteId != -1) {
-                            Note existingNote = noteRepository.getNoteById(currentNoteId);
-                            if (existingNote != null) {
-                                existingNote.setImagePath(imagePath);
-                                existingNote.setUserFirebaseId(currentUser.getUid());
-                                existingNote.setFontFamily(this.folderName);
-                                noteRepository.updateNote(existingNote);
+                            noteToSync = noteRepository.getNoteById(currentNoteId);
+                            if (noteToSync != null) {
+                                noteToSync.setImagePath(imagePath);
+                                noteToSync.setUserFirebaseId(currentUser.getUid());
+                                noteToSync.setFontFamily(this.folderName);
+                                noteRepository.updateNote(noteToSync);
                             }
                         } else {
-                            Note drawingNote = new Note();
-                            drawingNote.setTitle("Sketch");
-                            drawingNote.setColor(Color.WHITE);
-                            drawingNote.setDate(receivedDateFromActivities);
-                            drawingNote.setContent("");
-                            drawingNote.setUserFirebaseId(currentUser.getUid());
-                            drawingNote.setPinned(false);
-                            drawingNote.setImagePath(imagePath);
+                            noteToSync = new Note();
+                            noteToSync.setTitle("Sketch");
+                            noteToSync.setColor(Color.WHITE);
+                            noteToSync.setDate(receivedDateFromActivities);
+                            noteToSync.setContent("");
+                            noteToSync.setUserFirebaseId(currentUser.getUid());
+                            noteToSync.setPinned(false);
+                            noteToSync.setImagePath(imagePath);
                             if(this.folderName.length() != 0)
-                                drawingNote.setFontFamily(this.folderName);
-                            noteRepository.addNote(drawingNote);
+                                noteToSync.setFontFamily(this.folderName);
+                            long newId = noteRepository.addNote(noteToSync);
+                            noteToSync.setId(newId);
                             Log.d("NoteApp", "Saved drawing successfully");
                         }
                     }

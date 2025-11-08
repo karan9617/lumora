@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
@@ -37,7 +39,21 @@ public class NotesWidgetFactory implements RemoteViewsService.RemoteViewsFactory
     public void onDataSetChanged() {
         // This is called when the data is refreshed.
         // Load your data here, potentially on a background thread.
-        notes = noteRepository.getAllPinnedNotes(); // Or get pinned notes
+        //notes = noteRepository.getAllPinnedNotes(); // Or get pinned notes
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (currentUser != null) {
+            // A user is logged in. Fetch only their pinned notes.
+            String userId = currentUser.getUid();
+            // You will need to create this new method in your NoteRepository.
+            notes = noteRepository.getAllNotesForUser(userId);
+        } else {
+            // No user is logged in. The widget should be empty.
+            // Clear the existing list to ensure no old data is shown.
+            if (notes != null) {
+                notes.clear();
+            }
+        }
     }
 
     @Override

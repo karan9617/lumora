@@ -45,6 +45,8 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
@@ -52,6 +54,7 @@ import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
+import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
@@ -84,6 +87,7 @@ public class CalendarActivity extends AppCompatActivity {
     private MaterialCalendarView calendarView;
     private ActivityResultLauncher<Intent> galleryLauncher;
     private ActivityResultLauncher<Uri> cameraLauncher;
+    private FirebaseUser currentUser;
     private Uri cameraImageUri;
     public static final String ACTION_NOTE_SAVED = "com.noteaiapp.ACTION_NOTE_UPDATED";
     private BroadcastReceiver noteSavedReceiver = new BroadcastReceiver() {
@@ -326,6 +330,17 @@ public class CalendarActivity extends AppCompatActivity {
         setContentView(R.layout.activity_calendar);
         fabAddNote = findViewById(R.id.fabAddNote);
         optionsLayout = findViewById(R.id.options_layout);
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            // No user is signed in, we cannot proceed.
+            // Redirect to the login screen to be safe.
+            Toast.makeText(this, "Please log in to view the calendar.", Toast.LENGTH_SHORT).show();
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(loginIntent);
+            finish(); // Close this activity
+            return;   // IMPORTANT: Stop the rest of onCreate from running
+        }
         transparent_overlay = findViewById(R.id.transparent_overlay);
         tvNoNotesMessage = findViewById(R.id.tvNoNotesMessage);
         tvNoNotesMessage.setText("No notes currently for this date, press the add button to add notes :)");
@@ -392,7 +407,7 @@ public class CalendarActivity extends AppCompatActivity {
         notesRepository = new NoteRepository(this);
 
         // Load all notes once (unfiltered source)
-        allNotes.addAll(notesRepository.getAllNotes());
+        allNotes.addAll(notesRepository.getAllNotesForUser(currentUser.getUid()));
         allNotes.addAll(notesRepository.getAllPinnedNotes());
 
         // 2. Find Views
@@ -522,7 +537,7 @@ public class CalendarActivity extends AppCompatActivity {
     private void refreshNotesAndCalendar() {
         // 1. Reload all notes
         allNotes.clear();
-        allNotes.addAll(notesRepository.getAllNotes());
+        allNotes.addAll(notesRepository.getAllNotesForUser(currentUser.getUid()));
         allNotes.addAll(notesRepository.getAllPinnedNotes());
 
         // 2. Determine which day is currently selected or default to today

@@ -68,6 +68,9 @@ import androidx.core.view.ViewCompat;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.camera.CameraActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
@@ -99,9 +102,12 @@ import org.json.JSONObject;
 
 public class Notepad extends AppCompatActivity {
 
-    private static final String TAG = "NotepadActivity";
+    private static final String TAG = "com.noteaiapp.keyboardai";
     ProgressBar correctionProgressBar;
     private FirebaseUser currentUser;
+    private FirebaseFirestore db;
+    FirebaseAuth mAuth;
+    FirebaseStorage storage = FirebaseStorage.getInstance();
 
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -165,7 +171,12 @@ public class Notepad extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         EdgeToEdge.enable(this);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        //firebase storage
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        storage = FirebaseStorage.getInstance();
+        db = FirebaseFirestore.getInstance();
+        mAuth =FirebaseAuth.getInstance();
+
         postponeEnterTransition();
         init();
         registerListeners();
@@ -1210,10 +1221,6 @@ public class Notepad extends AppCompatActivity {
         } else if (id == R.id.action_color) {
             showColorPickerDialog();
             return true;
-        } else if (id == R.id.action_pin_unpin) {
-            // NEW: Handle the pin/unpin action
-            togglePinStatus();
-            return true;
         }
         else if (id == R.id.action_correct_text) { // NEW: Handle the correct text action
             correctTextWithGemini();
@@ -1539,6 +1546,72 @@ public class Notepad extends AppCompatActivity {
         });
         builder.show();
     }
+    // DELETE your old 'storetofirebasestorage' and 'savetofirestore' methods
+// ADD this new, combined method to Notepad.java
+
+    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath) {
+        String localImagePath = noteWithLocalPath.getImagePath();
+
+        // --- Scenario 1: Note has no image ---
+        if (localImagePath == null || localImagePath.isEmpty()) {
+            Log.d(TAG, "Note " + noteWithLocalPath.getId() + " has no image. Saving metadata to Firestore.");
+            // Set the image path to empty for Firestore and save directly.
+            noteWithLocalPath.setImagePath("");
+            db.collection("users").document(currentUser.getUid()).collection("notes").document(String.valueOf(noteWithLocalPath.getId()))
+                    .set(noteWithLocalPath)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Note " + noteWithLocalPath.getId() + " metadata saved to Firestore."))
+                    .addOnFailureListener(e -> Log.w(TAG, "Error saving note " + noteWithLocalPath.getId() + " metadata to Firestore.", e));
+            return;
+        }
+
+        // --- Scenario 2: Note has an image ---
+        File localImageFile = new File(localImagePath);
+        if (!localImageFile.exists()) {
+            Log.w(TAG, "Local image file not found, cannot upload: " + localImagePath);
+            // Save the note but with an empty image path as the local file is missing.
+            noteWithLocalPath.setImagePath("");
+            uploadAndSyncNoteToFirebase(noteWithLocalPath); // Recurse to handle the no-image case
+            return;
+        }
+
+        Uri localImageUri = Uri.fromFile(localImageFile);
+        String cloudFileName = localImageFile.getName();
+        String userId = noteWithLocalPath.getUserFirebaseId();
+        StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + cloudFileName);
+
+        // Start the upload and chain the tasks
+        imageRef.putFile(localImageUri)
+                // 1. First, upload the file
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        // If upload fails, pass the exception down the chain
+                        throw task.getException();
+                    }
+                    // 2. If upload succeeds, get the public download URL
+                    Log.d(TAG, "Image uploaded, getting download URL...");
+                    return imageRef.getDownloadUrl();
+                })
+                // 3. This listener receives the result of getDownloadUrl()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        // --- SUCCESS ---
+                        String downloadUrl = task.getResult().toString();
+                        Log.d(TAG, "Got download URL: " + downloadUrl);
+                        // Update the note object with the correct cloud URL
+                        noteWithLocalPath.setImagePath(downloadUrl);
+                    } else {
+                        // --- FAILURE ---
+                        Log.w(TAG, "Image upload or URL fetch failed for note " + noteWithLocalPath.getId(), task.getException());
+                        // Fallback: save the note with an empty image path
+                        noteWithLocalPath.setImagePath("");
+                    }
+                    // 4. NOW, save the final note object (with either the cloud URL or an empty path) to Firestore
+                    db.collection("users").document(currentUser.getUid()).collection("notes").document(String.valueOf(noteWithLocalPath.getId()))
+                            .set(noteWithLocalPath)
+                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Final note " + noteWithLocalPath.getId() + " saved to Firestore."))
+                            .addOnFailureListener(e -> Log.w(TAG, "Error saving final note " + noteWithLocalPath.getId() + " to Firestore.", e));
+                });
+    }
 
     public void saveNote() {
         clearHighlights();
@@ -1574,6 +1647,8 @@ public class Notepad extends AppCompatActivity {
                 String filename = "drawing_" + System.currentTimeMillis() + ".png";
 
                 newimagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+                // store this image in this imagePath to firebase storage
+
 
             }
         }
@@ -1585,15 +1660,17 @@ public class Notepad extends AppCompatActivity {
 
         final int finalColorToSave = colorToSave;
         final String imagepathfinal = newimagePath;
+
         Executors.newSingleThreadExecutor().execute(() -> {
+            Note notetoSave;
             if (noteId != -1) {
                 // Update existing note with the new imagePath
-                Note existingNote = new Note(noteId, title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
+                notetoSave = new Note(noteId, title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
                 if(this.folderName.length() != 0){
-                    existingNote.setFontFamily(this.folderName);
+                    notetoSave.setFontFamily(this.folderName);
                 }
-                existingNote.setUserFirebaseId(currentUser.getUid());
-                noteRepository.updateNote(existingNote);
+                notetoSave.setUserFirebaseId(currentUser.getUid());
+                noteRepository.updateNote(notetoSave);
                 runOnUiThread(() -> {
                     Toast.makeText(this, R.string.note_updated, Toast.LENGTH_SHORT).show();
                     isNoteModified = false;
@@ -1601,18 +1678,21 @@ public class Notepad extends AppCompatActivity {
                 });
             } else {
                 // Create a new note with the new imagePath
-                Note newNote = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
+                notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
                 if(this.folderName.length() != 0){
-                    newNote.setFontFamily(this.folderName);
+                    notetoSave.setFontFamily(this.folderName);
                 }
-                newNote.setUserFirebaseId(currentUser.getUid());
-                noteRepository.addNote(newNote);
+                notetoSave.setUserFirebaseId(currentUser.getUid());
+                long newNoteId = noteRepository.addNote(notetoSave);
+                notetoSave.setId(newNoteId);
                 runOnUiThread(() -> {
                     Toast.makeText(this, R.string.note_saved_text, Toast.LENGTH_SHORT).show();
                     isNoteModified = false;
                     supportFinishAfterTransition();
                 });
             }
+            uploadAndSyncNoteToFirebase(notetoSave);
+
         });
         this.drawingData = drawingDataToSave;
 
@@ -1620,6 +1700,8 @@ public class Notepad extends AppCompatActivity {
             if(drawingDataToSave != null && drawingDataToSave.length > 0){
                 Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
                 noteRepository.saveBytesToFile(drawingDataToSave,imagePath);
+
+
                 if (savedBitmap != null) {
                     imagesketch.setImageBitmap(savedBitmap);
                     imagesketch.setVisibility(View.VISIBLE);

@@ -2,6 +2,7 @@ package com.noteaiapp.keyboardai.auth;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Patterns;
@@ -16,11 +17,21 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class SignUpActivity extends AppCompatActivity {
@@ -157,8 +168,14 @@ public class SignUpActivity extends AppCompatActivity {
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (!hasMigrated && user != null) {
+            showLoading(true);
             Log.d(TAG, "New user account created. Checking for and claiming local notes...");
             Executors.newSingleThreadExecutor().execute(() -> {
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                FirebaseStorage storage = FirebaseStorage.getInstance();
+                StorageReference storageRef = storage.getReference();
+                String userId = user.getUid();
+
                 NoteRepository repository = new NoteRepository(getApplicationContext());
                 List<com.noteaiapp.keyboardai.Models.Note> localNotes = repository.getAllNotes();
 
@@ -166,15 +183,90 @@ public class SignUpActivity extends AppCompatActivity {
                     prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
                     return;
                 }
+                Set<String> uniqueFolders = new HashSet<>();
+                final int totalNotes = localNotes.size();
+                final int[] notesProcessed = {0};
 
                 for (com.noteaiapp.keyboardai.Models.Note note : localNotes) {
-                    note.setUserFirebaseId(user.getUid());
+                    String noteCloudId = UUID.randomUUID().toString();
+                    note.setUserFirebaseId(noteCloudId);
+
+                    // Collect folder names
+                    if (note.getFontFamily() != null && !note.getFontFamily().isEmpty()) {
+                        uniqueFolders.add(note.getFontFamily());
+                    }
+                    if (note.getImagePath() != null && !note.getImagePath().isEmpty()) {
+                        File localImageFile = new File(note.getImagePath());
+                        if (localImageFile.exists()) {
+                            Uri localImageUri = Uri.fromFile(localImageFile);
+                            String cloudFileName = localImageFile.getName();
+                            // Create a user-specific path in Cloud Storage
+                            StorageReference imageRef = storageRef.child("images/" + userId + "/" + cloudFileName);
+
+                            // Upload the file to Cloud Storage
+                            imageRef.putFile(localImageUri)
+                                    .addOnSuccessListener(taskSnapshot -> {
+                                        // After image upload, update the note's imagePath to the cloud path
+                                        note.setImagePath(imageRef.getPath()); // e.g., "images/userId/image.jpg"
+                                        // Now, upload the note metadata to Firestore
+                                        uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.w(TAG, "Image upload failed for note " + note.getId(), e);
+                                        // Still upload the note, but with a null image path
+                                        note.setImagePath(null);
+                                        uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                                    });
+                        } else {
+                            // Local image file not found, upload note without it
+                            note.setImagePath(null);
+                            uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                        }
+                    } else {
+                        // No image, just upload the note metadata to Firestore
+                        uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                    }
                     repository.updateNote(note);
                     // TODO: In the next phase, upload this note to Firestore
                 }
-                prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
                 Log.d(TAG, "Migration complete. " + localNotes.size() + " notes were claimed.");
             });
+        }
+    }
+    private void uploadNoteToFirestore(FirebaseFirestore db, com.noteaiapp.keyboardai.Models.Note note, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
+        // Using the local ID as the document ID in Firestore for easy mapping
+        db.collection("users").document(userId).collection("notes").document(String.valueOf(note.getUserFirebaseId()))
+                .set(note)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Note " + note.getId() + " uploaded to Firestore.");
+                    checkIfMigrationIsComplete(db, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error uploading note " + note.getId(), e);
+                    checkIfMigrationIsComplete(db, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                });
+    }
+    private void checkIfMigrationIsComplete(FirebaseFirestore db, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
+        notesProcessed[0]++;
+        if (notesProcessed[0] >= totalNotes) {
+            prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
+
+            // All notes have been processed, now upload the folder list
+            Log.d(TAG, "All notes processed. Uploading folder list...");
+            if (!uniqueFolders.isEmpty()) {
+                Map<String, Object> folderData = new HashMap<>();
+                folderData.put("array", new ArrayList<>(uniqueFolders));
+                db.collection("folder").document(userId).set(folderData)
+                        .addOnSuccessListener(aVoid -> Log.d(TAG, "Folder list uploaded successfully."))
+                        .addOnFailureListener(e -> Log.w(TAG, "Error uploading folder list.", e));
+            }
+
+            // CRITICAL: Set the migration flag so this never runs again
+            prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
+            Log.d(TAG, "Full data migration complete.");
+
+            // Now that migration is fully complete, navigate to the main app
+            runOnUiThread(() -> navigateToMainApp());
         }
     }
 }

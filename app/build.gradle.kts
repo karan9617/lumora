@@ -99,5 +99,8 @@ dependencies {
 
     // 2. Add the dependency for Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.1.0")
+    implementation("com.google.firebase:firebase-firestore")
 
+    // 2. For Cloud Storage (to store images)
+    implementation("com.google.firebase:firebase-storage")
 }

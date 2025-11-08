@@ -41,10 +41,4 @@
         android:icon="@drawable/ic_color_lens"
         app:showAsAction="ifRoom" />
 
-
-    <item
-        android:id="@+id/action_pin_unpin"
-        android:title="@string/pin_menu"
-        android:icon="@drawable/ic_pin"
-        />
 </menu>

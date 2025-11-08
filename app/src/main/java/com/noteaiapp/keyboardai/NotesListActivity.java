@@ -47,6 +47,8 @@ import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.noteaiapp.keyboardai.Models.Label;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
@@ -102,6 +104,10 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 
 public class NotesListActivity extends AppCompatActivity {
+    private interface FirestoreSyncCallback {
+        void onSyncComplete(List<Note> syncedNotes);
+        void onSyncFailed(Exception e);
+    }
     private RecyclerView notesRecyclerView;/// notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
    // private NotesAdapterPinned notesAdapterPinned;
@@ -109,6 +115,11 @@ public class NotesListActivity extends AppCompatActivity {
     // In NotesListActivity.java, with your other class variables
 // In NotesListActivity.java, with your other class variables
     private FirebaseUser currentUser;
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
+    private static final String TAG = "NotesListActivity";
+    // --- END: ADD THESE ---
+
     private ActivityResultLauncher<String> requestPermissionLauncher;
     private List<Note> notesList;
     List<Note> allNotesFromDb;// allPinnedNotesFromDb;
@@ -151,6 +162,10 @@ public class NotesListActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notes_list_main);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+        // --- END: INITIALIZE FIREBASE ---
+
         if (currentUser == null) {
             Toast.makeText(this, "No user logged in. Redirecting to login.", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(NotesListActivity.this, LoginActivity.class);
@@ -1203,52 +1218,138 @@ public class NotesListActivity extends AppCompatActivity {
         optionsLayout.startAnimation(animation);
         isOptionsVisible = false;
     }
+    // Add this new method anywhere inside your NotesListActivity class
+    private void syncNotesFromFirebase(FirestoreSyncCallback callback) {
+        if (currentUser == null) {
+            Log.w(TAG, "Cannot sync notes from cloud, user is not logged in.");
+            return; // Don't proceed if there's no user
+        }
+
+        String userId = currentUser.getUid();
+        Log.d(TAG, "Starting sync from Firestore for user: " + userId);
+
+        // Optional: Show a loading indicator to the user
+        // For example, if you have a SwipeRefreshLayout:
+        // swipeRefreshLayout.setRefreshing(true);
+        List<Note> notesListFromFirestore = new ArrayList<>();
+
+        // This is the query to get all notes for the current user
+        db.collection("users").document(userId).collection("notes")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("com.noteaiapp.keyboardai", "Successfully fetched " + task.getResult().size() + " notes from Firestore.");
+
+                        // Perform the heavy database operations on a background thread
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                                // Convert each document from Firestore into a Note object
+                            Note cloudNote = document.toObject(Note.class);
+                            notesListFromFirestore.add(cloudNote);
+                            }
+                        callback.onSyncComplete(notesListFromFirestore);
+
+                    } else {
+                        Log.w("com.noteaiapp.keyboardai", "Error getting documents from Firestore: ", task.getException());
+                        callback.onSyncFailed(task.getException());
+                    }
+                    // Optional: Hide your loading indicator here
+                    // swipeRefreshLayout.setRefreshing(false);
+                });
+    }
+
+    // DELETE your old loadNotesFromDatabase method and REPLACE it with this new version.
     private void loadNotesFromDatabase() {
+
+        // Show a loading indicator to the user.
+        // If you have a SwipeRefreshLayout, this is a good place to start it.
+        // swipeRefreshLayout.setRefreshing(true);
+
+        // Call the sync method and provide a new callback implementation.
+        // The code inside this callback will only run AFTER the Firebase download is complete.
+        syncNotesFromFirebase(new FirestoreSyncCallback() {
+            @Override
+            public void onSyncComplete(List<Note> syncedNotes) {
+                Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
+
+                // Now that we have the fresh notes from the cloud,
+                // perform the local database updates and filtering on a background thread.
+                Executors.newSingleThreadExecutor().execute(() -> {
+
+                    // Prepare to filter notes for UI display
+                    List<Note> filteredNotesForUi = new ArrayList<>();
+                    SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
+                    Set<String> folders = prefs.getStringSet("folder_set", new HashSet<>());
+
+                    // Filter the list of notes we just received
+                    for (Note note : syncedNotes) {
+                        if (note.getFontFamily() == null || note.getFontFamily().isEmpty() ||
+                                (!note.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(note.getFontFamily()))) {
+                            filteredNotesForUi.add(note);
+                        }
+                    }
+
+                    // Update the UI on the main thread with the final, filtered list.
+                    runOnUiThread(() -> {
+                        allNotes.clear();
+                        allNotes.addAll(filteredNotesForUi);
+
+                        // You can now re-use the allNotes list for your notesList if needed,
+                        // or apply further client-side sorting/filtering.
+                        notesList.clear();
+                        notesList.addAll(allNotes);
+
+                        notesAdapter.notifyDataSetChanged();
+                        updatePinnedSectionVisibility();
+
+                        // Hide the loading indicator.
+                        // swipeRefreshLayout.setRefreshing(false);
+                        Log.d(TAG, "UI has been refreshed with synced notes.");
+                    });
+                });
+            }
+
+            @Override
+            public void onSyncFailed(Exception e) {
+                // Handle the failure case
+                runOnUiThread(() -> {
+                    Toast.makeText(NotesListActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
+                    // Hide the loading indicator.
+                    // swipeRefreshLayout.setRefreshing(false);
+                });
+            }
+        });
+    }
+
+    /*
+    private void loadNotesFromDatabase() {
+
         new Thread(() -> {
             if (currentUser != null) {
-                String userId = currentUser.getUid();
-                List<Note> allNotesFromDb1 = noteRepository.getAllNotesForUser(userId);
+                List<Note> allNotesFromDb1 = syncNotesFromFirebase();
                 allNotesFromDb.clear();
                 // get all folder names from sharepreference
                 SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
                 // get folder names from prefs
                 Set<String> folders = prefs.getStringSet("folder_set", new HashSet<>());
-
                 for (Note note : allNotesFromDb1) {
-
                     if (note.getFontFamily() == null || note.getFontFamily().length() == 0 || (!note.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(note.getFontFamily()))) {
                         //check if the note.getFontFamily is not the name of any folder
                         allNotesFromDb.add(note);
                     }
                 }
-                //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
-                List<Note> allPinnedArchivedNotes = noteRepository.getAllPinnedNotes();
-                for (Note currentNote : allPinnedArchivedNotes) {
-                    if (currentNote.getFontFamily() == null || currentNote.getFontFamily().length() == 0 || (!currentNote.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(currentNote.getFontFamily()))) {
-                        allNotesFromDb.add(currentNote);
-                    }
-
-                }
-
                 runOnUiThread(() -> {
                     allNotes.clear();
                     allNotes.addAll(allNotesFromDb);
-
-                    // pinnedNotes.clear();
-                    // pinnedNotes.addAll(allPinnedNotesFromDb);
-
                     notesList.clear();
                     notesList.addAll(allNotes);
-
                     notesAdapter.notifyDataSetChanged();
                     // notesAdapterPinned.notifyDataSetChanged();
                     updatePinnedSectionVisibility();
                 });
         }
         }).start();
-
     }
-
+*/
     private void filterNotes(String query) {
         List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
       //  List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
@@ -1503,6 +1604,7 @@ public class NotesListActivity extends AppCompatActivity {
                     // Delete notes from the main list
                     for (Note note : selectedNotes) {
                         note.setFontFamily("archived");
+                        note.setUserFirebaseId(currentUser.getUid());
                         noteRepository.updateNote(note);
                     }
                     runOnUiThread(() -> {

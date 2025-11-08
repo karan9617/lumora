@@ -2,6 +2,7 @@ package com.noteaiapp.keyboardai.auth;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
@@ -31,17 +32,27 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private static final String TAG = "LoginActivity";
+    private static final String TAG = "com.noteaiapp.keyboardai";
     private TextView forgotPasswordTextView; // <-- ADD THIS LINE
     // UI Elements
     private EditText emailEditText;
@@ -199,7 +210,8 @@ public class LoginActivity extends AppCompatActivity {
                         if (user != null && user.isEmailVerified()) {
                             // --- SUCCESS: User is verified, proceed to the main app ---
                             Log.d(TAG, "signInWithEmail:success - User is verified.");
-                            navigateToMainApp();
+                            //navigateToMainApp();
+                            checkForLocalNotesMigration();
                         }else {
                             // --- FAILURE: User is not verified ---
                             Log.w(TAG,"signInWithEmail:failure - User's email is not verified.");
@@ -267,7 +279,8 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         // Sign in success
                         Log.d(TAG, "signInWithCredential:success");
-                        navigateToMainApp();
+                        //navigateToMainApp();
+                        checkForLocalNotesMigration();
                     } else {
                         // If sign in fails, display a message to the user.
                         Log.w(TAG, "signInWithCredential:failure", task.getException());
@@ -277,41 +290,126 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
     // Add this new method to LoginActivity.java
+    // In LoginActivity.java
     private void checkForLocalNotesMigration() {
-        // Use SharedPreferences to ensure this migration runs only once per device install.
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes", false);
-
+        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes07", false);
         FirebaseUser user = mAuth.getCurrentUser();
 
-        // Only run migration if it has NEVER been done before AND we have a valid logged-in user.
         if (!hasMigrated && user != null) {
-            Log.d(TAG, "First login on this device detected. Starting local notes migration...");
+            // --- MIGRATION IS NEEDED ---
+            Log.d(TAG, "First login on this device detected. Starting full data migration to Firebase...");
+            showLoading(true); // Show loading spinner
 
-            // This is a heavy database operation, so it must be on a background thread.
             Executors.newSingleThreadExecutor().execute(() -> {
+                // Get instances of Firebase services
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                FirebaseStorage storage = FirebaseStorage.getInstance();
+                StorageReference storageRef = storage.getReference();
+                String userId = user.getUid();
+
                 NoteRepository repository = new NoteRepository(getApplicationContext());
-                List<com.noteaiapp.keyboardai.Models.Note> localNotes = repository.getAllNotes();
+                List<Note> localNotes = repository.getAllNotes();
 
                 if (localNotes.isEmpty()) {
-                    prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
+                    // If there's nothing to migrate, set the flag and navigate.
+                    prefs.edit().putBoolean("has_migrated_local_notes07", true).apply();
+                    Log.d(TAG, "No local notes found to migrate.");
+                    runOnUiThread(this::navigateToMainApp); // Use method reference for cleanliness
                     return;
                 }
+                Set<String> uniqueFolders = new HashSet<>();
+                final int totalNotes = localNotes.size();
+                final int[] notesProcessed = {0};
+                // Loop through each local note to upload it
+                for (Note note : localNotes) {
+                    String noteCloudId = UUID.randomUUID().toString();
+                    note.setUserFirebaseId(noteCloudId); // Stamp with user ID
+                    if (note.getFontFamily() != null && !note.getFontFamily().isEmpty()) {
+                        uniqueFolders.add(note.getFontFamily());
+                    }
+                    if (note.getImagePath() != null && !note.getImagePath().isEmpty()) {
+                        File localImageFile = new File(note.getImagePath());
+                        if (localImageFile.exists()) {
+                            Uri localImageUri = Uri.fromFile(localImageFile);
+                            String cloudFileName = localImageFile.getName();
+                            StorageReference imageRef = storageRef.child("images/" + userId + "/" + cloudFileName);
 
-                for (com.noteaiapp.keyboardai.Models.Note note : localNotes) {
+                            // --- START: THIS IS THE CRITICAL FIX ---
+                            // Upload the file, and only in the success listener do we upload the note data.
+                            imageRef.putFile(localImageUri)
+                                    .addOnSuccessListener(taskSnapshot -> {
+                                        // 1. Image upload is successful. Now, update the note's path.
+                                        note.setImagePath(imageRef.getPath()); // e.g., "images/userId/image.jpg"
+                                        Log.d(TAG, "Image uploaded for note " + note.getId() + " to " + imageRef.getPath());
 
-                    note.setUserFirebaseId(user.getUid());
-                    repository.updateNote(note);
-                    // TODO: In the next phase, upload this note to Firestore
+                                        // 2. With the correct cloud path set, NOW upload the note to Firestore.
+                                        uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.w(TAG, "Image upload failed for note " + note.getId(), e);
+                                        // If image upload fails, still upload the note but with a null image path.
+                                        note.setImagePath(null);
+                                        uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                                    });
+                            // --- END: CRITICAL FIX ---
+                        } else {
+                            // Local image file doesn't exist, so upload note without it.
+                            Log.w(TAG, "Local image file not found for note " + note.getId() + " at path: " + note.getImagePath());
+                            note.setImagePath(null);
+                            uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                        }
+                    } else {
+                        // No image for this note, so upload its data directly to Firestore.
+                        uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                    }
                 }
-                prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
-                Log.d(TAG, "Migration complete. " + localNotes.size() + " notes were claimed.");
             });
+        } else {
+            // --- MIGRATION IS NOT NEEDED ---
+            // The flag is already true. Navigate to the main app immediately.
+            Log.d(TAG, "Migration not needed. Navigating to main app.");
+            navigateToMainApp();
+        }
+    }
+
+    private void uploadNoteToFirestore(FirebaseFirestore db, Note note, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
+        // Using the local ID as the document ID in Firestore for easy mapping
+        db.collection("users").document(userId).collection("notes").document(String.valueOf(note.getUserFirebaseId()))
+                .set(note)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Note " + note.getId() + " uploaded to Firestore.");
+                    checkIfMigrationIsComplete(db, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error uploading note " + note.getId(), e);
+                    checkIfMigrationIsComplete(db, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                });
+    }
+    private void checkIfMigrationIsComplete(FirebaseFirestore db, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
+        notesProcessed[0]++;
+        if (notesProcessed[0] == totalNotes) {
+            prefs.edit().putBoolean("has_migrated_local_notes07", true).apply();
+            // All notes have been processed, now upload the folder list
+            Log.d(TAG, "All notes processed. Uploading folder list...");
+            if (!uniqueFolders.isEmpty()) {
+                Map<String, Object> folderData = new
+                        HashMap<>();
+                folderData.put("array", new ArrayList<>(uniqueFolders));
+                db.collection("folder").document(userId).set(folderData)
+                        .addOnSuccessListener(aVoid -> Log.d(TAG, "Folder list uploaded successfully."))
+                        .addOnFailureListener(e -> Log.w(TAG, "Error uploading folder list.", e));
+            }
+
+            // CRITICAL: Set the migration flag so this never runs again
+            prefs.edit().putBoolean("has_migrated_local_notes07", true).apply();
+            Log.d(TAG, "Full data migration complete.");
+            runOnUiThread(() -> showLoading(false)); // Hide loading indicator
         }
     }
 
     private void navigateToMainApp() {
-        checkForLocalNotesMigration();
+        //checkForLocalNotesMigration();
         Intent intent = new Intent(LoginActivity.this, NotesListActivity.class);
         // Clear the activity stack so the user can't go back to the login screen
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

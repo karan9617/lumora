@@ -8,13 +8,17 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
+import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -23,6 +27,8 @@ public class AppWidgetConfigureActivity extends Activity {
 
     private static final String PREFS_NAME = "com.noteaiapp.keyboardai.widget.NotesWidgetProvider";
     private static final String PREF_PREFIX_KEY = "note_id_";
+    private FirebaseAuth mAuth;
+    private FirebaseUser currentUser;
 
     int mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 
@@ -35,7 +41,22 @@ public class AppWidgetConfigureActivity extends Activity {
         super.onCreate(icicle);
         setResult(RESULT_CANCELED);
         setContentView(R.layout.widget_config_layout);
+        mAuth = FirebaseAuth.getInstance();
+        currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            // User is not signed in. We cannot show them a list of notes.
+            // Inform the user and redirect them to the Login screen.
+            Toast.makeText(this, "Please log in to add a widget.", Toast.LENGTH_LONG).show();
 
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            // Add flags to make it a new task, so it doesn't feel like a deep part of the widget flow.
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(loginIntent);
+
+            // 3. Finish this configuration activity because it cannot proceed.
+            finish();
+            return; // IMPORTANT: Stop executing the rest of onCreate.
+        }
         noteRepository = new NoteRepository(this);
         recyclerView = findViewById(R.id.notes_recycler_view);
         emptyTextView = findViewById(R.id.empty_text_view);
@@ -59,9 +80,9 @@ public class AppWidgetConfigureActivity extends Activity {
     private void loadNotes() {
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            List<Note> pinnedNotes = noteRepository.getAllPinnedNotes();
-            List<Note> notes = noteRepository.getAllNotes();
-            notes.addAll(pinnedNotes);
+            String userId = currentUser.getUid();
+            //List<Note> pinnedNotes = noteRepository.getAllPinnedNotes();
+            List<Note> notes = noteRepository.getAllNotesForUser(userId);
             runOnUiThread(() -> {
                 if (notes.isEmpty()) {
                     emptyTextView.setVisibility(View.VISIBLE);

@@ -1,5 +1,7 @@
 package com.noteaiapp.keyboardai.Models;
 
+import com.google.firebase.firestore.Exclude;
+
 import java.io.Serializable;
 public class Note implements Serializable {
 
@@ -17,6 +19,7 @@ public class Note implements Serializable {
     // NEW FIELD: To store the file path of the saved image
     private String imagePath;
     // NEW FIELD: For selection state (not stored in database)
+
     private boolean isSelected = false;
     private String fontFamily;
     private String fontColor;
@@ -181,6 +184,7 @@ public class Note implements Serializable {
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
     }
+    @Exclude
     public boolean isSelected() { return isSelected; }
     public void setSelected(boolean selected) { this.isSelected = selected; }
 

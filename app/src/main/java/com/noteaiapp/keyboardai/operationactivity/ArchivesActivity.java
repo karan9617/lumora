@@ -51,12 +51,15 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
+import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
@@ -80,6 +83,8 @@ public class ArchivesActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView;/// notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
     private List<Note> notesList;
+    private FirebaseUser currentUser;
+
     List<Note> allNotesFromDb;// allPinnedNotesFromDb;
     Toolbar toolbar;
     private NoteRepository noteRepository;
@@ -115,7 +120,17 @@ public class ArchivesActivity extends AppCompatActivity {
         getWindow().setAllowEnterTransitionOverlap(false);
         getWindow().setAllowReturnTransitionOverlap(false);
         // Add this inside your onCreate method in NotesListActivity.java
-
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            // No user is signed in, we cannot proceed.
+            // Redirect to the login screen to be safe.
+            Toast.makeText(this, "Please log in to view the calendar.", Toast.LENGTH_SHORT).show();
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(loginIntent);
+            finish(); // Close this activity
+            return;   // IMPORTANT: Stop the rest of onCreate from running
+        }
         allNotesFromDb = new ArrayList<>();
         //allPinnedNotesFromDb = new ArrayList<>();
         noteRepository = new NoteRepository(this);
@@ -463,7 +478,7 @@ public class ArchivesActivity extends AppCompatActivity {
     private void loadNotesFromDatabase() {
         new Thread(() -> {
             allNotesFromDb.clear();
-            List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
+            List<Note> allNotesFromDb1 = noteRepository.getAllNotesForUser(currentUser.getUid());
             //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
             for(Note note: allNotesFromDb1){
                 if(note.getFontFamily() != null && note.getFontFamily().length() > 0 && note.getFontFamily().equalsIgnoreCase("archived")){

@@ -37,10 +37,13 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.noteaiapp.keyboardai.Models.Label;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
+import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
@@ -94,6 +97,8 @@ public class FolderNotesActivity extends AppCompatActivity {
     // private NotesAdapterPinned notesAdapterPinned;
     View transparentOverlay;
     private List<Note> notesList;
+    private FirebaseUser currentUser;
+
     List<Note> allNotesFromDb;// allPinnedNotesFromDb;
     Toolbar toolbar;
     private NoteRepository noteRepository;
@@ -135,7 +140,17 @@ public class FolderNotesActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_folder);
         // UPDATE the activity label to folder name
-
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            // No user is signed in, we cannot proceed.
+            // Redirect to the login screen to be safe.
+            Toast.makeText(this, "Please log in to view the calendar.", Toast.LENGTH_SHORT).show();
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(loginIntent);
+            finish(); // Close this activity
+            return;   // IMPORTANT: Stop the rest of onCreate from running
+        }
         // get folder from intent
         this.folderName = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
         setTitle(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
@@ -1115,7 +1130,7 @@ public class FolderNotesActivity extends AppCompatActivity {
     private void loadNotesFromDatabase() {
         Log.d("com.noteaiapp.keyboardai","filder name:"+this.folderName);
         new Thread(() -> {
-            List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
+            List<Note> allNotesFromDb1 = noteRepository.getAllNotesForUser(currentUser.getUid());
             allNotesFromDb.clear();
             for(Note note : allNotesFromDb1){
 
