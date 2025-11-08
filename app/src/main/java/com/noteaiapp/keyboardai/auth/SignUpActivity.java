@@ -205,12 +205,35 @@ public class SignUpActivity extends AppCompatActivity {
 
                             // Upload the file to Cloud Storage
                             imageRef.putFile(localImageUri)
+                                    .continueWithTask(task -> {
+                                        if (!task.isSuccessful()) {
+                                            // If upload fails, pass the exception down the chain
+                                            throw task.getException();
+                                        }
+                                        // 2. If upload succeeds, get the public download URL
+                                        Log.d(TAG, "Image uploaded, getting download URL...");
+                                        return imageRef.getDownloadUrl();
+                                    })
+                                    .addOnCompleteListener(task -> {
+                                        if (task.isSuccessful()) {
+                                            String downloadUrl = task.getResult().toString();
+                                            Log.d(TAG, "Got download URL: " + downloadUrl);
+                                            // Update the note object with the correct CLOUD URL
+                                            note.setImagePath(downloadUrl);
+                                            uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+                                        } else {
+                                            // --- FAILURE ---
+                                            Log.w(TAG, "Image upload or URL fetch failed for note", task.getException());
+                                            // Fallback: save the note with an empty image path
+                                            note.setImagePath("");
+                                        }
+                                    })/*
                                     .addOnSuccessListener(taskSnapshot -> {
                                         // After image upload, update the note's imagePath to the cloud path
                                         note.setImagePath(imageRef.getPath()); // e.g., "images/userId/image.jpg"
                                         // Now, upload the note metadata to Firestore
                                         uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
-                                    })
+                                    })*/
                                     .addOnFailureListener(e -> {
                                         Log.w(TAG, "Image upload failed for note " + note.getId(), e);
                                         // Still upload the note, but with a null image path

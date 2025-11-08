@@ -293,7 +293,7 @@ public class LoginActivity extends AppCompatActivity {
     // In LoginActivity.java
     private void checkForLocalNotesMigration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes07", false);
+        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes08", false);
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (!hasMigrated && user != null) {
@@ -313,7 +313,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 if (localNotes.isEmpty()) {
                     // If there's nothing to migrate, set the flag and navigate.
-                    prefs.edit().putBoolean("has_migrated_local_notes07", true).apply();
+                    prefs.edit().putBoolean("has_migrated_local_notes08", true).apply();
                     Log.d(TAG, "No local notes found to migrate.");
                     runOnUiThread(this::navigateToMainApp); // Use method reference for cleanliness
                     return;
@@ -338,6 +338,31 @@ public class LoginActivity extends AppCompatActivity {
                             // --- START: THIS IS THE CRITICAL FIX ---
                             // Upload the file, and only in the success listener do we upload the note data.
                             imageRef.putFile(localImageUri)
+                                    .continueWithTask(task -> {
+                                        if (!task.isSuccessful()) {
+                                            // If upload fails, pass the exception down the chain
+                                            throw task.getException();
+                                        }
+                                        // 2. If upload succeeds, get the public download URL
+                                        Log.d(TAG, "Image uploaded, getting download URL...");
+                                        return imageRef.getDownloadUrl();
+                                    })
+                                    .addOnCompleteListener(task -> {
+                                        if (task.isSuccessful()) {
+                                            String downloadUrl = task.getResult().toString();
+                                            Log.d(TAG, "Got download URL: " + downloadUrl);
+                                            // Update the note object with the correct CLOUD URL
+                                            note.setImagePath(downloadUrl);
+                                            uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
+
+                                        } else {
+                                            // --- FAILURE ---
+                                            Log.w(TAG, "Image upload or URL fetch failed for note", task.getException());
+                                            // Fallback: save the note with an empty image path
+                                            note.setImagePath("");
+                                        }
+                                    })
+                                    /*
                                     .addOnSuccessListener(taskSnapshot -> {
                                         // 1. Image upload is successful. Now, update the note's path.
                                         note.setImagePath(imageRef.getPath()); // e.g., "images/userId/image.jpg"
@@ -345,7 +370,7 @@ public class LoginActivity extends AppCompatActivity {
 
                                         // 2. With the correct cloud path set, NOW upload the note to Firestore.
                                         uploadNoteToFirestore(db, note, totalNotes, notesProcessed, prefs, uniqueFolders, userId);
-                                    })
+                                    })*/
                                     .addOnFailureListener(e -> {
                                         Log.w(TAG, "Image upload failed for note " + note.getId(), e);
                                         // If image upload fails, still upload the note but with a null image path.
@@ -389,7 +414,7 @@ public class LoginActivity extends AppCompatActivity {
     private void checkIfMigrationIsComplete(FirebaseFirestore db, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
         notesProcessed[0]++;
         if (notesProcessed[0] == totalNotes) {
-            prefs.edit().putBoolean("has_migrated_local_notes07", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes08", true).apply();
             // All notes have been processed, now upload the folder list
             Log.d(TAG, "All notes processed. Uploading folder list...");
             if (!uniqueFolders.isEmpty()) {
@@ -402,7 +427,7 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             // CRITICAL: Set the migration flag so this never runs again
-            prefs.edit().putBoolean("has_migrated_local_notes07", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes08", true).apply();
             Log.d(TAG, "Full data migration complete.");
             runOnUiThread(() -> showLoading(false)); // Hide loading indicator
         }

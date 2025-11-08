@@ -559,6 +559,7 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
+                intent.putExtra("note_font_size",note.getUserFirebaseId());
 
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
@@ -1315,17 +1316,19 @@ public class NotesListActivity extends AppCompatActivity {
                     Toast.makeText(NotesListActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
                     // Hide the loading indicator.
                     // swipeRefreshLayout.setRefreshing(false);
+                    loadNotesFromLocalDatabase();
+
                 });
             }
         });
     }
 
-    /*
-    private void loadNotesFromDatabase() {
+
+    private void loadNotesFromLocalDatabase() {
 
         new Thread(() -> {
             if (currentUser != null) {
-                List<Note> allNotesFromDb1 = syncNotesFromFirebase();
+                List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
                 allNotesFromDb.clear();
                 // get all folder names from sharepreference
                 SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
@@ -1349,7 +1352,7 @@ public class NotesListActivity extends AppCompatActivity {
         }
         }).start();
     }
-*/
+
     private void filterNotes(String query) {
         List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
       //  List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
