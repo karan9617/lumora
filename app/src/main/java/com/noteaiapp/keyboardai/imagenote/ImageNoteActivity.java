@@ -68,6 +68,9 @@ import androidx.exifinterface.media.ExifInterface;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
@@ -89,6 +92,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import okhttp3.MediaType;
@@ -148,6 +152,7 @@ public class ImageNoteActivity extends AppCompatActivity {
     SearchView search_view;
     private ImageView imagesketch,voiceicon,linkImage;
     private String currentHint = "";
+
     // NEW: Variable to hold the note's pinned status
     private boolean isPinned = false;
     // NEW: Variable to hold the note's order
@@ -161,6 +166,11 @@ public class ImageNoteActivity extends AppCompatActivity {
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
     private ActivityResultLauncher<Intent> pdfFileLauncher;
+    private FirebaseFirestore db;
+    RelativeLayout sideSheet;
+    LinearLayout sideSheetHandle;
+    private FirebaseStorage storage;
+    private String currentNoteUuid = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -168,19 +178,14 @@ public class ImageNoteActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         this.currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
+        this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
 
         postponeEnterTransition();
         init();
         registerListeners();
-        clearImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                drawingData = null;
-                imagePath = null;
-                imageframelayout.setVisibility(View.GONE);
-                saveNote();
-            }
-        });
+
         pdfFileLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -203,88 +208,6 @@ public class ImageNoteActivity extends AppCompatActivity {
                     }
                 }
         );
-        // FrameLayout bottomSheet = findViewById(R.id.frameLayout);
-        //BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
-        //behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-
-        // In your onCreate method:
-        RelativeLayout sideSheet = findViewById(R.id.side_sheet);
-        LinearLayout sideSheetHandle = findViewById(R.id.side_sheet_handle);
-
-// Initially hide the side sheet (off-screen to the right)
-        sideSheet.setVisibility(View.VISIBLE);
-        sideSheet.setTranslationX(130); // Only the handle is visible (80dp is the sheet width)
-
-// Track if it's open or closed
-        final boolean[] isOpen = {false};
-
-// Add touch listener for dragging
-        sideSheetHandle.setOnTouchListener(new View.OnTouchListener() {
-            private float startX;
-            private float startTranslationX;
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        startX = event.getRawX();
-                        startTranslationX = sideSheet.getTranslationX();
-                        return true;
-
-                    case MotionEvent.ACTION_MOVE:
-                        float deltaX = event.getRawX() - startX;
-                        float newTranslationX = startTranslationX + deltaX;
-
-                        // Constrain movement between -100 (fully open, extends left) and 180 (closed)
-                        if (newTranslationX >= -100 && newTranslationX <= 180) {
-                            sideSheet.setTranslationX(newTranslationX);
-                        }
-                        return true;
-
-                    case MotionEvent.ACTION_UP:
-                        // Snap to open or closed based on position
-                        float currentTranslation = sideSheet.getTranslationX();
-                        if (currentTranslation < 40) {
-                            // Snap to open (negative value makes it extend more to the left)
-                            sideSheet.animate()
-                                    .translationX(-100)
-                                    .setDuration(200)
-                                    .start();
-                            isOpen[0] = true;
-                        } else {
-                            // Snap to closed
-                            sideSheet.animate()
-                                    .translationX(180)
-                                    .setDuration(200)
-                                    .start();
-                            isOpen[0] = false;
-                        }
-                        return true;
-                }
-                return false;
-            }
-        });
-
-// Also add click listener for quick toggle
-        sideSheetHandle.setOnClickListener(v -> {
-            if (isOpen[0]) {
-                // Close
-                sideSheet.animate()
-                        .translationX(80)
-                        .setDuration(300)
-                        .start();
-                isOpen[0] = false;
-            } else {
-                // Open
-                sideSheet.animate()
-                        .translationX(0)
-                        .setDuration(300)
-                        .start();
-                isOpen[0] = true;
-            }
-        });
-
-        ///
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
         italicsButton = findViewById(R.id.italicsButton);
@@ -992,6 +915,89 @@ public class ImageNoteActivity extends AppCompatActivity {
         }
     }
     public void registerListeners(){
+        clearImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawingData = null;
+                imagePath = null;
+                imageframelayout.setVisibility(View.GONE);
+                saveNote();
+            }
+        });
+        sideSheet = findViewById(R.id.side_sheet);
+        sideSheetHandle = findViewById(R.id.side_sheet_handle);
+
+// Initially hide the side sheet (off-screen to the right)
+        sideSheet.setVisibility(View.VISIBLE);
+        sideSheet.setTranslationX(130); // Only the handle is visible (80dp is the sheet width)
+
+// Track if it's open or closed
+        final boolean[] isOpen = {false};
+// Add touch listener for dragging
+        sideSheetHandle.setOnTouchListener(new View.OnTouchListener() {
+            private float startX;
+            private float startTranslationX;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = event.getRawX();
+                        startTranslationX = sideSheet.getTranslationX();
+                        return true;
+
+                    case MotionEvent.ACTION_MOVE:
+                        float deltaX = event.getRawX() - startX;
+                        float newTranslationX = startTranslationX + deltaX;
+
+                        // Constrain movement between -100 (fully open, extends left) and 180 (closed)
+                        if (newTranslationX >= -100 && newTranslationX <= 180) {
+                            sideSheet.setTranslationX(newTranslationX);
+                        }
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        // Snap to open or closed based on position
+                        float currentTranslation = sideSheet.getTranslationX();
+                        if (currentTranslation < 40) {
+                            // Snap to open (negative value makes it extend more to the left)
+                            sideSheet.animate()
+                                    .translationX(-100)
+                                    .setDuration(200)
+                                    .start();
+                            isOpen[0] = true;
+                        } else {
+                            // Snap to closed
+                            sideSheet.animate()
+                                    .translationX(180)
+                                    .setDuration(200)
+                                    .start();
+                            isOpen[0] = false;
+                        }
+                        return true;
+                }
+                return false;
+            }
+        });
+
+// Also add click listener for quick toggle
+        sideSheetHandle.setOnClickListener(v -> {
+            if (isOpen[0]) {
+                // Close
+                sideSheet.animate()
+                        .translationX(80)
+                        .setDuration(300)
+                        .start();
+                isOpen[0] = false;
+            } else {
+                // Open
+                sideSheet.animate()
+                        .translationX(0)
+                        .setDuration(300)
+                        .start();
+                isOpen[0] = true;
+            }
+        });
 
         if (search_view != null) {
             search_view.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -1591,17 +1597,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         }
         ProgressBar saveProgressBar = findViewById(R.id.saveProgressBar);
         saveProgressBar.setVisibility(View.VISIBLE);
-
-        // --- Step 3: Show a loading indicator (optional but recommended) ---
-        // If you have a ProgressBar with id 'saveProgressBar', uncomment the next line
-        // findViewById(R.id.saveProgressBar).setVisibility(View.VISIBLE);
-
-
-        // --- Step 4: Execute all heavy operations on a background thread ---
         Executors.newSingleThreadExecutor().execute(() -> {
-            // --- Background Task: Heavy Lifting ---
-
-            // 1. Process text to get labels
             WordTokenizer tokenizer = new WordTokenizer(currentContent);
             List<String> labels = tokenizer.getTokenizedWords();
             if (labels == null || labels.size() < 2) {
@@ -1613,10 +1609,11 @@ public class ImageNoteActivity extends AppCompatActivity {
 
             // 2. Process image/drawing data and save to a file
             String finalImagePath = this.imagePath; // Start with the existing path
+            String filename = "";
             if (drawingDataFromView != null && drawingDataFromView.length > 0) {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
                 if (drawingBitmap != null) {
-                    String filename = "drawing_" + System.currentTimeMillis() + ".png";
+                    filename = "drawing_" + System.currentTimeMillis() + ".png";
                     // Save the new drawing and get its path. This is file I/O.
                     try {
                         Bitmap bitmapToSave = rotateImageIfRequired(drawingBitmap, finalImagePath);
@@ -1630,28 +1627,32 @@ public class ImageNoteActivity extends AppCompatActivity {
 
             // 3. Save the note to the database
             String toastMessage;
+            Note noteToSave;
             if (noteId != -1) {
                 // Update existing note
-                Note existingNote = new Note(noteId, finalTitle, currentContent, receivedDateFromActivities, currentColor, noteOrder, "imagenote", isPinned, finalImagePath);
+                noteToSave = new Note(noteId, finalTitle, currentContent, receivedDateFromActivities, currentColor, noteOrder, "imagenote", isPinned, finalImagePath);
 
-                existingNote.setFontColor("imagenote");
+                noteToSave.setFontColor("imagenote");
                 if(this.folderName.length() != 0){
-                    existingNote.setFontFamily(this.folderName);
+                    noteToSave.setFontFamily(this.folderName);
                 }
-                existingNote.setUserFirebaseId(currentUser.getUid());
-                noteRepository.updateImageNote(existingNote);
+                noteToSave.setUserFirebaseId(currentNoteUuid);
+                noteRepository.updateImageNote(noteToSave);
                 toastMessage = "Note updated!";
             } else {
                 // Create a new note
-                Note newNote = new Note(finalTitle, currentContent, receivedDateFromActivities, currentColor, 0, "imagenote", isPinned, finalImagePath);
-                newNote.setFontColor("imagenote");
+                String noteCloudId = UUID.randomUUID().toString();
+                noteToSave = new Note(finalTitle, currentContent, receivedDateFromActivities, currentColor, 0, "imagenote", isPinned, finalImagePath);
+                noteToSave.setFontColor("imagenote");
                 if(this.folderName.length() != 0){
-                    newNote.setFontFamily(this.folderName);
+                    noteToSave.setFontFamily(this.folderName);
                 }
-                newNote.setUserFirebaseId(currentUser.getUid());
-                noteRepository.addImageNote(newNote);
+                noteToSave.setUserFirebaseId(noteCloudId);
+                long id = noteRepository.addImageNote(noteToSave);
+                noteToSave.setId(id);
                 toastMessage = "Note saved!";
             }
+            uploadAndSyncNoteToFirebase(noteToSave,drawingDataFromView,filename);
 
 
             // --- Step 5: Update the UI on the main thread after all work is done ---
@@ -1686,7 +1687,44 @@ public class ImageNoteActivity extends AppCompatActivity {
             });
         });
     }
+    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename) {
+        String userId = this.currentUser.getUid();
+        StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
 
+        imageRef.putBytes(imageData)
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+                    Log.d(TAG, "Image uploaded, getting download URL...");
+                    return imageRef.getDownloadUrl();
+                })
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        String downloadUrl = task.getResult().toString();
+                        Log.d(TAG, "Got download URL: " + downloadUrl);
+                        // Update the note object with the correct cloud URL
+                        noteWithLocalPath.setImagePath(downloadUrl);
+                    } else {
+                        Log.w(TAG, "Image upload or URL fetch failed for note " + noteWithLocalPath.getId(), task.getException());
+                        noteWithLocalPath.setImagePath("");
+                    }
+
+                    // Get the note's unique ID (the UUID) from the object
+                    String noteCloudId = noteWithLocalPath.getUserFirebaseId();
+
+                    if (noteCloudId == null || noteCloudId.isEmpty()) {
+                        Log.e(TAG, "Cannot save to Firestore, note's unique ID (cloudId) is missing!");
+                        return; // Stop here to prevent a crash
+                    }
+
+                    // NOW, save the final note object to Firestore using the full, correct path
+                    db.collection("users").document(userId).collection("notes").document(noteCloudId)
+                            .set(noteWithLocalPath)
+                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Final note " + noteCloudId + " saved to Firestore."))
+                            .addOnFailureListener(e -> Log.w(TAG, "Error saving final note " + noteCloudId + " to Firestore.", e));
+                });
+    }
     private String getHtmlContent() {
         if (resultText.getText() != null) {
             // TO_HTML_PARAGRAPH_LINES_CONSECUTIVE is essential for preserving

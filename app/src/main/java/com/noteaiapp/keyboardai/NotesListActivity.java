@@ -1293,9 +1293,8 @@ public class NotesListActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         allNotes.clear();
                         allNotes.addAll(filteredNotesForUi);
-
-                        // You can now re-use the allNotes list for your notesList if needed,
-                        // or apply further client-side sorting/filtering.
+                        allNotesFromDb.clear();
+                        allNotesFromDb.addAll(filteredNotesForUi);
                         notesList.clear();
                         notesList.addAll(allNotes);
 

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint; // Import Paint to use STRIKE_THRU_TEXT_FLAG
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -31,6 +32,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
@@ -43,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class ListItemsActivity extends AppCompatActivity {
@@ -67,9 +72,12 @@ public class ListItemsActivity extends AppCompatActivity {
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
-    /**
-     * Model class for a single list item. This object holds the content and state (checked/unchecked).
-     */
+    private String TAG = "com.noteaiapp.keyboardai";
+
+    // --- START: ADD THESE LINES ---
+    private FirebaseFirestore db;
+    private FirebaseStorage storage;
+    private String currentNoteUuid;
     private static class ListItem {
         String content;
         boolean isChecked;
@@ -96,6 +104,10 @@ public class ListItemsActivity extends AppCompatActivity {
         toolbar = findViewById(R.id.list_toolbar);
         setSupportActionBar(toolbar);
         this.currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
+        this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
+
         String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
         if(receivedFolder != null && !receivedFolder.isEmpty()){
             this.folderName = receivedFolder;
@@ -263,15 +275,10 @@ public class ListItemsActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Saves the current list note (new or existing) to the database.
-     */
     private void saveNote() {
         // *** NEW STEP: Synchronize data from EditText views before serializing ***
         synchronizeRecyclerViewData();
         NotesWidgetProvider.refreshWidget(getApplicationContext());
-        // ----------------------------------------------------------------------
-
         String title = noteTitleEditText.getText().toString().trim();
         String listContent = serializeListItems();
 
@@ -282,7 +289,6 @@ public class ListItemsActivity extends AppCompatActivity {
                 return;
             }
         }
-
         // If title is empty, use the first non-empty list item as the title
         if (title.isEmpty()) {
             if (!listItems.isEmpty()) {
@@ -303,32 +309,46 @@ public class ListItemsActivity extends AppCompatActivity {
         // *** CRITICAL CHANGE: Prepend the LIST_NOTE_PREFIX to the content before saving ***
         String finalContent = NotesListActivity.LIST_NOTE_PREFIX + "\n" + listContent;
         noteColor = selectedColor;
+        String finalTitle = title;
 
-        // Note: The 'imagePath' is null as this is a list note
-        Note note = new Note(title, finalContent, receivedDateFromActivities, noteColor, false, "");
-        if(this.folderName.length() != 0){
-            note.setFontFamily(this.folderName);
-        }
-        note.setUserFirebaseId(currentUser.getUid());
-        if (noteId == -1) {
-            // New Note
-            noteRepository.addNote(note);
-            Toast.makeText(this, "List note saved!", Toast.LENGTH_SHORT).show();
-        } else {
-            // Existing Note
-            note.setId(noteId);
-            if(this.folderName.length() != 0){
-                note.setFontFamily(this.folderName);
+        Executors.newSingleThreadExecutor().execute(() -> {
+
+            // Note: The 'imagePath' is null as this is a list note
+            Note notetosync = new Note(finalTitle, finalContent, receivedDateFromActivities, noteColor, false, "");
+            if (this.folderName.length() != 0) {
+                notetosync.setFontFamily(this.folderName);
             }
-            noteRepository.updateNote(note);
-            Toast.makeText(this, "List note updated!", Toast.LENGTH_SHORT).show();
-        }
+            if (noteId == -1) {
+                String noteCloudId = UUID.randomUUID().toString();
+                notetosync.setUserFirebaseId(noteCloudId);
+                long id = noteRepository.addNote(notetosync);
+                notetosync.setId(id);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "List note saved!", Toast.LENGTH_SHORT).show();
+                });
+            } else {
+                // Existing Note
+                notetosync.setUserFirebaseId(currentNoteUuid);
+                if (this.folderName.length() != 0) {
+                    notetosync.setFontFamily(this.folderName);
+                }
+                noteRepository.updateNote(notetosync);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "List note updated!", Toast.LENGTH_SHORT).show();
+                });
 
-        finish();
+            }
+            uploadAndSyncNoteToFirebase(notetosync);
+            finish();
+        });
     }
-
-    // --- Toolbar Menu ---
-
+    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath) {
+        noteWithLocalPath.setImagePath("");
+        db.collection("users").document(this.currentUser.getUid()).collection("notes").document(String.valueOf(noteWithLocalPath.getUserFirebaseId()))
+                    .set(noteWithLocalPath)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Note " + noteWithLocalPath.getId() + " metadata saved to Firestore."))
+                    .addOnFailureListener(e -> Log.w(TAG, "Error saving note " + noteWithLocalPath.getId() + " metadata to Firestore.", e));
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the standard action menu (Save, Delete, etc.)

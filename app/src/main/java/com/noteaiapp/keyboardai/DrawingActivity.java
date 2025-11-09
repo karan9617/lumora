@@ -31,6 +31,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.UUID;
 
 public class DrawingActivity extends AppCompatActivity {
     private RelativeLayout saveDiscardDialog;
@@ -49,6 +51,7 @@ public class DrawingActivity extends AppCompatActivity {
     private static final int PICK_IMAGE_REQUEST = 1;
     private DrawingView drawingView;
     private FirebaseUser currentUser;
+    private String TAG = "com.noteaiapp.keyboardai";
 
     // --- START: ADD THESE LINES ---
     private FirebaseFirestore db;
@@ -67,6 +70,7 @@ public class DrawingActivity extends AppCompatActivity {
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
     private String folderName = "";
+    private String currentNoteUuid = "";
 
     // This static class will temporarily hold the drawing data to bypass the Intent size limit
     public static class DrawingDataManager {
@@ -95,18 +99,16 @@ public class DrawingActivity extends AppCompatActivity {
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
+        this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
+
         init();
         listeners();
 
         // Check if we are editing an existing note
         Intent intent = getIntent();
         String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
-        if(receivedFolder != null && !receivedFolder.isEmpty()){
-            folderName = receivedFolder;
-        }
-        else{
-            folderName ="";
-        }
+        folderName = (receivedFolder != null && !receivedFolder.isEmpty())? receivedFolder:"";
+
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
         if(receivedDate != null && !receivedDate.isEmpty()){
             dateReceived = true;
@@ -174,7 +176,6 @@ public class DrawingActivity extends AppCompatActivity {
         color_purple = findViewById(R.id.color_purple);
         // Add a listener to the drawing view to detect changes
         drawingView.setOnDrawListener(new DrawingView.OnDrawListener() {
-
             @Override
             public void onDrawFinished() {
                 isDirty = true;
@@ -207,17 +208,18 @@ public class DrawingActivity extends AppCompatActivity {
                             noteToSync = noteRepository.getNoteById(currentNoteId);
                             if (noteToSync != null) {
                                 noteToSync.setImagePath(imagePath);
-                                noteToSync.setUserFirebaseId(currentUser.getUid());
-                                noteToSync.setFontFamily(this.folderName);
+                                noteToSync.setUserFirebaseId(currentNoteUuid); // used for unique note id
+                                noteToSync.setFontFamily(this.folderName); // used for folder name
                                 noteRepository.updateNote(noteToSync);
                             }
                         } else {
+                            String noteCloudId = UUID.randomUUID().toString();
                             noteToSync = new Note();
                             noteToSync.setTitle("Sketch");
                             noteToSync.setColor(Color.WHITE);
                             noteToSync.setDate(receivedDateFromActivities);
                             noteToSync.setContent("");
-                            noteToSync.setUserFirebaseId(currentUser.getUid());
+                            noteToSync.setUserFirebaseId(noteCloudId);
                             noteToSync.setPinned(false);
                             noteToSync.setImagePath(imagePath);
                             if(this.folderName.length() != 0)
@@ -226,6 +228,7 @@ public class DrawingActivity extends AppCompatActivity {
                             noteToSync.setId(newId);
                             Log.d("NoteApp", "Saved drawing successfully");
                         }
+                        uploadAndSyncNoteToFirebase(noteToSync,drawingData,filename);
                     }
                 } catch (Exception e) {
                     Log.e("NoteApp", "Error saving drawing", e);
@@ -239,6 +242,44 @@ public class DrawingActivity extends AppCompatActivity {
                 }
             }).start();
         }
+    }
+    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename) {
+        String userId = currentUser.getUid();
+        StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
+
+        imageRef.putBytes(imageData)
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+                    Log.d(TAG, "Image uploaded, getting download URL...");
+                    return imageRef.getDownloadUrl();
+                })
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        String downloadUrl = task.getResult().toString();
+                        Log.d(TAG, "Got download URL: " + downloadUrl);
+                        // Update the note object with the correct cloud URL
+                        noteWithLocalPath.setImagePath(downloadUrl);
+                    } else {
+                        Log.w(TAG, "Image upload or URL fetch failed for note " + noteWithLocalPath.getId(), task.getException());
+                        noteWithLocalPath.setImagePath("");
+                    }
+
+                    // Get the note's unique ID (the UUID) from the object
+                    String noteCloudId = noteWithLocalPath.getUserFirebaseId();
+
+                    if (noteCloudId == null || noteCloudId.isEmpty()) {
+                        Log.e(TAG, "Cannot save to Firestore, note's unique ID (cloudId) is missing!");
+                        return; // Stop here to prevent a crash
+                    }
+
+                    // NOW, save the final note object to Firestore using the full, correct path
+                    db.collection("users").document(userId).collection("notes").document(noteCloudId)
+                            .set(noteWithLocalPath)
+                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Final note " + noteCloudId + " saved to Firestore."))
+                            .addOnFailureListener(e -> Log.w(TAG, "Error saving final note " + noteCloudId + " to Firestore.", e));
+                });
     }
 
     private Bitmap scaleBitmap(Bitmap src, int maxSize) {
