@@ -95,6 +95,86 @@ public class ListItemsActivity extends AppCompatActivity {
         }
     }
 
+    private void fetchNoteFromFirebase(String cloudId) {
+
+        if (currentUser == null || cloudId == null || cloudId.length() == 0) {
+            Log.w(TAG, "User not logged in, falling back to local database.");
+            loadNoteData(getIntent());
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        // Show a ProgressBar if you have one
+
+        db.collection("users").document(userId).collection("notes").document(cloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Log.d(TAG, "Successfully fetched list note from Firestore.");
+                        Note cloudNote = documentSnapshot.toObject(Note.class);
+                        if (cloudNote != null) {
+                            populateUiWithNoteData(cloudNote);
+                        }
+                    } else {
+                        Log.w(TAG, "List note not found in Firestore, falling back to local.");
+                        loadNoteData(getIntent());
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to fetch from Firestore. Falling back to local.", e);
+                    loadNoteData(getIntent());
+                });
+    }
+    public void populateUiWithNoteData(Note currentNode){
+        if (currentNode == null) {
+            // This is a new note, add one empty item to start
+            if (listItems.isEmpty()) {
+                addNewListItem("");
+            }
+            return;
+        }
+
+        // --- This is an existing note, so populate the UI ---
+
+        // 1. Get the raw data from the note object
+        String title = currentNode.getTitle();
+        String content = currentNode.getContent(); // This is the serialized list
+        noteColor = currentNode.getColor();
+        selectedColor = noteColor;
+
+        // 2. Set the title
+        if (title != null) {
+            noteTitleEditText.setText(title.split(";")[0]); // Safely get the title part
+        }
+
+        // --- 3. THIS IS THE FIX FOR THE BLANK SCREEN ---
+        // Clear the existing list before adding new items
+        listItems.clear();
+
+        if (content != null && !content.isEmpty()) {
+            String listContent = content;
+            // Remove the prefix if it exists
+            if (listContent.startsWith(NotesListActivity.LIST_NOTE_PREFIX)) {
+                listContent = listContent.substring(NotesListActivity.LIST_NOTE_PREFIX.length()).trim();
+            }
+
+            String[] items = listContent.split("\n");
+            for (String item : items) {
+                if (item.trim().isEmpty()) continue; // Skip empty lines
+
+                boolean isChecked = item.startsWith("[x] ");
+                // The prefix is 4 characters long ("[x] " or "[ ] ")
+                String itemContent = item.length() >= 4 ? item.substring(4).trim() : item.trim();
+
+                listItems.add(new ListItem(itemContent, isChecked));
+            }
+        }
+
+        // 4. Notify the adapter *once*, after the list has been fully populated.
+        listAdapter.notifyDataSetChanged();
+        //
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -109,12 +189,8 @@ public class ListItemsActivity extends AppCompatActivity {
         this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
 
         String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
-        if(receivedFolder != null && !receivedFolder.isEmpty()){
-            this.folderName = receivedFolder;
-        }
-        else{
-            this.folderName ="";
-        }
+        this.folderName = (receivedFolder != null && !receivedFolder.isEmpty())? receivedFolder:"";
+
         // Set up the toolbar to act as the action bar and add a back/close icon
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         // Assuming you have an ic_close drawable
@@ -126,14 +202,8 @@ public class ListItemsActivity extends AppCompatActivity {
         ImageButton addItemButton = findViewById(R.id.addItemButton);
         listItemLayout = findViewById(R.id.listItemLayout);
         noteRepository = new NoteRepository(this);
-
-        // Setup RecyclerView
         recyclerViewList.setLayoutManager(new LinearLayoutManager(this));
         listAdapter = new ListAdapter(this, listItems);
-        recyclerViewList.setAdapter(listAdapter);
-
-        // Load existing note data if provided (for editing)
-        loadNoteData(getIntent());
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
         if(receivedDate != null && !receivedDate.isEmpty()){
             dateReceived = true;
@@ -142,17 +212,20 @@ public class ListItemsActivity extends AppCompatActivity {
         else{
             receivedDateFromActivities = getCurrentDate();
         }
+
+        fetchNoteFromFirebase(currentNoteUuid);
+        // Setup RecyclerView
+
+        recyclerViewList.setAdapter(listAdapter);
+
+        // Get the date from the intent
+
         // Add New Item Button Listener
         addItemButton.setOnClickListener(v -> addNewListItem(""));
 
         // Adjust input mode to prevent the layout from shrinking when the keyboard appears
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
-
-    /**
-     * Creates a new empty list item, adds it to the internal list, and updates the RecyclerView.
-     * @param content Initial content for the new item.
-     */
     private void addNewListItem(String content) {
         int newPosition = listItems.size();
         listItems.add(new ListItem(content, false));
@@ -318,9 +391,12 @@ public class ListItemsActivity extends AppCompatActivity {
             if (this.folderName.length() != 0) {
                 notetosync.setFontFamily(this.folderName);
             }
-            if (noteId == -1) {
+            if (currentNoteUuid.length() == 0) {
                 String noteCloudId = UUID.randomUUID().toString();
                 notetosync.setUserFirebaseId(noteCloudId);
+                if (this.folderName.length() != 0) {
+                    notetosync.setFontFamily(this.folderName);
+                }
                 long id = noteRepository.addNote(notetosync);
                 notetosync.setId(id);
                 runOnUiThread(() -> {
