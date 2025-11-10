@@ -132,7 +132,6 @@ public class ImageNoteActivity extends AppCompatActivity {
     private DrawingView drawingView;
     private Button toggleModeDrawSave;
     ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton,pdfUploadButton,leftAlignButton,centerAlignButton,rightAlignButton;
-    private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
     private String imagePath;
@@ -220,7 +219,6 @@ public class ImageNoteActivity extends AppCompatActivity {
             italicsButton.setOnClickListener((v -> applyStyleToSelection(Typeface.ITALIC)));
         }
 
-        noteId = getIntent().getLongExtra("note_id", -1);
         String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
         if(receivedFolder != null && !receivedFolder.isEmpty()){
             this.folderName = receivedFolder;
@@ -229,7 +227,7 @@ public class ImageNoteActivity extends AppCompatActivity {
             this.folderName ="";
         }
         imagePathFromIntent = getIntent().getStringExtra("image_path");
-        Note currentNode = noteRepository.getNoteById(noteId);
+        Note currentNode = noteRepository.getNoteByCloudId(currentNoteUuid);
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
         if(receivedDate != null && !receivedDate.isEmpty()){
             dateReceived = true;
@@ -284,7 +282,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
         }
-        if (noteId != -1) {
+        if (currentNoteUuid != null && currentNoteUuid.length() > 0) {
             titleText.setText(noteTitle);
             loadNote(noteContent);
             //resultText.setText(noteContent);
@@ -1254,10 +1252,6 @@ public class ImageNoteActivity extends AppCompatActivity {
         } else if (id == R.id.action_color) {
             showColorPickerDialog();
             return true;
-        } else if (id == R.id.action_pin_unpin) {
-            // NEW: Handle the pin/unpin action
-            togglePinStatus();
-            return true;
         }
         else if (id == R.id.action_correct_text) { // NEW: Handle the correct text action
             correctTextWithGemini();
@@ -1523,20 +1517,6 @@ public class ImageNoteActivity extends AppCompatActivity {
         });
     }
 
-    // NEW: Method to handle toggling the pin status
-    private void togglePinStatus() {
-        isPinned = !isPinned;
-        setPinIcon(isPinned);
-        if (noteId != -1) {
-            Executors.newSingleThreadExecutor().execute(() -> {
-                noteRepository.updateNotePinStatus(noteId, isPinned);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, isPinned ? "Note pinned!" : "Note unpinned!", Toast.LENGTH_SHORT).show();
-                });
-            });
-        }
-    }
-
     // NEW: Method to set the correct icon on the toolbar
     private void setPinIcon(boolean isPinned) {
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
@@ -1628,11 +1608,18 @@ public class ImageNoteActivity extends AppCompatActivity {
             // 3. Save the note to the database
             String toastMessage;
             Note noteToSave;
-            if (noteId != -1) {
+            if (currentNoteUuid != null && currentNoteUuid.length() > 0) {
                 // Update existing note
-                noteToSave = new Note(noteId, finalTitle, currentContent, receivedDateFromActivities, currentColor, noteOrder, "imagenote", isPinned, finalImagePath);
-
+                noteToSave = noteRepository.getNoteByCloudId(currentNoteUuid);
+                noteToSave.setTitle(finalTitle);
+                noteToSave.setContent(currentContent);
+                noteToSave.setDate(receivedDateFromActivities);
+                noteToSave.setColor(currentColor);
+                noteToSave.setImagePath(finalImagePath);
+                noteToSave.setOrder(noteOrder);
                 noteToSave.setFontColor("imagenote");
+                noteToSave.setPinned(isPinned);
+                //noteToSave = new Note(noteId, finalTitle, currentContent, receivedDateFromActivities, currentColor, noteOrder, "imagenote", isPinned, finalImagePath);
                 if(this.folderName.length() != 0){
                     noteToSave.setFontFamily(this.folderName);
                 }

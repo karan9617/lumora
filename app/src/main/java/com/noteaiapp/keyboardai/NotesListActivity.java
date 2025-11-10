@@ -97,14 +97,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
 public class NotesListActivity extends AppCompatActivity {
-    private interface FirestoreSyncCallback {
+    public interface FirestoreSyncCallback {
         void onSyncComplete(List<Note> syncedNotes);
         void onSyncFailed(Exception e);
     }
@@ -114,10 +116,11 @@ public class NotesListActivity extends AppCompatActivity {
     View transparentOverlay;
     // In NotesListActivity.java, with your other class variables
 // In NotesListActivity.java, with your other class variables
+    Set<String> globalfolderlist;
     private FirebaseUser currentUser;
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private static final String TAG = "NotesListActivity";
+    private static final String TAG = "com.noteaiapp.keyboardai";
     // --- END: ADD THESE ---
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
@@ -162,6 +165,8 @@ public class NotesListActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_notes_list_main);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        globalfolderlist = new HashSet<>();
+
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         // --- END: INITIALIZE FIREBASE ---
@@ -293,18 +298,12 @@ public class NotesListActivity extends AppCompatActivity {
             }
             else if(id == R.id.option_logout){
                 FirebaseAuth.getInstance().signOut();
-
-                //2. Sign out from Google. This is important to allow the user to choose a different
-                //    Google account next time they sign in.
                 GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                         .requestIdToken(getString(R.string.default_web_client_id))
                         .requestEmail()
                         .build();
                 GoogleSignIn.getClient(this, gso).signOut();
-
-                // 3. Navigate the user back to the LoginActivity
                 Intent intent = new Intent(NotesListActivity.this, LoginActivity.class);
-                // Add flags to clear the activity stack, so the user can't press "back" to get into the app.
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
@@ -315,10 +314,7 @@ public class NotesListActivity extends AppCompatActivity {
             }
          else if (id == R.id.nav_archive) {
              startActivity(new Intent(this, ArchivesActivity.class));
-
         }
-
-
         drawerLayout.closeDrawers();
             return true;
         });
@@ -775,22 +771,71 @@ public class NotesListActivity extends AppCompatActivity {
 
     private void saveFolder(String folderName) {
         // Get the existing set of folders from SharedPreferences
-        SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
+        /*SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
         Set<String> folders = new HashSet<>(prefs.getStringSet("folder_set", new HashSet<>()));
 
         // Add the new folder and save the updated set
         folders.add(folderName);
-        prefs.edit().putStringSet("folder_set", folders).apply();
+        prefs.edit().putStringSet("folder_set", folders).apply();*/
+        db.collection("folder").document(currentUser.getUid())
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Set<String> cloudFolders = new HashSet<>();
+                    if (documentSnapshot.exists()) {
+                        List<String> folderArray = (List<String>) documentSnapshot.get("array");
+                        if (folderArray != null) {
+                            cloudFolders.addAll(folderArray);
+                        }
 
+                    }
+                    cloudFolders.add(folderName);
+                    globalfolderlist = cloudFolders;
+                    // Now, update the UI with the fresh data
+                    saveFolderToFirebase(globalfolderlist);
+
+                    updateDrawerMenu(globalfolderlist);
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error fetching folders from Firestore. Using local cache.", e);
+                    // On failure (e.g., offline), just use whatever is in the cache
+                    //loadFoldersToDrawer();
+                });
         // Refresh the navigation drawer to show the new folder
-        loadFoldersToDrawer();
+        //loadFoldersToDrawer();
     }
+    public void saveFolderToFirebase(Set<String> folders){
+        Map<String, Object> folderData = new HashMap<>();
+        folderData.put("array", new ArrayList<>(folders));
 
+        // Save the entire list to the user's folder document
+        db.collection("folder").document(currentUser.getUid())
+                .set(folderData)
+                .addOnSuccessListener(aVoid ->
+                        Log.d(TAG, "Folder list successfully synced to Firestore."))
+                .addOnFailureListener(e -> Log.w(TAG, "Error syncing folder list to Firestore.", e));
+    }
     // In NotesListActivity.java
-
-    private void loadFoldersToDrawer() {
-        SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);Set<String> folders = prefs.getStringSet("folder_set", null);
-
+    public void loadFoldersToDrawer(){
+        db.collection("folder").document(currentUser.getUid())
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Set<String> cloudFolders = new HashSet<>();
+                    if (documentSnapshot.exists()) {
+                        List<String> folderArray = (List<String>) documentSnapshot.get("array");
+                        if (folderArray != null) {
+                            cloudFolders.addAll(folderArray);
+                        }
+                        globalfolderlist = cloudFolders;
+                    }
+                    updateDrawerMenu(cloudFolders);
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error fetching folders from Firestore. Using local cache.", e);
+                    // On failure (e.g., offline), just use whatever is in the cache
+                    //loadFoldersToDrawer();
+                });
+    }
+    public void updateDrawerMenu(Set<String> folders){
         Menu menu = navigationView.getMenu();
         SubMenu foldersSubMenu = menu.findItem(R.id.folders_group_item).getSubMenu();
         foldersSubMenu.clear(); // Clear existing folders to prevent duplicates
@@ -870,17 +915,10 @@ public class NotesListActivity extends AppCompatActivity {
 // Add this method to NotesListActivity.java
 
     private void deleteFolderAndRefresh(String folderName) {
-        SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
-        Set<String> folders = new HashSet<>(prefs.getStringSet("folder_set", new HashSet<>()));
-
-        // Remove the folder from the set
-        folders.remove(folderName);
-
-        // Save the updated set back to SharedPreferences
-        prefs.edit().putStringSet("folder_set", folders).apply();
-
+        globalfolderlist.remove(folderName);
         // Refresh the navigation drawer to reflect the deletion
-        loadFoldersToDrawer();
+        saveFolderToFirebase(globalfolderlist);
+        updateDrawerMenu(globalfolderlist);
     }
 
 
@@ -1301,12 +1339,8 @@ public class NotesListActivity extends AppCompatActivity {
                         allNotesFromDb.addAll(filteredNotesForUi);
                         notesList.clear();
                         notesList.addAll(allNotes);
-
                         notesAdapter.notifyDataSetChanged();
                         updatePinnedSectionVisibility();
-
-                        // Hide the loading indicator.
-                        // swipeRefreshLayout.setRefreshing(false);
                         Log.d(TAG, "UI has been refreshed with synced notes.");
                     });
                 });
@@ -1612,11 +1646,11 @@ public class NotesListActivity extends AppCompatActivity {
                     // Delete notes from the main list
                     for (Note note : selectedNotes) {
                         note.setFontFamily("archived");
-                        note.setUserFirebaseId(currentUser.getUid());
-                        noteRepository.updateNote(note);
+                        noteRepository.updateNoteByCloudId(note);
+                        // update note in firestore as well
+                        db.collection("users").document(currentUser.getUid()).collection("notes").document(note.getUserFirebaseId()).set(note);
                     }
                     runOnUiThread(() -> {
-                        // Reload data to reflect changes
                         loadNotesFromDatabase();
                         Toast.makeText(NotesListActivity.this, "Notes Archived", Toast.LENGTH_SHORT).show();
                         mode.finish();

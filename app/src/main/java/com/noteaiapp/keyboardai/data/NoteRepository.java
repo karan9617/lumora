@@ -460,6 +460,37 @@ public Note getNoteByCloudId(String cloudId) {
         db.close();
         return updatedRows;
     }
+    public int updateNoteByCloudId(Note note) {
+        // Ensure we have a cloudId to update with, otherwise the operation is meaningless.
+        if (note == null || note.getUserFirebaseId() == null || note.getUserFirebaseId().isEmpty()) {
+            Log.e("NoteRepository", "Cannot update note by cloudId, the ID is null or empty.");
+            return 0;
+        }
+
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        // Populate the values with all the note's data, just like in updateNote().
+        values.put(NotesDbHelper.COLUMN_TITLE, note.getTitle());
+        values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
+        values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
+        values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily() == null) ? "" : note.getFontFamily());
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getUserFirebaseId()); // The cloudId itself
+        values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0); // Include other fields as well
+        values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
+
+        // --- THIS IS THE KEY DIFFERENCE ---
+        // The 'WHERE' clause of the update statement now targets the COLUMN_FONT_SIZE
+        // to find the correct note to update.
+        int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,
+                values,
+                NotesDbHelper.COLUMN_FONT_SIZE + " = ?",
+                new String[]{note.getUserFirebaseId()});
+
+        db.close();
+        return updatedRows;
+    }
     public int updateImageNote(Note note) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();

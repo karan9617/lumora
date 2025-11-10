@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -53,6 +54,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.noteaiapp.keyboardai.DrawingActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
@@ -75,8 +78,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 public class ArchivesActivity extends AppCompatActivity {
@@ -84,6 +89,9 @@ public class ArchivesActivity extends AppCompatActivity {
     private NotesAdapter notesAdapter;
     private List<Note> notesList;
     private FirebaseUser currentUser;
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
+    private String TAG = "com.noteaiapp.keyboardai";
 
     List<Note> allNotesFromDb;// allPinnedNotesFromDb;
     Toolbar toolbar;
@@ -121,6 +129,9 @@ public class ArchivesActivity extends AppCompatActivity {
         getWindow().setAllowReturnTransitionOverlap(false);
         // Add this inside your onCreate method in NotesListActivity.java
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
         if (currentUser == null) {
             // No user is signed in, we cannot proceed.
             // Redirect to the login screen to be safe.
@@ -267,10 +278,7 @@ public class ArchivesActivity extends AppCompatActivity {
                         //selectedNote.setSelected(true);
                     }
                 }
-
-
             }
-
             @Override
             public boolean isLongPressDragEnabled() {
                 // Enable long press drag
@@ -476,9 +484,45 @@ public class ArchivesActivity extends AppCompatActivity {
     }
 
     private void loadNotesFromDatabase() {
+        syncNotesFromFirebase(new NotesListActivity.FirestoreSyncCallback() {
+            @Override
+            public void onSyncComplete(List<Note> syncedNotes) {
+                Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    List<Note> filteredNotesForUi = new ArrayList<>();
+                    for (Note note : syncedNotes) {
+                        if (note.getFontFamily() != null && note.getFontFamily().length() > 0 && note.getFontFamily().equalsIgnoreCase("archived")) {
+                            filteredNotesForUi.add(note);
+                        }
+                    }
+                    runOnUiThread(() -> {
+                        allNotes.clear();
+                        allNotes.addAll(filteredNotesForUi);
+                        allNotesFromDb.clear();
+                        allNotesFromDb.addAll(filteredNotesForUi);
+                        notesList.clear();
+                        notesList.addAll(allNotes);
+                        notesAdapter.notifyDataSetChanged();
+                        updatePinnedSectionVisibility();
+                        Log.d(TAG, "UI has been refreshed with synced notes.");
+                    });
+                });
+            }
+
+            @Override
+            public void onSyncFailed(Exception e) {
+                // Handle the failure case
+                runOnUiThread(() -> {
+                    Toast.makeText(ArchivesActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
+                    loadNotesFromLocalDatabase();
+                });
+            }
+        });
+    }
+    private void loadNotesFromLocalDatabase() {
         new Thread(() -> {
             allNotesFromDb.clear();
-            List<Note> allNotesFromDb1 = noteRepository.getAllNotesForUser(currentUser.getUid());
+            List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
             //allPinnedNotesFromDb = noteRepository.getAllPinnedNotes();
             for(Note note: allNotesFromDb1){
                 if(note.getFontFamily() != null && note.getFontFamily().length() > 0 && note.getFontFamily().equalsIgnoreCase("archived")){
@@ -509,7 +553,37 @@ public class ArchivesActivity extends AppCompatActivity {
         }).start();
 
     }
+    private void syncNotesFromFirebase(NotesListActivity.FirestoreSyncCallback callback) {
+        if (currentUser == null) {
+            Log.w(TAG, "Cannot sync notes from cloud, user is not logged in.");
+            return; // Don't proceed if there's no user
+        }
+        String userId = currentUser.getUid();
+        Log.d(TAG, "Starting sync from Firestore for user: " + userId);
+        List<Note> notesListFromFirestore = new ArrayList<>();
+        // This is the query to get all notes for the current user
+        db.collection("users").document(userId).collection("notes")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("com.noteaiapp.keyboardai", "Successfully fetched " + task.getResult().size() + " notes from Firestore.");
 
+                        // Perform the heavy database operations on a background thread
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            // Convert each document from Firestore into a Note object
+                            Note cloudNote = document.toObject(Note.class);
+                            notesListFromFirestore.add(cloudNote);
+                        }
+                        callback.onSyncComplete(notesListFromFirestore);
+
+                    } else {
+                        Log.w("com.noteaiapp.keyboardai", "Error getting documents from Firestore: ", task.getException());
+                        callback.onSyncFailed(task.getException());
+                    }
+                    // Optional: Hide your loading indicator here
+                    // swipeRefreshLayout.setRefreshing(false);
+                });
+    }
     private void filterNotes(String query) {
         List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
         //  List<Note> masterPinned   = (allPinnedNotesFromDb != null) ? allPinnedNotesFromDb : new ArrayList<>();
@@ -760,7 +834,8 @@ public class ArchivesActivity extends AppCompatActivity {
                     // Delete notes from the main list
                     for (Note note : selectedNotes) {
                         note.setFontFamily("");
-                        noteRepository.updateNote(note);
+                        noteRepository.updateNoteByCloudId(note);
+                        db.collection("users").document(currentUser.getUid()).collection("notes").document(note.getUserFirebaseId()).set(note);
                     }
                     runOnUiThread(() -> {
                         // Reload data to reflect changes

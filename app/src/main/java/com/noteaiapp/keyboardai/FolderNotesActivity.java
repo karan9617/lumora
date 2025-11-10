@@ -1149,13 +1149,8 @@ public class FolderNotesActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 allNotes.clear();
                 allNotes.addAll(allNotesFromDb);
-
-                // pinnedNotes.clear();
-                // pinnedNotes.addAll(allPinnedNotesFromDb);
-
                 notesList.clear();
                 notesList.addAll(allNotes);
-
                 notesAdapter.notifyDataSetChanged();
                 // notesAdapterPinned.notifyDataSetChanged();
                 updatePinnedSectionVisibility();
