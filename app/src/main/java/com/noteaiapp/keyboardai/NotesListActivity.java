@@ -542,14 +542,18 @@ public class NotesListActivity extends AppCompatActivity {
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
                 if(isListNote){
                     intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
+                    Log.d("com.noteaiapp.keyboardai","list note intent called");
                 }
                 else if(note.getFontColor() != null && !note.getFontColor().isEmpty() && note.getFontColor().equalsIgnoreCase("imagenote")){
                     intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
+                    Log.d("com.noteaiapp.keyboardai","image note intent intent called");
                 }
                 else if (note.getContent() != null && !note.getContent().isEmpty()) {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
+                    Log.d("com.noteaiapp.keyboardai","notepad intent called");
                 } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                     intent = new Intent(NotesListActivity.this, DrawingActivity.class);
+                    Log.d("com.noteaiapp.keyboardai","DrawingActivity intent called");
                 } else {
                     intent = new Intent(NotesListActivity.this, Notepad.class);
                 }
@@ -560,7 +564,7 @@ public class NotesListActivity extends AppCompatActivity {
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
                 intent.putExtra("note_font_size",note.getUserFirebaseId());
-
+                Log.d(TAG, "note_id: "+note.getId()+" note_title: "+note.getTitle()+" note_content: "+note.getContent()+" note_date: "+note.getDate()+" note_color: "+note.getColor()+" note_image_path: "+note.getImagePath()+" note_font_size: "+note.getUserFirebaseId()+" note_font_color: "+note.getFontColor());
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
@@ -1579,6 +1583,8 @@ public class NotesListActivity extends AppCompatActivity {
                     for (Note note : selectedNotes) {
                         notesRepositoryTrash.addNote(note);
                         noteRepository.deleteNote(note.getId());
+                        // delete note from firestore as well
+                        db.collection("users").document(currentUser.getUid()).collection("notes").document(note.getUserFirebaseId()).delete();
                     }
                     /* Delete notes from the pinned list
                     for (Note note : selectedPinnedNotes) {

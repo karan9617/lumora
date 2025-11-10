@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -23,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -43,6 +45,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
+import androidx.annotation.NonNull;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+
 
 public class DrawingActivity extends AppCompatActivity {
     private RelativeLayout saveDiscardDialog;
@@ -88,36 +95,8 @@ public class DrawingActivity extends AppCompatActivity {
             drawingData = null;
         }
     }
-
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_drawing);
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        db = FirebaseFirestore.getInstance();
-        storage = FirebaseStorage.getInstance();
-        this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
-
-        init();
-        listeners();
-
-        // Check if we are editing an existing note
+    public void loadNoteData(){
         Intent intent = getIntent();
-        String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
-        folderName = (receivedFolder != null && !receivedFolder.isEmpty())? receivedFolder:"";
-
-        String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
-        if(receivedDate != null && !receivedDate.isEmpty()){
-            dateReceived = true;
-            this.receivedDateFromActivities = receivedDate;
-        }
-        else{
-            receivedDateFromActivities = getCurrentDate();
-        }
-
         if (intent.hasExtra("note_id")) {
             currentNoteId = intent.getLongExtra("note_id", -1);
             if (currentNoteId != -1) {
@@ -138,6 +117,97 @@ public class DrawingActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+    public void loadDataFromFirebase(String cloudId){
+        if (currentUser == null || cloudId == null || cloudId.length() == 0) {
+            Log.w(TAG, "User not logged in, falling back to local database.");
+            loadNoteData();
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        // Show a ProgressBar if you have one
+        Log.d(TAG, "List item user uid:"+userId);
+        db.collection("users").document(userId).collection("notes").document(cloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Log.d(TAG, "Successfully fetched list note from Firestore.");
+                        Note cloudNote = documentSnapshot.toObject(Note.class);
+                        Log.d(TAG, "cloudNote :"+cloudNote.getTitle()+"|cloudNote content:"+cloudNote.getContent());
+
+                        if (cloudNote != null) {
+                            populateUiWithNoteData(cloudNote);
+                        }
+                    } else {
+                        Log.w(TAG, "List note not found in Firestore, falling back to local.");
+                        loadNoteData();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to fetch from Firestore. Falling back to local.", e);
+                    loadNoteData();
+                });
+    }
+    public void populateUiWithNoteData(Note existingNote) {
+        if (existingNote == null) {
+            // Handle new note case if needed, though onCreate handles this now.
+            return;
+        }
+
+        // Set the member variables from the loaded note
+        this.currentNoteId = existingNote.getId();
+        this.receivedDateFromActivities = existingNote.getDate();
+        this.folderName = existingNote.getFontFamily();
+
+        // --- THIS IS THE FIX ---
+        String imagePath = existingNote.getImagePath();
+
+        if (imagePath != null && !imagePath.isEmpty()) {
+            Log.d(TAG, "Loading image into DrawingView from path: " + imagePath);
+
+            // Use Glide to load the image. It handles both local paths and cloud URLs.
+            Glide.with(this)
+                    .asBitmap() // Important: We need a Bitmap for the drawing view
+                    .load(imagePath)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                            // This callback runs when Glide has finished downloading/loading the Bitmap.
+                            // Now, set it as the background for the DrawingView.
+                            drawingView.setBackgroundImage(resource);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // Handle case where the view is cleared
+                        }
+                    });
+        }
+        // -----------------------
+    }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_drawing);
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
+        this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
+
+        init();
+        listeners();
+        folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) != null && !getIntent().getStringExtra(EXTRA_FOLDER_NAME).isEmpty())? getIntent().getStringExtra(EXTRA_FOLDER_NAME):"";
+        if(getIntent().getStringExtra(DATE_EXTRA_KEY) != null && !getIntent().getStringExtra(DATE_EXTRA_KEY).isEmpty()){
+            dateReceived = true;
+            this.receivedDateFromActivities = getIntent().getStringExtra(DATE_EXTRA_KEY);
+        }
+        else{
+            receivedDateFromActivities = getCurrentDate();
+        }
+        loadDataFromFirebase(currentNoteUuid);
     }
 
     @Override
@@ -201,17 +271,17 @@ public class DrawingActivity extends AppCompatActivity {
 
                     String filename = "drawing_" + System.currentTimeMillis() + ".png";
                     String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
-
+                    Note noteToSync;
                     if (imagePath != null) {
-                        Note noteToSync;
-                        if (currentNoteId != -1) {
-                            noteToSync = noteRepository.getNoteById(currentNoteId);
-                            if (noteToSync != null) {
-                                noteToSync.setImagePath(imagePath);
-                                noteToSync.setUserFirebaseId(currentNoteUuid); // used for unique note id
-                                noteToSync.setFontFamily(this.folderName); // used for folder name
-                                noteRepository.updateNote(noteToSync);
-                            }
+
+                        if (currentNoteUuid != null && currentNoteUuid.length() != 0) {
+                            noteToSync = noteRepository.getNoteByCloudId(currentNoteUuid);
+                            noteToSync.setImagePath(imagePath);
+                            noteToSync.setDate(receivedDateFromActivities);
+                            noteToSync.setUserFirebaseId(currentNoteUuid); // used for unique note id
+                            noteToSync.setFontFamily(this.folderName); // used for folder name
+                            noteRepository.updateNote(noteToSync);
+
                         } else {
                             String noteCloudId = UUID.randomUUID().toString();
                             noteToSync = new Note();
@@ -222,13 +292,13 @@ public class DrawingActivity extends AppCompatActivity {
                             noteToSync.setUserFirebaseId(noteCloudId);
                             noteToSync.setPinned(false);
                             noteToSync.setImagePath(imagePath);
-                            if(this.folderName.length() != 0)
+                            if (this.folderName.length() != 0)
                                 noteToSync.setFontFamily(this.folderName);
                             long newId = noteRepository.addNote(noteToSync);
                             noteToSync.setId(newId);
                             Log.d("NoteApp", "Saved drawing successfully");
                         }
-                        uploadAndSyncNoteToFirebase(noteToSync,drawingData,filename);
+                        uploadAndSyncNoteToFirebase(noteToSync, drawingData, filename);
                     }
                 } catch (Exception e) {
                     Log.e("NoteApp", "Error saving drawing", e);

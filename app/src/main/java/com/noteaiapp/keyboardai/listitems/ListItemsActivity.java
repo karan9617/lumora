@@ -105,13 +105,15 @@ public class ListItemsActivity extends AppCompatActivity {
 
         String userId = currentUser.getUid();
         // Show a ProgressBar if you have one
-
+        Log.d(TAG, "List item user uid:"+userId);
         db.collection("users").document(userId).collection("notes").document(cloudId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         Log.d(TAG, "Successfully fetched list note from Firestore.");
                         Note cloudNote = documentSnapshot.toObject(Note.class);
+                        Log.d(TAG, "cloudNote :"+cloudNote.getTitle()+"|cloudNote content:"+cloudNote.getContent());
+
                         if (cloudNote != null) {
                             populateUiWithNoteData(cloudNote);
                         }
@@ -141,6 +143,7 @@ public class ListItemsActivity extends AppCompatActivity {
         String content = currentNode.getContent(); // This is the serialized list
         noteColor = currentNode.getColor();
         selectedColor = noteColor;
+        Log.w(TAG, "title final:" +title + "|content:"+content);
 
         // 2. Set the title
         if (title != null) {

@@ -39,8 +39,8 @@ public class NotesRepositoryTrash {
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
         values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
-        //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
-        //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily() == null)?"":(note.getFontFamily()));
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, (note.getUserFirebaseId() == null)?"":note.getUserFirebaseId());
         values.put(NotesDbHelper.COLUMN_FONT_COLOR, (note.getFontColor() == null)?"":(note.getFontColor()));
 
         long newRowId = db.insert(NotesDbHelper.TABLE_NOTES, null, values);
@@ -68,9 +68,9 @@ public class NotesRepositoryTrash {
                 note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-                //   note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
-                //   note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
-                //   note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
+                note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+                note.setUserFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+                note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
 
                 notes.add(note);
             } while (cursor.moveToNext());
@@ -132,9 +132,9 @@ public class NotesRepositoryTrash {
             note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
             note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
             note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-            //  note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
-            //  note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
-            //  note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
+            note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+            note.setUserFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+            note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
         }
         cursor.close();
         db.close();
@@ -148,9 +148,9 @@ public class NotesRepositoryTrash {
         values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
         values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
-        //  values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
-        //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
-        //  values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getUserFirebaseId());
+        values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
         int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,
                 values,

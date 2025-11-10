@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
@@ -49,6 +50,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ProgressBar;
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -65,6 +68,9 @@ import androidx.core.content.FileProvider;
 import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -82,6 +88,7 @@ import com.noteaiapp.keyboardai.ui.LinkPreviewHelper;
 import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -134,7 +141,6 @@ public class Notepad extends AppCompatActivity {
     private DrawingView drawingView;
     private Button toggleModeDrawSave;
     ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton,pdfUploadButton,leftAlignButton,centerAlignButton,rightAlignButton;
-    private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
     private String imagePath;
@@ -167,6 +173,117 @@ public class Notepad extends AppCompatActivity {
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
     private ActivityResultLauncher<Intent> pdfFileLauncher;
+    public void loadNoteData(){
+        String noteTitle = getIntent().getStringExtra("note_title");
+        String noteContent = getIntent().getStringExtra("note_content");
+        noteDate = getIntent().getStringExtra("note_date");
+        selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
+        imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
+        isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
+        // NEW: Retrieve the note's order from the intent
+        noteOrder = getIntent().getIntExtra("note_order", -1);
+        if (this.currentUserUuid != null && this.currentUserUuid.length() != 0) {
+            titleText.setText(noteTitle);
+            loadNote(noteContent);
+            //resultText.setText(noteContent);
+            resultBuilder.append(noteContent);
+            titleBuilder.append(noteTitle);
+        } else {
+            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
+            titleText.setHint("Untitled");
+        }
+    }
+    private void fetchNoteFromFirebase(String cloudId) {
+
+        if (currentUser == null || cloudId == null || cloudId.length() == 0) {
+            Log.w(TAG, "User not logged in, falling back to local database.");
+            loadNoteData();
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        // Show a ProgressBar if you have one
+        Log.d(TAG, "List item user uid:"+userId);
+        db.collection("users").document(userId).collection("notes").document(cloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Log.d(TAG, "Successfully fetched list note from Firestore.");
+                        Note cloudNote = documentSnapshot.toObject(Note.class);
+                        Log.d(TAG, "cloudNote :"+cloudNote.getTitle()+"|cloudNote content:"+cloudNote.getContent());
+
+                        if (cloudNote != null) {
+                            populateUiWithNoteData(cloudNote, cloudId);
+                        }
+                    } else {
+                        Log.w(TAG, "List note not found in Firestore, falling back to local.");
+                        //loadNoteData();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to fetch from Firestore. Falling back to local.", e);
+                    //loadNoteData();
+                });
+    }
+    public void populateUiWithNoteData(Note currentNode, String cloudId){
+        String noteTitle = currentNode.getTitle().split(";")[0];
+        String noteContent = currentNode.getContent();
+        noteDate = this.receivedDateFromActivities;
+        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
+        imagePath = (currentNode == null )? "":currentNode.getImagePath();
+        drawingData = (currentNode == null )? null :FileUtils.loadFileFromPath(currentNode.getImagePath());
+        isPinned = (currentNode == null )? false: currentNode.isPinned();
+        noteOrder = (currentNode == null )? -1:currentNode.getOrder();
+        if (cloudId != null && cloudId.length() != 0) {
+            titleText.setText(noteTitle);
+            loadNote(noteContent);
+            //resultText.setText(noteContent);
+            resultBuilder.append(noteContent);
+            titleBuilder.append(noteTitle);
+        } else {
+            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
+            titleText.setHint("Untitled");
+        }
+        if (imagePath != null && !imagePath.isEmpty()) {
+            Log.d(TAG, "Populating UI with image from path: " + imagePath);
+            imageframelayout.setVisibility(View.VISIBLE);
+            imagesketch.setVisibility(View.VISIBLE);
+            imageCard.setVisibility(View.VISIBLE);
+            clearImageButton.setVisibility(View.VISIBLE);
+
+            // Use Glide to load the image. It handles both local paths and cloud URLs.
+            Glide.with(this).load(imagePath).into(imagesketch);
+        } else {
+            Log.d(TAG, "Note has no image path. Hiding image views.");
+            imageframelayout.setVisibility(View.GONE);
+            imagesketch.setVisibility(View.GONE);
+            imageCard.setVisibility(View.GONE);
+            clearImageButton.setVisibility(View.GONE);
+        }
+        if(drawingData != null && drawingData.length > 0){
+            Glide.with(this)
+                    .asBitmap() // Important: We need a Bitmap for the drawing view
+                    .load(imagePath)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                            // This callback runs when Glide has finished downloading/loading the Bitmap.
+                            // Now, set it as the background for the DrawingView.
+                            imagesketch.setImageBitmap(resource);
+                            imageframelayout.setVisibility(View.VISIBLE);
+                            imagesketch.setVisibility(View.VISIBLE);
+                            imageCard.setVisibility(View.VISIBLE);
+                            clearImageButton.setVisibility(View.VISIBLE);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // Handle case where the view is cleared
+                        }
+                    });
+            imagesketch.setVisibility(View.VISIBLE);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -179,45 +296,17 @@ public class Notepad extends AppCompatActivity {
         storage = FirebaseStorage.getInstance();
         db = FirebaseFirestore.getInstance();
         mAuth =FirebaseAuth.getInstance();
+        currentUserUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
 
         postponeEnterTransition();
         init();
         registerListeners();
-        pdfFileLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Uri uri = result.getData().getData();
-                        if (uri != null) {
-                            // Grant persistence read permission access to this URI
-                            final int takeFlags = result.getData().getFlags()
-                                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                            try {
-                                getContentResolver().takePersistableUriPermission(uri, takeFlags);
-                            } catch (SecurityException e) {
-                                Log.e(TAG, "Failed to take persistable URI permission. Content access may be temporary.", e);
-                            }
-
-                            String fileName = getFileName(uri);
-                            insertPdfLink(uri, fileName);
-                        }
-                    }
-                }
-        );
-       // FrameLayout bottomSheet = findViewById(R.id.frameLayout);
-        //BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
-        //behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-
-        // In your onCreate method:
         RelativeLayout sideSheet = findViewById(R.id.side_sheet);
         LinearLayout sideSheetHandle = findViewById(R.id.side_sheet_handle);
 
 // Initially hide the side sheet (off-screen to the right)
         sideSheet.setVisibility(View.VISIBLE);
         sideSheet.setTranslationX(130); // Only the handle is visible (80dp is the sheet width)
-
-// Track if it's open or closed
         final boolean[] isOpen = {false};
 
 // Add touch listener for dragging
@@ -266,7 +355,6 @@ public class Notepad extends AppCompatActivity {
                 return false;
             }
         });
-
 // Also add click listener for quick toggle
         sideSheetHandle.setOnClickListener(v -> {
             if (isOpen[0]) {
@@ -285,8 +373,6 @@ public class Notepad extends AppCompatActivity {
                 isOpen[0] = true;
             }
         });
-
-        ///
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
         italicsButton = findViewById(R.id.italicsButton);
@@ -298,95 +384,35 @@ public class Notepad extends AppCompatActivity {
         if(italicsButton != null){
             italicsButton.setOnClickListener((v -> applyStyleToSelection(Typeface.ITALIC)));
         }
+        this.folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) == null)? "":(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
+        this.receivedDateFromActivities = (getIntent().getStringExtra(DATE_EXTRA_KEY) == null)? "":(getIntent().getStringExtra(DATE_EXTRA_KEY));
 
-        noteId = getIntent().getLongExtra("note_id", -1);
-        Note currentNode = noteRepository.getNoteById(noteId);
+        //Note currentNode = noteRepository.getNoteById(noteId);
+        fetchNoteFromFirebase(currentUserUuid);
 
-
-        String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
-        String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
-        if(receivedFolder != null && !receivedFolder.isEmpty()){
-            folderName = receivedFolder;
-        }
-        else{
-            folderName ="";
-        }
-        if(receivedDate != null && !receivedDate.isEmpty()){
-            dateReceived = true;
-            this.receivedDateFromActivities = receivedDate;
-        }
-        else{
-            receivedDateFromActivities = getCurrentDate();
-        }
-        /*
-        String noteTitle = getIntent().getStringExtra("note_title");
-        String noteContent = getIntent().getStringExtra("note_content");
-        noteDate = getIntent().getStringExtra("note_date");
-        selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
-        imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
-        drawingData = FileUtils.loadFileFromPath(getIntent().getStringExtra("note_image_path"));
-        */
-        String noteTitle = (currentNode == null )? "":(currentNode.getTitle().split(";")[0]);
-        String noteContent = (currentNode == null )? "":currentNode.getContent();
-        noteDate = (currentNode == null )? "":currentNode.getDate();
-        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
-        imagePath = (currentNode == null )? "":currentNode.getImagePath();
-        drawingData = (currentNode == null )? null :FileUtils.loadFileFromPath(currentNode.getImagePath());
-        currentUserUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
         DrawingActivity.DrawingDataManager.clearDrawingData();
-        /*
-        // NEW: Retrieve the pinned status from the intent
-        isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
-        // NEW: Retrieve the note's order from the intent
-        noteOrder = getIntent().getIntExtra("note_order", -1);*/
-        isPinned = (currentNode == null )? false: currentNode.isPinned();
-        noteOrder = (currentNode == null )? -1:currentNode.getOrder();
-        // setting the imagesketch from the database
-        if(drawingData != null && drawingData.length > 0){
-            Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
-            // Check if the bitmap was successfully created
-            if (savedBitmap != null) {
-                // Assign the bitmap to your ImageView and make it visible
-                imagesketch.setImageBitmap(savedBitmap);
-                imageframelayout.setVisibility(View.VISIBLE);
-                imagesketch.setVisibility(View.VISIBLE);
-                imageCard.setVisibility(View.VISIBLE);
-                clearImageButton.setVisibility(View.VISIBLE);
-            }
-        }
 
-        if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
-        }
-        if (noteId != -1) {
-            titleText.setText(noteTitle);
-            loadNote(noteContent);
-            //resultText.setText(noteContent);
-            resultBuilder.append(noteContent);
-            titleBuilder.append(noteTitle);
-        } else {
-            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
-            titleText.setHint("Untitled");
-        }
+        // setting the imagesketch from the database
+
         // setting background
         mainContentLayout.setBackgroundColor(selectedColor);
         titleText.setBackground(null);
         resultText.setBackground(null);
         hintTextView.setBackground(null);
-
+        if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+        }
         String transitionName = getIntent().getStringExtra("TRANSITION_NAME");
         if (transitionName != null) {
             ViewCompat.setTransitionName(findViewById(R.id.main_content_layout), transitionName);
         }
         startPostponedEnterTransition();
-
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
         }
 
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
-
         toolbar.setOnMenuItemClickListener(this::onOptionsItemSelected);
 
         // NEW: Call the method to set the correct pin icon when the activity is created.
@@ -965,7 +991,28 @@ public class Notepad extends AppCompatActivity {
         }
     }
     public void registerListeners(){
+        pdfFileLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            // Grant persistence read permission access to this URI
+                            final int takeFlags = result.getData().getFlags()
+                                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            try {
+                                getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                            } catch (SecurityException e) {
+                                Log.e(TAG, "Failed to take persistable URI permission. Content access may be temporary.", e);
+                            }
 
+                            String fileName = getFileName(uri);
+                            insertPdfLink(uri, fileName);
+                        }
+                    }
+                }
+        );
         if (search_view != null) {
             search_view.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
@@ -1121,23 +1168,46 @@ public class Notepad extends AppCompatActivity {
             }
         });
     }
-    private void drawOnDrawingView(){
-        if (imagePath != null && imagePath.length() > 0) {
-            // Use a ViewTreeObserver to wait until the view is laid out
-            // and its dimensions are available before loading the bitmap.
-            drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    // Ensure the view has valid dimensions before loading the data
-                    if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
-                        drawingView.setDrawingData(drawingData);
-                        // Remove the listener to avoid repeated calls
-                        drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+    private void drawOnDrawingView() {
+        //1. Get the drawable from the ImageView that Glide loaded the image into.
+        Drawable drawable = imagesketch.getDrawable();
+
+        // 2. Check if the drawable exists and is a BitmapDrawable.
+        if (drawable instanceof BitmapDrawable) {
+            Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+
+            if (bitmap != null) {
+                Log.d("Notepad", "Bitmap retrieved from imagesketch. Preparing to draw.");
+                // 3. Convert the Bitmap into a byte array.
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+
+                // 4. Update the activity's main drawingData variable.
+                this.drawingData = byteArray;
+
+                // 5. Use a ViewTreeObserver to safely set the data on the drawingView
+                //    only after it has been measured and laid out on the screen.
+                drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        // Ensure the view has valid dimensions before setting the data
+                        if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
+                            Log.d("Notepad", "DrawingView is ready. Setting drawing data.");
+                            drawingView.setDrawingData(drawingData);
+                            // Remove the listener to avoid this from being called repeatedly.
+                            drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                Log.w("Notepad", "Could not get Bitmap from imagesketch's drawable.");
+            }
+        } else {
+            Log.w("Notepad", "imagesketch does not contain a valid BitmapDrawable. Cannot edit.");
         }
     }
+
     private void toggleMode() {
         isDrawingMode = !isDrawingMode;
         if (isDrawingMode) {
@@ -1499,18 +1569,7 @@ public class Notepad extends AppCompatActivity {
     }
 
     // NEW: Method to handle toggling the pin status
-    private void togglePinStatus() {
-        isPinned = !isPinned;
-        setPinIcon(isPinned);
-        if (noteId != -1) {
-            Executors.newSingleThreadExecutor().execute(() -> {
-                noteRepository.updateNotePinStatus(noteId, isPinned);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, isPinned ? "Note pinned!" : "Note unpinned!", Toast.LENGTH_SHORT).show();
-                });
-            });
-        }
-    }
+
 
     // NEW: Method to set the correct icon on the toolbar
     private void setPinIcon(boolean isPinned) {
@@ -1653,13 +1712,20 @@ public class Notepad extends AppCompatActivity {
 
         Executors.newSingleThreadExecutor().execute(() -> {
             Note notetoSave;
-            if (noteId != -1) {
+            if (currentUserUuid != null && currentUserUuid.length() != 0) {
                 // Update existing note with the new imagePath
-                notetoSave = new Note(noteId, title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
+                notetoSave = noteRepository.getNoteByCloudId(currentUserUuid);
+                notetoSave.setTitle(title);
+                notetoSave.setContent(content);
+                notetoSave.setDate(receivedDateFromActivities);
+                notetoSave.setOrder(noteOrder);
+                notetoSave.setColor(finalColorToSave);
+                notetoSave.setPinned(false);
+                notetoSave.setImagePath(imagepathfinal);
+                //notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
                 if(this.folderName.length() != 0){
                     notetoSave.setFontFamily(this.folderName);
                 }
-
                 notetoSave.setUserFirebaseId(currentUserUuid);
                 noteRepository.updateNote(notetoSave);
                 runOnUiThread(() -> {
@@ -1685,8 +1751,14 @@ public class Notepad extends AppCompatActivity {
                 });
             }
             uploadAndSyncNoteToFirebase(notetoSave,drawingData,filename);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    setUIChangesBasedOnImage();
+                }
+            });
         });
-        setUIChangesBasedOnImage();
+
     }
     public void setUIChangesBasedOnImage(){
         if (drawingData != null && drawingData.length > 0) {
