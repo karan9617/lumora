@@ -1,6 +1,7 @@
 package com.noteaiapp.keyboardai;
 
 
+import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -39,6 +40,8 @@ import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.noteaiapp.keyboardai.Models.Label;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
@@ -96,6 +99,7 @@ public class FolderNotesActivity extends AppCompatActivity {
     private NotesAdapter notesAdapter;
     // private NotesAdapterPinned notesAdapterPinned;
     View transparentOverlay;
+    private String TAG = "com.noteaiapp.keyboardai";
     private List<Note> notesList;
     private FirebaseUser currentUser;
 
@@ -125,7 +129,10 @@ public class FolderNotesActivity extends AppCompatActivity {
     ImageButton shuffle,themeColor;
     NavigationView navigationView;
     private enum DriveAction { BACKUP, RESTORE }
-    String folderName="";
+    public static String folderName="";
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
+    private ActivityResultLauncher<Intent> noteActivityLauncher;
 
     private BroadcastReceiver noteUpdateReceiver = new BroadcastReceiver() {
         @Override
@@ -139,8 +146,22 @@ public class FolderNotesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_folder);
+        noteActivityLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    // This is the callback that runs when the launched activity returns.
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        // The user saved a note in Notepad, DrawingActivity, etc.
+                        // It's time to refresh the list.
+                        Log.d("FolderNotesActivity", "Returned from note activity with RESULT_OK. Refreshing notes.");
+                        loadNotesFromDatabase();
+                    }
+                }
+        );
         // UPDATE the activity label to folder name
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
         if (currentUser == null) {
             // No user is signed in, we cannot proceed.
             // Redirect to the login screen to be safe.
@@ -505,6 +526,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
+                intent.putExtra("note_font_size",note.getUserFirebaseId());
                 intent.putExtra(EXTRA_FOLDER_NAME,folderName);
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
@@ -531,104 +553,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         }, itemTouchHelper,notesRecyclerView);
         notesRecyclerView.setAdapter(notesAdapter);
         loadFoldersToDrawer();
-      /*
-        ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
-            @Override
-            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
-                return makeMovementFlags(dragFlags, 0);
-            }
-            @Override
-            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-                int fromPosition = viewHolder.getAdapterPosition();
-                int toPosition = target.getAdapterPosition();
-                notesAdapterPinned.onItemMove(fromPosition, toPosition);
-                return true;
-            }
-            @Override
-            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-            }
-            @Override
-            public void onMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y) {
-                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
-                notesAdapterPinned.onItemsMoved();
-            }
-            @Override
-            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
-                super.onSelectedChanged(viewHolder, actionState);
-                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
-                    notesAdapterPinned.onItemsMoved();
-                } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    if (actionMode == null) {
-                        actionMode = startSupportActionMode(actionModeCallback);
-                    }
-                    int position = viewHolder.getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        selectedNote = pinnedNotes.get(position);
-                        //selectedNote.setSelected(true);
-                    }
-                }
-            }
-            @Override
-            public boolean isLongPressDragEnabled() {
-                // Enable long press drag
-                return false;
-            }
-        };
 
-        itemTouchHelperPinned = new ItemTouchHelper(callbackPinned);
-        itemTouchHelperPinned.attachToRecyclerView(notesRecyclerViewPinned);
-
-        notesAdapterPinned = new NotesAdapterPinned(this, pinnedNotes, new NotesAdapterPinned.OnNoteClickListener() {
-            @Override
-            public void onNoteClick(Note note, View sharedView) {
-                if (actionMode != null) {
-                    actionMode.finish();
-                    return;
-                }
-                Intent intent;
-                String noteContent = note.getContent();
-                boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
-                if(isListNote){
-                    intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
-                }
-                else if (note.getContent() != null && !note.getContent().isEmpty()) {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
-                } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
-                    intent = new Intent(NotesListActivity.this, DrawingActivity.class);
-                } else {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
-                }
-                intent.putExtra("note_id", note.getId());
-                intent.putExtra("note_title", note.getTitle());
-                intent.putExtra("note_content", note.getContent());
-                intent.putExtra("note_date", note.getDate());
-                intent.putExtra("note_color", note.getColor());
-                intent.putExtra("note_image_path",note.getImagePath());
-
-                String transitionName = ViewCompat.getTransitionName(sharedView);
-                if (transitionName != null) {
-                    intent.putExtra("TRANSITION_NAME", transitionName);
-                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
-                            NotesListActivity.this,
-                            sharedView,
-                            transitionName
-                    );
-                    startActivity(intent, options.toBundle());
-                } else {
-                    startActivity(intent);
-                }
-            }
-        }, new NotesAdapterPinned.OnNoteLongClickListener() {
-            @Override
-            public void onNoteLongClick(View view, Note note, View sharedView) {
-                if (actionMode == null) {
-                    selectedNote = note;
-                    actionMode = startSupportActionMode(actionModeCallback);
-                }
-            }
-        }, itemTouchHelperPinned,notesRecyclerViewPinned);
-        notesRecyclerViewPinned.setAdapter(notesAdapterPinned);*/
         updatePinnedSectionVisibility();
 
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
@@ -1127,7 +1052,73 @@ public class FolderNotesActivity extends AppCompatActivity {
         optionsLayout.startAnimation(animation);
         isOptionsVisible = false;
     }
+    private void syncNotesFromFirebase(NotesListActivity.FirestoreSyncCallback callback) {
+        if (currentUser == null) {
+            Log.w(TAG, "Cannot sync notes from cloud, user is not logged in.");
+            return; // Don't proceed if there's no user
+        }
+        String userId = currentUser.getUid();
+        Log.d(TAG, "Starting sync from Firestore for user: " + userId);
+        List<Note> notesListFromFirestore = new ArrayList<>();
+        // This is the query to get all notes for the current user
+        db.collection("users").document(userId).collection("notes")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("com.noteaiapp.keyboardai", "Successfully fetched " + task.getResult().size() + " notes from Firestore.");
+
+                        // Perform the heavy database operations on a background thread
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            // Convert each document from Firestore into a Note object
+                            Note cloudNote = document.toObject(Note.class);
+                            notesListFromFirestore.add(cloudNote);
+                        }
+                        callback.onSyncComplete(notesListFromFirestore);
+
+                    } else {
+                        Log.w("com.noteaiapp.keyboardai", "Error getting documents from Firestore: ", task.getException());
+                        callback.onSyncFailed(task.getException());
+                    }
+                });
+    }
     private void loadNotesFromDatabase() {
+        syncNotesFromFirebase(new NotesListActivity.FirestoreSyncCallback() {
+            @Override
+            public void onSyncComplete(List<Note> syncedNotes) {
+                Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    List<Note> filteredNotesForUi = new ArrayList<>();
+                    for (Note note : syncedNotes) {
+                        if (note.getFontFamily() != null && note.getFontFamily().length() > 0 && note.getFontFamily().equalsIgnoreCase(FolderNotesActivity.folderName)) {
+                            filteredNotesForUi.add(note);
+                        }
+                    }
+                    runOnUiThread(() -> {
+                        allNotes.clear();
+                        allNotes.addAll(filteredNotesForUi);
+                        allNotesFromDb.clear();
+                        allNotesFromDb.addAll(filteredNotesForUi);
+                        notesList.clear();
+                        notesList.addAll(allNotes);
+                        notesAdapter.notifyDataSetChanged();
+                        updatePinnedSectionVisibility();
+                        Log.d(TAG, "UI has been refreshed with synced notes.");
+                    });
+                });
+            }
+
+            @Override
+            public void onSyncFailed(Exception e) {
+                // Handle the failure case
+                runOnUiThread(() -> {
+                    Toast.makeText(FolderNotesActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
+                    //loadNotesFromLocalDatabase();
+                });
+            }
+        });
+    }
+    /*
+    private void loadNotesFromLocalDatabase() {
         Log.d("com.noteaiapp.keyboardai","filder name:"+this.folderName);
         new Thread(() -> {
             List<Note> allNotesFromDb1 = noteRepository.getAllNotesForUser(currentUser.getUid());
@@ -1145,7 +1136,6 @@ public class FolderNotesActivity extends AppCompatActivity {
                     allNotesFromDb.add(currentNote);
                 }
             }
-
             runOnUiThread(() -> {
                 allNotes.clear();
                 allNotes.addAll(allNotesFromDb);
@@ -1157,7 +1147,8 @@ public class FolderNotesActivity extends AppCompatActivity {
             });
         }).start();
 
-    }
+    }*/
+
 
     private void filterNotes(String query) {
         List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
@@ -1206,12 +1197,6 @@ public class FolderNotesActivity extends AppCompatActivity {
     }
 
     public void updatePinnedSectionVisibility(){
-       /* if(pinnedNotes.isEmpty()){
-            pinnedNotesHeader.setVisibility(View.GONE);
-        }
-        else{
-            pinnedNotesHeader.setVisibility(View.VISIBLE);
-        }*/
         if(allNotes.size() == 0){
             initialtext.setVisibility(View.VISIBLE);
         }

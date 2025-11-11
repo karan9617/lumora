@@ -47,7 +47,10 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.noteaiapp.keyboardai.DrawingActivity;
+import com.noteaiapp.keyboardai.FolderNotesActivity;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.NotesListActivity;
@@ -81,6 +84,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
 
 public class CalendarActivity extends AppCompatActivity {
 
@@ -110,7 +114,8 @@ public class CalendarActivity extends AppCompatActivity {
     private Toolbar toolbar;
     // Formatter to compare dates (ignoring time component: "yyyy-MM-dd")
     private final SimpleDateFormat DATE_KEY_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
 
     // Renamed for clarity and added updateData method
     private static class NotesCalendarAdapter extends RecyclerView.Adapter<NotesCalendarAdapter.ViewHolder> {
@@ -321,6 +326,7 @@ public class CalendarActivity extends AppCompatActivity {
     Animation slideUpAnimation;
     Animation slideDownAnimation;
     OutOfMonthDecorator outOfMonthDecorator;
+    private String TAG = "com.noteaiapp.keyboardai";
     View transparent_overlay;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -331,6 +337,9 @@ public class CalendarActivity extends AppCompatActivity {
         fabAddNote = findViewById(R.id.fabAddNote);
         optionsLayout = findViewById(R.id.options_layout);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
         if (currentUser == null) {
             // No user is signed in, we cannot proceed.
             // Redirect to the login screen to be safe.
@@ -341,6 +350,7 @@ public class CalendarActivity extends AppCompatActivity {
             finish(); // Close this activity
             return;   // IMPORTANT: Stop the rest of onCreate from running
         }
+        calendarView = findViewById(R.id.calendarView);
         transparent_overlay = findViewById(R.id.transparent_overlay);
         tvNoNotesMessage = findViewById(R.id.tvNoNotesMessage);
         tvNoNotesMessage.setText("No notes currently for this date, press the add button to add notes :)");
@@ -407,14 +417,15 @@ public class CalendarActivity extends AppCompatActivity {
         notesRepository = new NoteRepository(this);
 
         // Load all notes once (unfiltered source)
-        allNotes.addAll(notesRepository.getAllNotesForUser(currentUser.getUid()));
-        allNotes.addAll(notesRepository.getAllPinnedNotes());
+        // 1. Load all notes for the current user from firebase
+        //    and add them to the allNotes list below
+        loadNotesFromDatabase();
+        ///allNotes.addAll(notesRepository.getAllNotesForUser(currentUser.getUid()));
+        //allNotes.addAll(notesRepository.getAllPinnedNotes());
+/*
 
-        // 2. Find Views
-        calendarView = findViewById(R.id.calendarView);
 
         Set<CalendarDay> noteDates = new HashSet<>();
-
         for (Note note : allNotes) {
             try {
                 Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(note.getDate());
@@ -425,11 +436,7 @@ public class CalendarActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
-// Add the decorator with flag markers
-
         HashMap<CalendarDay, Integer> noteCountMap = new HashMap<>();
-
         for (Note note : allNotes) {
             try {
                 Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(note.getDate());
@@ -443,13 +450,11 @@ public class CalendarActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
         for (Map.Entry<CalendarDay, Integer> entry : noteCountMap.entrySet()) {
             calendarView.addDecorator(new MultiNoteDayDecorator(this, entry.getKey(), entry.getValue()));
         }
-
         calendarView.addDecorator(new NoteDayDecorator(this, noteDates));
-
+*/
 
         selectedDateLabel = findViewById(R.id.tv_selected_date_label);
         recyclerViewNotes = findViewById(R.id.recyclerViewNotes);
@@ -492,6 +497,7 @@ public class CalendarActivity extends AppCompatActivity {
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
+                intent.putExtra("note_font_size",note.getUserFirebaseId());
 
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
@@ -518,7 +524,117 @@ public class CalendarActivity extends AppCompatActivity {
         updateSelectedDateLabel(todayMillis);
         filterAndDisplayNotes(todayMillis); // <--- Initial filter applied here
         listener();
+    }
+    // In CalendarActivity.java
+// This is your NEW and CORRECT updateUiWithNotes method
 
+    private void updateUiWithNotes() {
+        // This method now assumes that 'allNotes' already contains the fresh, correct data.
+
+        // 1. Determine which day is currently selected or default to today
+        CalendarDay selectedDay = calendarView.getSelectedDate();
+        long targetTimeMillis;
+        if (selectedDay == null) {
+            selectedDay = CalendarDay.today();
+            targetTimeMillis = System.currentTimeMillis();
+        } else {
+            Calendar cal = Calendar.getInstance();
+            cal.set(selectedDay.getYear(), selectedDay.getMonth(), selectedDay.getDay());
+            targetTimeMillis = cal.getTimeInMillis();
+        }
+
+        // --- START: THIS IS THE FIX ---
+        // 2. Update Calendar Decorators using the fresh 'allNotes' list
+        Set<CalendarDay> noteDates = new HashSet<>();
+        HashMap<CalendarDay, Integer> noteCountMap = new HashMap<>();
+
+        for (Note note : allNotes) { // 'allNotes' now has the fresh data
+            try {
+                Date date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(note.getDate());
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                CalendarDay day = CalendarDay.from(cal);
+
+                noteDates.add(day);
+                int currentCount = noteCountMap.getOrDefault(day, 0);
+                noteCountMap.put(day, currentCount + 1);
+            } catch (Exception e) { // Catch all exceptions to be safe
+                e.printStackTrace();
+            }
+        }
+
+        // Clear all old decorators before adding the new ones
+        calendarView.removeDecorators();
+
+        // Re-add decorators based on the FRESH data
+        for (Map.Entry<CalendarDay, Integer> entry : noteCountMap.entrySet()) {
+            calendarView.addDecorator(new MultiNoteDayDecorator(this, entry.getKey(), entry.getValue()));
+        }
+        calendarView.addDecorator(new NoteDayDecorator(this, noteDates));
+        calendarView.addDecorator(new AllDatesDecorator(this)); // Add your other static decorators back
+        calendarView.addDecorator(selectedDayDecorator); // Ensure this is also re-added
+        // --- END: THIS IS THE FIX ---
+
+        // 3. Update the RecyclerView for the selected date
+        updateSelectedDateLabel(targetTimeMillis);
+        filterAndDisplayNotes(targetTimeMillis);
+    }
+
+    private void syncNotesFromFirebase(NotesListActivity.FirestoreSyncCallback callback) {
+        if (currentUser == null) {
+            Log.w(TAG, "Cannot sync notes from cloud, user is not logged in.");
+            return; // Don't proceed if there's no user
+        }
+        String userId = currentUser.getUid();
+        Log.d(TAG, "Starting sync from Firestore for user: " + userId);
+        List<Note> notesListFromFirestore = new ArrayList<>();
+        // This is the query to get all notes for the current user
+        db.collection("users").document(userId).collection("notes")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("com.noteaiapp.keyboardai", "Successfully fetched " + task.getResult().size() + " notes from Firestore.");
+                        // Perform the heavy database operations on a background thread
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            // Convert each document from Firestore into a Note object
+                            Note cloudNote = document.toObject(Note.class);
+                            notesListFromFirestore.add(cloudNote);
+                        }
+                        callback.onSyncComplete(notesListFromFirestore);
+
+                    } else {
+                        Log.w("com.noteaiapp.keyboardai", "Error getting documents from Firestore: ", task.getException());
+                        callback.onSyncFailed(task.getException());
+                    }
+                });
+    }
+    private void loadNotesFromDatabase() {
+        syncNotesFromFirebase(new NotesListActivity.FirestoreSyncCallback() {
+            @Override
+            public void onSyncComplete(List<Note> syncedNotes) {
+                Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    List<Note> filteredNotesForUi = new ArrayList<>();
+                    for (Note note : syncedNotes) {
+                        filteredNotesForUi.add(note);
+                    }
+                    runOnUiThread(() -> {
+                        allNotes.clear();
+                        allNotes.addAll(filteredNotesForUi);
+                        updateUiWithNotes();
+                        Log.d(TAG, "UI has been refreshed with synced notes.");
+                    });
+                });
+            }
+            @Override
+            public void onSyncFailed(Exception e) {
+                // Handle the failure case
+                runOnUiThread(() -> {
+                    Toast.makeText(CalendarActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
+                    //loadNotesFromLocalDatabase();
+                });
+            }
+        });
     }
     @Override
     protected void onResume() {
@@ -537,9 +653,7 @@ public class CalendarActivity extends AppCompatActivity {
     private void refreshNotesAndCalendar() {
         // 1. Reload all notes
         allNotes.clear();
-        allNotes.addAll(notesRepository.getAllNotesForUser(currentUser.getUid()));
-        allNotes.addAll(notesRepository.getAllPinnedNotes());
-
+        loadNotesFromDatabase();
         // 2. Determine which day is currently selected or default to today
         CalendarDay selectedDay = calendarView.getSelectedDate();
         long targetTimeMillis;
@@ -870,10 +984,8 @@ public class CalendarActivity extends AppCompatActivity {
                 displayedNotes.add(note);
             }
         }
-
         // Update the adapter with the new filtered list
         notesAdapter.updateData(displayedNotes);
-
         // Optionally show a message if no notes are found
         if (displayedNotes.isEmpty()) {
             // Note: Use a better method for showing "No Notes" than just a Toast in a real app

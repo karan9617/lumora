@@ -319,6 +319,7 @@ public class ArchivesActivity extends AppCompatActivity {
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
+                intent.putExtra("note_font_size",note.getUserFirebaseId());
 
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
@@ -514,7 +515,7 @@ public class ArchivesActivity extends AppCompatActivity {
                 // Handle the failure case
                 runOnUiThread(() -> {
                     Toast.makeText(ArchivesActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
-                    loadNotesFromLocalDatabase();
+                    //loadNotesFromLocalDatabase();
                 });
             }
         });

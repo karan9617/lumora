@@ -191,12 +191,9 @@ public class NotesListActivity extends AppCompatActivity {
             // Permission is granted. Now, we can safely launch the camera.
             launchCamera();
         } else {
-            // Permission is denied. Explain to the user why the feature is unavailable.
             Toast.makeText(this, "Camera permission is required to take photos.", Toast.LENGTH_LONG).show();
         }
         });
-        // Add this inside your onCreate method in NotesListActivity.java
-
 // Launcher for picking an image from the gallery
         galleryLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -463,12 +460,9 @@ public class NotesListActivity extends AppCompatActivity {
                 builder.show();
             }
         });
+
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         notesRecyclerView.setLayoutManager(layoutManager);
-
-        //StaggeredGridLayoutManager layoutManagerPinned = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-       // notesRecyclerViewPinned.setLayoutManager(layoutManagerPinned);
-
         notesList = new ArrayList<>();
         allNotes = new ArrayList<>();
        // pinnedNotes = new ArrayList<>();
@@ -520,7 +514,6 @@ public class NotesListActivity extends AppCompatActivity {
                 // Enable long press drag
                 return false;
             }
-
         };
 
         itemTouchHelper = new ItemTouchHelper(callback);
@@ -1302,31 +1295,19 @@ public class NotesListActivity extends AppCompatActivity {
 
     // DELETE your old loadNotesFromDatabase method and REPLACE it with this new version.
     private void loadNotesFromDatabase() {
-
-        // Show a loading indicator to the user.
-        // If you have a SwipeRefreshLayout, this is a good place to start it.
-        // swipeRefreshLayout.setRefreshing(true);
-
-        // Call the sync method and provide a new callback implementation.
-        // The code inside this callback will only run AFTER the Firebase download is complete.
         syncNotesFromFirebase(new FirestoreSyncCallback() {
             @Override
             public void onSyncComplete(List<Note> syncedNotes) {
                 Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
-
-                // Now that we have the fresh notes from the cloud,
-                // perform the local database updates and filtering on a background thread.
                 Executors.newSingleThreadExecutor().execute(() -> {
 
                     // Prepare to filter notes for UI display
                     List<Note> filteredNotesForUi = new ArrayList<>();
-                    SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
-                    Set<String> folders = prefs.getStringSet("folder_set", new HashSet<>());
 
                     // Filter the list of notes we just received
                     for (Note note : syncedNotes) {
                         if (note.getFontFamily() == null || note.getFontFamily().isEmpty() ||
-                                (!note.getFontFamily().equalsIgnoreCase("archived") && !folders.contains(note.getFontFamily()))) {
+                                (!note.getFontFamily().equalsIgnoreCase("archived") && !globalfolderlist.contains(note.getFontFamily()))) {
                             filteredNotesForUi.add(note);
                         }
                     }
@@ -1359,8 +1340,6 @@ public class NotesListActivity extends AppCompatActivity {
             }
         });
     }
-
-
     private void loadNotesFromLocalDatabase() {
 
         new Thread(() -> {
@@ -1437,19 +1416,12 @@ public class NotesListActivity extends AppCompatActivity {
     }
 
     public void updatePinnedSectionVisibility(){
-       /* if(pinnedNotes.isEmpty()){
-            pinnedNotesHeader.setVisibility(View.GONE);
-        }
-        else{
-            pinnedNotesHeader.setVisibility(View.VISIBLE);
-        }*/
         if(allNotes.size() == 0){
             initialtext.setVisibility(View.VISIBLE);
         }
         else{
             initialtext.setVisibility(View.GONE);
         }
-
     }
     private ActionMode.Callback actionModeCallback = new ActionMode.Callback() {
 
