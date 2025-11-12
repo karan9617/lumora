@@ -199,7 +199,7 @@ public class DrawingActivity extends AppCompatActivity {
 
         init();
         listeners();
-        folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) != null && !getIntent().getStringExtra(EXTRA_FOLDER_NAME).isEmpty())? getIntent().getStringExtra(EXTRA_FOLDER_NAME):"";
+        this.folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) == null)? "":(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
         if(getIntent().getStringExtra(DATE_EXTRA_KEY) != null && !getIntent().getStringExtra(DATE_EXTRA_KEY).isEmpty()){
             dateReceived = true;
             this.receivedDateFromActivities = getIntent().getStringExtra(DATE_EXTRA_KEY);

@@ -89,6 +89,8 @@ public class ArchivesActivity extends AppCompatActivity {
     private NotesAdapter notesAdapter;
     private List<Note> notesList;
     private FirebaseUser currentUser;
+    public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
+
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private String TAG = "com.noteaiapp.keyboardai";
@@ -320,6 +322,7 @@ public class ArchivesActivity extends AppCompatActivity {
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
                 intent.putExtra("note_font_size",note.getUserFirebaseId());
+                intent.putExtra(EXTRA_FOLDER_NAME,note.getFontFamily());
 
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
@@ -809,6 +812,7 @@ public class ArchivesActivity extends AppCompatActivity {
                     for (Note note : selectedNotes) {
                         notesRepositoryTrash.addNote(note);
                         noteRepository.deleteNote(note.getId());
+                        db.collection("users").document(currentUser.getUid()).collection("notes").document(note.getUserFirebaseId()).delete();
                     }
                     /* Delete notes from the pinned list
                     for (Note note : selectedPinnedNotes) {

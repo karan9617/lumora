@@ -1,6 +1,7 @@
 package com.noteaiapp.keyboardai.calendar;
 
 
+import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -94,6 +95,7 @@ public class CalendarActivity extends AppCompatActivity {
     private FirebaseUser currentUser;
     private Uri cameraImageUri;
     public static final String ACTION_NOTE_SAVED = "com.noteaiapp.ACTION_NOTE_UPDATED";
+    private ActivityResultLauncher<Intent> noteActivityLauncher;
     private BroadcastReceiver noteSavedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -350,6 +352,18 @@ public class CalendarActivity extends AppCompatActivity {
             finish(); // Close this activity
             return;   // IMPORTANT: Stop the rest of onCreate from running
         }
+        noteActivityLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    // This is the callback that runs when the launched activity (e.g., Notepad) returns.
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        // The user successfully saved a note. It's time to refresh the calendar and list.
+                        Log.d(TAG, "Returned from note activity with RESULT_OK. Refreshing data.");
+                        // This will trigger a fresh sync from Firebase and redraw the UI.
+                        loadNotesFromDatabase();
+                    }
+                }
+        );
         calendarView = findViewById(R.id.calendarView);
         transparent_overlay = findViewById(R.id.transparent_overlay);
         tvNoNotesMessage = findViewById(R.id.tvNoNotesMessage);
@@ -724,11 +738,9 @@ public class CalendarActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Intent intent = new Intent(CalendarActivity.this, ListItemsActivity.class);
                 CalendarDay selectedDay = calendarView.getSelectedDate();
-
                 if (selectedDay == null) {
                     selectedDay = CalendarDay.today();
                 }
-
                 String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
                 intent.putExtra(DATE_EXTRA_KEY, dateString);
                 startActivity(intent);
@@ -740,14 +752,12 @@ public class CalendarActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(CalendarActivity.this, DrawingActivity.class);
                 CalendarDay selectedDay = calendarView.getSelectedDate();
-
                 if (selectedDay == null) {
                     selectedDay = CalendarDay.today();
                 }
-
                 String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
                 intent.putExtra(DATE_EXTRA_KEY, dateString);
-                startActivity(intent);
+                noteActivityLauncher.launch(intent); // <-- THE FIX
                 hideOptions();
             }
         });
@@ -801,11 +811,9 @@ public class CalendarActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(CalendarActivity.this, Notepad.class);
                 CalendarDay selectedDay = calendarView.getSelectedDate();
-
                 if (selectedDay == null) {
                     selectedDay = CalendarDay.today();
                 }
-
                 String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
                 intent.putExtra(DATE_EXTRA_KEY, dateString);
                 startActivity(intent);

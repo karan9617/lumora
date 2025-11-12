@@ -220,10 +220,6 @@ public class ListItemsActivity extends AppCompatActivity {
         // Setup RecyclerView
 
         recyclerViewList.setAdapter(listAdapter);
-
-        // Get the date from the intent
-
-        // Add New Item Button Listener
         addItemButton.setOnClickListener(v -> addNewListItem(""));
 
         // Adjust input mode to prevent the layout from shrinking when the keyboard appears

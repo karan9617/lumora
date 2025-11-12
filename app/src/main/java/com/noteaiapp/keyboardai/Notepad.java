@@ -385,7 +385,7 @@ public class Notepad extends AppCompatActivity {
             italicsButton.setOnClickListener((v -> applyStyleToSelection(Typeface.ITALIC)));
         }
         this.folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) == null)? "":(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
-        this.receivedDateFromActivities = (getIntent().getStringExtra(DATE_EXTRA_KEY) == null)? "":(getIntent().getStringExtra(DATE_EXTRA_KEY));
+        this.receivedDateFromActivities = (getIntent().getStringExtra(DATE_EXTRA_KEY) == null)? getCurrentDate():(getIntent().getStringExtra(DATE_EXTRA_KEY));
 
         //Note currentNode = noteRepository.getNoteById(noteId);
         fetchNoteFromFirebase(currentUserUuid);
@@ -1720,6 +1720,7 @@ public class Notepad extends AppCompatActivity {
                 notetoSave.setDate(receivedDateFromActivities);
                 notetoSave.setOrder(noteOrder);
                 notetoSave.setColor(finalColorToSave);
+
                 notetoSave.setPinned(false);
                 notetoSave.setImagePath(imagepathfinal);
                 //notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
@@ -1741,9 +1742,11 @@ public class Notepad extends AppCompatActivity {
                 }
                 String noteCloudId = UUID.randomUUID().toString(); // generate uuid
                 notetoSave.setUserFirebaseId(noteCloudId); // set the unique note id
-
+                notetoSave.setFontFamily(this.folderName);
                 long newNoteId = noteRepository.addNote(notetoSave); // save to sqlite
                 notetoSave.setId(newNoteId);
+                Log.d(TAG, "note family:"+notetoSave.getFontFamily()+"|folder name |"+this.folderName+"| note setUserFirebaseId:"+notetoSave.getUserFirebaseId());
+
                 runOnUiThread(() -> {
                     Toast.makeText(this, R.string.note_saved_text, Toast.LENGTH_SHORT).show();
                     isNoteModified = false;

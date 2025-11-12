@@ -1631,6 +1631,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                 String noteCloudId = UUID.randomUUID().toString();
                 noteToSave = new Note(finalTitle, currentContent, receivedDateFromActivities, currentColor, 0, "imagenote", isPinned, finalImagePath);
                 noteToSave.setFontColor("imagenote");
+                noteToSave.setDate(this.receivedDateFromActivities);
                 if(this.folderName.length() != 0){
                     noteToSave.setFontFamily(this.folderName);
                 }

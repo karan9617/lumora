@@ -1334,7 +1334,7 @@ public class NotesListActivity extends AppCompatActivity {
                     Toast.makeText(NotesListActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
                     // Hide the loading indicator.
                     // swipeRefreshLayout.setRefreshing(false);
-                    loadNotesFromLocalDatabase();
+                   // loadNotesFromLocalDatabase();
 
                 });
             }
@@ -1490,11 +1490,6 @@ public class NotesListActivity extends AppCompatActivity {
                         FileOutputStream fos = new FileOutputStream(newImageFile);
                         newBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
                         fos.close();
-
-
-                        //File directory = context.getDir("images", Context.MODE_PRIVATE);
-
-                        // Get content URI using FileProvider
                         Uri contentUri = FileProvider.getUriForFile(
                                 NotesListActivity.this,
                                 getApplicationContext().getPackageName() + ".fileprovider",
@@ -1527,7 +1522,6 @@ public class NotesListActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-
                 } else {
                     // 2. This is a text note - share as text
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -1542,39 +1536,14 @@ public class NotesListActivity extends AppCompatActivity {
                     } else {
                         cleanContent = Html.fromHtml(content).toString();
                     }
-
-// 3. Construct the final share text using the clean content
                     String shareText = title + "\n\n" + cleanContent;
-
                     shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
-
                     startActivity(Intent.createChooser(shareIntent, "Share text note via"));
                 }
 
                 mode.finish();
                 return true;
-            }  /*else if (id == R.id.action_pin) {
-                final List<Note> selectedNotesToPin = notesAdapter.getSelectedNotes();
-                //final List<Note> selectedPinnedNotesToUnpin = notesAdapterPinned.getSelectedNotes();
-
-                // Determine if we are pinning or unpinning.
-                boolean isPinning = !selectedNotesToPin.isEmpty();
-
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    if (isPinning) {
-                        noteRepository.updateNotePinStatusBulk(selectedNotesToPin, true);
-                    } else {
-                        noteRepository.updateNotePinStatusBulk(selectedPinnedNotesToUnpin, false);
-                    }
-
-                    runOnUiThread(() -> {
-                        loadNotesFromDatabase();
-                        Toast.makeText(NotesListActivity.this, isPinning ? "Notes pinned" : "Notes unpinned", Toast.LENGTH_SHORT).show();
-                        mode.finish();
-                    });
-                });
-                return true;
-            }*/
+            }
             else if (id == R.id.action_delete_note) {
                 final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
                // final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
@@ -1630,7 +1599,6 @@ public class NotesListActivity extends AppCompatActivity {
                 });
                 return true;
             }
-
             return false;
         }
 
