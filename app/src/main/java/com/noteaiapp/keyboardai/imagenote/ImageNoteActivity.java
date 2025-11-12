@@ -1713,8 +1713,33 @@ public class ImageNoteActivity extends AppCompatActivity {
     // Updated uploadAndSyncNoteToFirebase method WITH callback
     private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename, FirebaseUploadCallback callback) {
         String userId = this.currentUser.getUid();
+        String noteCloudId = noteWithLocalPath.getUserFirebaseId();
         StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
+        if (imageData == null || imageData.length == 0) {
+            // If there's no image, just save the note metadata to Firestore with an empty image path.
+            Log.d(TAG, "No image data to upload. Saving note metadata directly to Firestore.");
 
+            // Make sure the image path is empty before saving.
+            noteWithLocalPath.setImagePath("");
+
+            // Save to Firestore and notify when complete.
+            db.collection("users").document(userId).collection("notes").document(noteCloudId)
+                    .set(noteWithLocalPath)
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Final note " + noteCloudId + " (metadata only) saved to Firestore.");
+                        if (callback != null) {
+                            callback.onUploadComplete(); // *** NOTIFY SUCCESS ***
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.w(TAG, "Error saving final note " + noteCloudId + " to Firestore.", e);
+                        if (callback != null) {
+                            callback.onUploadFailed(e); // *** NOTIFY FAILURE ***
+                        }
+                    });
+
+            return; // IMPORTANT: Stop execution here.
+        }
         imageRef.putBytes(imageData)
                 .continueWithTask(task -> {
                     if (!task.isSuccessful()) {
@@ -1732,8 +1757,6 @@ public class ImageNoteActivity extends AppCompatActivity {
                         Log.w(TAG, "Image upload or URL fetch failed for note " + noteWithLocalPath.getId(), task.getException());
                         noteWithLocalPath.setImagePath("");
                     }
-
-                    String noteCloudId = noteWithLocalPath.getUserFirebaseId();
 
                     if (noteCloudId == null || noteCloudId.isEmpty()) {
                         Log.e(TAG, "Cannot save to Firestore, note's unique ID (cloudId) is missing!");
