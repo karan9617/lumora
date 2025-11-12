@@ -253,7 +253,6 @@ public class DrawingActivity extends AppCompatActivity {
         });
 
     }
-
     private void saveOrUpdateDrawing() {
         byte[] drawingData = drawingView.getDrawingData();
         NotesWidgetProvider.refreshWidget(getApplicationContext());
@@ -266,22 +265,21 @@ public class DrawingActivity extends AppCompatActivity {
                     if (originalBitmap == null) return;
 
                     // Downscale large bitmaps to avoid crashes
-                    int maxSize = 2048; // limit width/height to prevent OOM
+                    int maxSize = 2048;
                     Bitmap drawingBitmap = scaleBitmap(originalBitmap, maxSize);
 
                     String filename = "drawing_" + System.currentTimeMillis() + ".png";
                     String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
                     Note noteToSync;
-                    if (imagePath != null) {
 
+                    if (imagePath != null) {
                         if (currentNoteUuid != null && currentNoteUuid.length() != 0) {
                             noteToSync = noteRepository.getNoteByCloudId(currentNoteUuid);
                             noteToSync.setImagePath(imagePath);
                             noteToSync.setDate(receivedDateFromActivities);
-                            noteToSync.setUserFirebaseId(currentNoteUuid); // used for unique note id
-                            noteToSync.setFontFamily(this.folderName); // used for folder name
+                            noteToSync.setUserFirebaseId(currentNoteUuid);
+                            noteToSync.setFontFamily(this.folderName);
                             noteRepository.updateNote(noteToSync);
-
                         } else {
                             String noteCloudId = UUID.randomUUID().toString();
                             noteToSync = new Note();
@@ -298,22 +296,56 @@ public class DrawingActivity extends AppCompatActivity {
                             noteToSync.setId(newId);
                             Log.d("NoteApp", "Saved drawing successfully");
                         }
-                        uploadAndSyncNoteToFirebase(noteToSync, drawingData, filename);
+
+                        // *** THIS IS THE KEY FIX ***
+                        // Upload to Firebase and WAIT for completion before finishing
+                        uploadAndSyncNoteToFirebase(noteToSync, drawingData, filename, new FirebaseUploadCallback() {
+                            @Override
+                            public void onUploadComplete() {
+                                // This runs AFTER Firebase upload succeeds
+                                runOnUiThread(() -> {
+                                    isDirty = false;
+                                    Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                                    setResult(RESULT_OK);
+                                    finish();
+                                });
+                            }
+
+                            @Override
+                            public void onUploadFailed(Exception e) {
+                                // Even if upload fails, still close the activity
+                                // The local save was successful
+                                runOnUiThread(() -> {
+                                    Log.w(TAG, "Firebase upload failed, but local save succeeded", e);
+                                    isDirty = false;
+                                    Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                                    setResult(RESULT_OK);
+                                    finish();
+                                });
+                            }
+                        });
                     }
                 } catch (Exception e) {
                     Log.e("NoteApp", "Error saving drawing", e);
-                } finally {
                     runOnUiThread(() -> {
-                        isDirty = false;
-                        Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
-                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                        Toast.makeText(DrawingActivity.this, "Error saving drawing", Toast.LENGTH_SHORT).show();
                         finish();
                     });
                 }
             }).start();
         }
     }
-    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename) {
+
+    // Add this callback interface at the top of your DrawingActivity class
+    public interface FirebaseUploadCallback {
+        void onUploadComplete();
+        void onUploadFailed(Exception e);
+    }
+
+    // Updated uploadAndSyncNoteToFirebase method with callback
+    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename, FirebaseUploadCallback callback) {
         String userId = currentUser.getUid();
         StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
 
@@ -329,26 +361,43 @@ public class DrawingActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         String downloadUrl = task.getResult().toString();
                         Log.d(TAG, "Got download URL: " + downloadUrl);
-                        // Update the note object with the correct cloud URL
                         noteWithLocalPath.setImagePath(downloadUrl);
                     } else {
                         Log.w(TAG, "Image upload or URL fetch failed for note " + noteWithLocalPath.getId(), task.getException());
                         noteWithLocalPath.setImagePath("");
                     }
 
-                    // Get the note's unique ID (the UUID) from the object
                     String noteCloudId = noteWithLocalPath.getUserFirebaseId();
 
                     if (noteCloudId == null || noteCloudId.isEmpty()) {
                         Log.e(TAG, "Cannot save to Firestore, note's unique ID (cloudId) is missing!");
-                        return; // Stop here to prevent a crash
+                        if (callback != null) {
+                            callback.onUploadFailed(new Exception("Missing cloud ID"));
+                        }
+                        return;
                     }
 
-                    // NOW, save the final note object to Firestore using the full, correct path
+                    // Save to Firestore and notify when complete
                     db.collection("users").document(userId).collection("notes").document(noteCloudId)
                             .set(noteWithLocalPath)
-                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Final note " + noteCloudId + " saved to Firestore."))
-                            .addOnFailureListener(e -> Log.w(TAG, "Error saving final note " + noteCloudId + " to Firestore.", e));
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Final note " + noteCloudId + " saved to Firestore.");
+                                if (callback != null) {
+                                    callback.onUploadComplete(); // *** NOTIFY SUCCESS ***
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.w(TAG, "Error saving final note " + noteCloudId + " to Firestore.", e);
+                                if (callback != null) {
+                                    callback.onUploadFailed(e); // *** NOTIFY FAILURE ***
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Complete failure in upload chain", e);
+                    if (callback != null) {
+                        callback.onUploadFailed(e);
+                    }
                 });
     }
 

@@ -1,5 +1,6 @@
 package com.noteaiapp.keyboardai.imagenote;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -64,6 +65,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -1557,6 +1559,11 @@ public class ImageNoteActivity extends AppCompatActivity {
         });
         builder.show();
     }
+    // Add this callback interface at the top of your ImageNoteActivity class (same as DrawingActivity)
+    public interface FirebaseUploadCallback {
+        void onUploadComplete();
+        void onUploadFailed(Exception e);
+    }
 
     public void saveNote() {
         clearHighlights();
@@ -1566,7 +1573,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         final String currentTitle = titleText.getText().toString().trim();
         final String currentContent = saveNoteContent();
         final byte[] drawingDataFromView = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
-        final int currentColor = selectedColor; // Use the class variable we fixed before
+        final int currentColor = selectedColor;
 
         // --- Step 2: Perform a quick check to see if there's anything to save ---
         if (currentTitle.isEmpty() && currentContent.isEmpty() && (imagePath == null || imagePath.isEmpty()) && (drawingDataFromView == null || drawingDataFromView.length == 0)) {
@@ -1575,8 +1582,10 @@ public class ImageNoteActivity extends AppCompatActivity {
             supportFinishAfterTransition();
             return;
         }
+
         ProgressBar saveProgressBar = findViewById(R.id.saveProgressBar);
         saveProgressBar.setVisibility(View.VISIBLE);
+
         Executors.newSingleThreadExecutor().execute(() -> {
             WordTokenizer tokenizer = new WordTokenizer(currentContent);
             List<String> labels = tokenizer.getTokenizedWords();
@@ -1588,17 +1597,15 @@ public class ImageNoteActivity extends AppCompatActivity {
             String finalTitle = currentTitle + ";" + labels.get(0) + ";" + labels.get(1);
 
             // 2. Process image/drawing data and save to a file
-            String finalImagePath = this.imagePath; // Start with the existing path
+            String finalImagePath = this.imagePath;
             String filename = "";
             if (drawingDataFromView != null && drawingDataFromView.length > 0) {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
                 if (drawingBitmap != null) {
                     filename = "drawing_" + System.currentTimeMillis() + ".png";
-                    // Save the new drawing and get its path. This is file I/O.
                     try {
                         Bitmap bitmapToSave = rotateImageIfRequired(drawingBitmap, finalImagePath);
                         finalImagePath = noteRepository.saveImageToInternalStorage(bitmapToSave, filename);
-
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -1619,7 +1626,6 @@ public class ImageNoteActivity extends AppCompatActivity {
                 noteToSave.setOrder(noteOrder);
                 noteToSave.setFontColor("imagenote");
                 noteToSave.setPinned(isPinned);
-                //noteToSave = new Note(noteId, finalTitle, currentContent, receivedDateFromActivities, currentColor, noteOrder, "imagenote", isPinned, finalImagePath);
                 if(this.folderName.length() != 0){
                     noteToSave.setFontFamily(this.folderName);
                 }
@@ -1640,42 +1646,72 @@ public class ImageNoteActivity extends AppCompatActivity {
                 noteToSave.setId(id);
                 toastMessage = "Note saved!";
             }
-            uploadAndSyncNoteToFirebase(noteToSave,drawingDataFromView,filename);
 
+            // *** THIS IS THE KEY FIX - Wait for Firebase upload before finishing ***
+            final String finalToastMessage = toastMessage;
+            final byte[] finalDrawingData = drawingDataFromView;
+            final String finalFilename = filename;
 
-            // --- Step 5: Update the UI on the main thread after all work is done ---
-            runOnUiThread(() -> {
-                // Hide loading indicator
-                // findViewById(R.id.saveProgressBar).setVisibility(View.GONE);
+            uploadAndSyncNoteToFirebase(noteToSave, drawingDataFromView, filename, new FirebaseUploadCallback() {
+                @Override
+                public void onUploadComplete() {
+                    // --- Step 5: Update the UI AFTER Firebase upload completes ---
+                    runOnUiThread(() -> {
+                        // Update UI elements
+                        ImageNoteActivity.this.drawingData = finalDrawingData;
+                        saveProgressBar.setVisibility(View.GONE);
 
-                // Update UI elements if needed
-                this.drawingData = drawingDataFromView; // Update the activity's drawing data state
-                saveProgressBar.setVisibility(View.GONE);
-                if (this.drawingData != null && this.drawingData.length > 0) {
-                    Bitmap savedBitmap = BitmapFactory.decodeByteArray(this.drawingData, 0, this.drawingData.length);
-                    if (savedBitmap != null) {
-                        imagesketch.setImageBitmap(savedBitmap);
-                        imagesketch.setVisibility(View.VISIBLE);
-                        imageCard.setVisibility(View.VISIBLE);
-                        imageframelayout.setVisibility(View.VISIBLE);
-                        clearImageButton.setVisibility(View.VISIBLE);
-                    }
-                } else {
-                    imagesketch.setImageDrawable(null);
-                    imagesketch.setVisibility(View.GONE);
-                    imageCard.setVisibility(View.GONE);
-                    imageframelayout.setVisibility(View.GONE);
-                    clearImageButton.setVisibility(View.GONE);
+                        if (ImageNoteActivity.this.drawingData != null && ImageNoteActivity.this.drawingData.length > 0) {
+                            Bitmap savedBitmap = BitmapFactory.decodeByteArray(ImageNoteActivity.this.drawingData, 0, ImageNoteActivity.this.drawingData.length);
+                            if (savedBitmap != null) {
+                                imagesketch.setImageBitmap(savedBitmap);
+                                imagesketch.setVisibility(View.VISIBLE);
+                                imageCard.setVisibility(View.VISIBLE);
+                                imageframelayout.setVisibility(View.VISIBLE);
+                                clearImageButton.setVisibility(View.VISIBLE);
+                            }
+                        } else {
+                            imagesketch.setImageDrawable(null);
+                            imagesketch.setVisibility(View.GONE);
+                            imageCard.setVisibility(View.GONE);
+                            imageframelayout.setVisibility(View.GONE);
+                            clearImageButton.setVisibility(View.GONE);
+                        }
+
+                        Toast.makeText(ImageNoteActivity.this, finalToastMessage, Toast.LENGTH_SHORT).show();
+                        isNoteModified = false;
+
+                        // Send broadcast for CalendarActivity
+                        Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+
+                        setResult(RESULT_OK);
+                        supportFinishAfterTransition();
+                    });
                 }
 
-                // Show confirmation and finish
-                Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
-                isNoteModified = false;
-                supportFinishAfterTransition();
+                @Override
+                public void onUploadFailed(Exception e) {
+                    // Even if upload fails, still close (local save succeeded)
+                    runOnUiThread(() -> {
+                        Log.w(TAG, "Firebase upload failed, but local save succeeded", e);
+                        saveProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(ImageNoteActivity.this, finalToastMessage + " (Cloud sync pending)", Toast.LENGTH_SHORT).show();
+                        isNoteModified = false;
+
+                        Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+
+                        setResult(RESULT_OK);
+                        supportFinishAfterTransition();
+                    });
+                }
             });
         });
     }
-    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename) {
+
+    // Updated uploadAndSyncNoteToFirebase method WITH callback
+    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename, FirebaseUploadCallback callback) {
         String userId = this.currentUser.getUid();
         StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
 
@@ -1691,26 +1727,43 @@ public class ImageNoteActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         String downloadUrl = task.getResult().toString();
                         Log.d(TAG, "Got download URL: " + downloadUrl);
-                        // Update the note object with the correct cloud URL
                         noteWithLocalPath.setImagePath(downloadUrl);
                     } else {
                         Log.w(TAG, "Image upload or URL fetch failed for note " + noteWithLocalPath.getId(), task.getException());
                         noteWithLocalPath.setImagePath("");
                     }
 
-                    // Get the note's unique ID (the UUID) from the object
                     String noteCloudId = noteWithLocalPath.getUserFirebaseId();
 
                     if (noteCloudId == null || noteCloudId.isEmpty()) {
                         Log.e(TAG, "Cannot save to Firestore, note's unique ID (cloudId) is missing!");
-                        return; // Stop here to prevent a crash
+                        if (callback != null) {
+                            callback.onUploadFailed(new Exception("Missing cloud ID"));
+                        }
+                        return;
                     }
 
-                    // NOW, save the final note object to Firestore using the full, correct path
+                    // Save to Firestore and notify when complete
                     db.collection("users").document(userId).collection("notes").document(noteCloudId)
                             .set(noteWithLocalPath)
-                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Final note " + noteCloudId + " saved to Firestore."))
-                            .addOnFailureListener(e -> Log.w(TAG, "Error saving final note " + noteCloudId + " to Firestore.", e));
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "Final note " + noteCloudId + " saved to Firestore.");
+                                if (callback != null) {
+                                    callback.onUploadComplete(); // *** NOTIFY SUCCESS ***
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.w(TAG, "Error saving final note " + noteCloudId + " to Firestore.", e);
+                                if (callback != null) {
+                                    callback.onUploadFailed(e); // *** NOTIFY FAILURE ***
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Complete failure in upload chain", e);
+                    if (callback != null) {
+                        callback.onUploadFailed(e);
+                    }
                 });
     }
     private String getHtmlContent() {

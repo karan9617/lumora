@@ -355,11 +355,16 @@ public class CalendarActivity extends AppCompatActivity {
         noteActivityLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    // This is the callback that runs when the launched activity (e.g., Notepad) returns.
+                    Log.d(TAG, "Returned from note activity with result code: " + result.getResultCode());
                     if (result.getResultCode() == Activity.RESULT_OK) {
-                        // The user successfully saved a note. It's time to refresh the calendar and list.
-                        Log.d(TAG, "Returned from note activity with RESULT_OK. Refreshing data.");
-                        // This will trigger a fresh sync from Firebase and redraw the UI.
+                        Log.d(TAG, "Note was saved. Refreshing data...");
+                        // Add a small delay to ensure Firebase has processed the write
+                        new android.os.Handler().postDelayed(() -> {
+                            loadNotesFromDatabase();
+                        }, 500); // 500ms delay
+                    } else {
+                        // Even if RESULT_OK wasn't set, try refreshing anyway
+                        Log.d(TAG, "Result was not OK, but refreshing data anyway...");
                         loadNotesFromDatabase();
                     }
                 }
@@ -876,10 +881,15 @@ public class CalendarActivity extends AppCompatActivity {
     }
     private void launchImageNoteActivity(String imagePath) {
         Intent intent = new Intent(CalendarActivity.this, ImageNoteActivity.class);
-        // We pass the image path so the activity knows which image to load.
-        // The note doesn't exist yet, so we don't pass a note_id.
         intent.putExtra("image_path", imagePath);
-        startActivity(intent);
+        CalendarDay selectedDay = calendarView.getSelectedDate();
+        if (selectedDay == null) {
+            // If no day is selected for some reason, default to today.
+            selectedDay = CalendarDay.today();
+        }
+        String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
+        intent.putExtra(DATE_EXTRA_KEY, dateString);
+        noteActivityLauncher.launch(intent);
     }
     /**
      * Copies an image from a source URI (camera or gallery) to our app's private, permanent storage.

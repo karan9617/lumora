@@ -1743,6 +1743,7 @@ public class Notepad extends AppCompatActivity {
                 String noteCloudId = UUID.randomUUID().toString(); // generate uuid
                 notetoSave.setUserFirebaseId(noteCloudId); // set the unique note id
                 notetoSave.setFontFamily(this.folderName);
+                notetoSave.setDate(receivedDateFromActivities);
                 long newNoteId = noteRepository.addNote(notetoSave); // save to sqlite
                 notetoSave.setId(newNoteId);
                 Log.d(TAG, "note family:"+notetoSave.getFontFamily()+"|folder name |"+this.folderName+"| note setUserFirebaseId:"+notetoSave.getUserFirebaseId());
