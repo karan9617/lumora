@@ -201,7 +201,7 @@ public class TrashActivity extends AppCompatActivity {
     private void emptyTrash() {
         new Thread(() -> {
             for(Note currentNote: allTrashNotesFromDb){
-                notesRepositoryTrash.deleteNote(currentNote.getId());
+                notesRepositoryTrash.deleteNoteByCloudId(currentNote.getUserFirebaseId());
             }
             allTrashNotesFromDb.clear();
         }).start();

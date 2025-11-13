@@ -256,6 +256,13 @@ public class DrawingView extends View {
         }
 
         if (isRectangleMode) {
+            // Update the live rectangle
+            if (currentRect == null) {
+                // Initialize it here as a safeguard, using the first touch point.
+                startX = mX; // mX and mY hold the initial ACTION_DOWN coordinates
+                startY = mY;
+                currentRect = new Rect();
+            }
             endX = x;
             endY = y;
             // Update the live rectangle

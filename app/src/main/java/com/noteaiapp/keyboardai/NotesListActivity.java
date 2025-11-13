@@ -1627,7 +1627,7 @@ public class NotesListActivity extends AppCompatActivity {
                     // Delete notes from the main list
                     for (Note note : selectedNotes) {
                         notesRepositoryTrash.addNote(note);
-                        noteRepository.deleteNote(note.getId());
+                        noteRepository.deleteNoteByCloudId(note.getUserFirebaseId());
                         // delete note from firestore as well
                         db.collection("users").document(currentUser.getUid()).collection("notes").document(note.getUserFirebaseId()).delete();
                     }

@@ -100,6 +100,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             holder.labeltext2.setText(R.string.general_text);
         }
         holder.noteTitle.setText(titleArr[0]);
+        holder.noteTitle.setVisibility(View.VISIBLE);
+
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM, yyyy", Locale.getDefault());
@@ -119,6 +121,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 holder.noteContent.setVisibility(View.GONE);
                 if(titleArr[0].equalsIgnoreCase("sketch")){
                     holder.noteTitle.setVisibility(View.GONE);
+                    holder.noteDate.setVisibility(View.GONE);
                 }
                 else{
                     holder.noteTitle.setVisibility(View.VISIBLE);

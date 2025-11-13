@@ -191,6 +191,37 @@ public class NotesRepositoryTrash {
         return deletedRows;
     }
 
+    public int deleteNoteByCloudId(String cloudId) {
+        // 1. Ensure the cloudId is valid before attempting to delete.
+        if (cloudId == null || cloudId.isEmpty()) {
+            Log.e("NoteRepository", "Cannot delete note, the provided cloudId is null or empty.");
+            return 0;
+        }
+
+        // 2. Get a writable instance of the database.
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        try {
+            String selection = NotesDbHelper.COLUMN_FONT_SIZE + " = ?";
+            String[] selectionArgs = { cloudId };
+            deletedRows = db.delete(NotesDbHelper.TABLE_NOTES,
+                    selection,
+                    selectionArgs);
+            if (deletedRows > 0) {
+                Log.d("NoteRepository", "Successfully deleted note with cloudId: " + cloudId);
+            } else {
+                Log.w("NoteRepository", "No note found with cloudId to delete: " + cloudId);
+            }
+        } catch (Exception e) {
+            Log.e("NoteRepository", "Error deleting note by cloudId", e);
+        } finally {
+            db.close();
+        }
+
+        // 6. Return the number of rows affected.
+        return deletedRows;
+    }
     // --- New Label-related methods ---
     public long addLabel(Label label) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
