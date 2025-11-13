@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -40,6 +41,9 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -1453,30 +1457,97 @@ public class NotesListActivity extends AppCompatActivity {
             int id = item.getItemId();
 
             if (id == R.id.action_share) {
+                final Note noteToShare = selectedNote;
+                if (noteToShare == null) {
+                    mode.finish();
+                    return true;
+                }
 
-                // 1. Check if it's an image/drawing note
-                if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {
-                    try {
+                if (selectedNote.getImagePath() != null && !noteToShare.getImagePath().isEmpty()) {
+
+                        Log.d("NoteShare", "Loading image for sharing from path: " + noteToShare.getImagePath());
+
+                        Glide.with(NotesListActivity.this).asBitmap()
+                                .load(noteToShare.getImagePath())
+                                .into(new CustomTarget<Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                                        // This callback runs after Glide has successfully loaded the Bitmap.
+                                        Log.d("NoteShare","Bitmap loaded successfully. Preparing to share.");
+                                        try {
+                                            // The rest of your logic is mostly correct.
+                                            // We process the bitmap and save it to a cache file.
+                                            Bitmap newBitmap = Bitmap.createBitmap(
+                                                    resource.getWidth(),
+                                                    resource.getHeight(),
+                                                    Bitmap.Config.ARGB_8888
+                                            );
+                                            Canvas canvas = new Canvas(newBitmap);
+                                            canvas.drawColor(Color.WHITE); // white background
+                                            canvas.drawBitmap(resource, 0, 0, null);
+
+                                            // Save to a temporary file in the cache directory
+                                            File cachePath = new File(getCacheDir(), "images");
+                                            cachePath.mkdirs(); // ensure the directory exists
+                                            File newImageFile = new File(cachePath, "shared_image.png");
+                                            FileOutputStream fos = new FileOutputStream(newImageFile);
+                                            newBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                                            fos.close();
+
+                                            // Use FileProvider to get a secure content URI
+                                            Uri contentUri = FileProvider.getUriForFile(
+                                                    NotesListActivity.this,
+                                                    getApplicationContext().getPackageName() + ".fileprovider",
+                                                    newImageFile
+                                            );
+
+                                            // Create the share intent
+                                            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                                            shareIntent.setType("image/png");
+                                            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                                            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                                            // Add optional text
+                                            String title = noteToShare.getTitle() != null ? noteToShare.getTitle().split(";")[0] : "";
+                                            String shareText = "Title: " + title;
+                                            // You can add cleaned content here if you want
+                                            shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+
+                                            // Start the chooser
+                                            startActivity(Intent.createChooser(shareIntent, "Share image note via"));
+
+                                        } catch (Exception e) {
+                                            Log.e("NoteShare", "Failed to share image", e);
+                                            Toast.makeText(NotesListActivity.this, "Failed to share image.", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                                        // Called if the view is cleared, can be left empty
+                                    }
+
+                                    @Override
+                                    public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                                        super.onLoadFailed(errorDrawable);
+                                        Log.e("NoteShare", "Glide failed to load image for sharing.");
+                                        Toast.makeText(NotesListActivity.this, "Could not load image to share.", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+
+                    /*
                         File imageFile = new File(selectedNote.getImagePath());
-
-                        if (!imageFile.exists()) {
-                            mode.finish();
-                            return true;
-                        }
-
-                        // ---- Convert transparent image to white background ----
+                        if (!imageFile.exists()) {mode.finish();return true;}
                         Bitmap originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
                         if (originalBitmap == null) {
                             mode.finish();
                             return true;
                         }
-
                         Bitmap newBitmap = Bitmap.createBitmap(
                                 originalBitmap.getWidth(),
                                 originalBitmap.getHeight(),
                                 Bitmap.Config.ARGB_8888
                         );
-
                         Canvas canvas = new Canvas(newBitmap);
                         canvas.drawColor(Color.WHITE); // white background
                         canvas.drawBitmap(originalBitmap, 0, 0, null);
@@ -1516,12 +1587,10 @@ public class NotesListActivity extends AppCompatActivity {
                         shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
 
                         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
                         startActivity(Intent.createChooser(shareIntent, "Share image note via"));
-
                     } catch (Exception e) {
                         e.printStackTrace();
-                    }
+                    }*/
                 } else {
                     // 2. This is a text note - share as text
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -1536,6 +1605,7 @@ public class NotesListActivity extends AppCompatActivity {
                     } else {
                         cleanContent = Html.fromHtml(content).toString();
                     }
+                    cleanContent = formatListNoteForSharing(cleanContent);
                     String shareText = title + "\n\n" + cleanContent;
                     shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
                     startActivity(Intent.createChooser(shareIntent, "Share text note via"));
@@ -1600,6 +1670,26 @@ public class NotesListActivity extends AppCompatActivity {
                 return true;
             }
             return false;
+        }
+
+        private String formatListNoteForSharing(String rawContent) {
+            Log.d("NoteSharing", "Original content: " + rawContent);
+            if (rawContent == null || rawContent.isEmpty() || !rawContent.startsWith(LIST_NOTE_PREFIX)) {
+                return rawContent; // Return the content as-is if it's not a list
+            }
+            String listContent = rawContent.substring(LIST_NOTE_PREFIX.length()).trim();
+            String[] items = listContent.split("\\s*\\[[x\\s]\\]\\s*");
+            StringBuilder formattedList = new StringBuilder();
+            int itemNumber = 1;
+            for (String item : items) {
+                String trimmedItem = item.trim();
+                if (trimmedItem.isEmpty()) {
+                    continue;
+                }
+                formattedList.append(itemNumber).append(". ").append(trimmedItem).append("\n");
+                itemNumber++;
+            }
+            return formattedList.toString().trim();
         }
 
         @Override

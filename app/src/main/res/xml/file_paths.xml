@@ -4,5 +4,7 @@
         name="shared_images"
         path="drawing_notes/" />
     <external-path name="my_images" path="Android/data/com.noteaiapp.keyboardai/files/Pictures" />
-
+    <cache-path
+        name="my_cache"
+        path="." />
 </paths>
