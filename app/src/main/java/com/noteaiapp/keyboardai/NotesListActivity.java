@@ -1813,8 +1813,6 @@ public class NotesListActivity extends AppCompatActivity {
     }
     private void showOfflineSnackbar() {
         View rootView = findViewById(android.R.id.content);
-
-        // Create a gentle, informative Snackbar
         Snackbar snackbar = Snackbar.make(
                 rootView,
                 "📶 "+getApplicationContext().getString(R.string.snackbar_text),
@@ -1828,13 +1826,9 @@ public class NotesListActivity extends AppCompatActivity {
                 startActivity(new Intent(Settings.ACTION_SETTINGS));
             }
         });
-
-        // Customize colors for a gentle, non-alarming appearance
         snackbar.setBackgroundTint(Color.parseColor("#424242")); // Dark gray
         snackbar.setTextColor(Color.parseColor("#FFFFFF")); // White text
         snackbar.setActionTextColor(Color.parseColor("#64B5F6")); // Light blue action
-
-        // Play a soft notification sound
         try {
             Uri notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             Ringtone ringtone = RingtoneManager.getRingtone(getApplicationContext(), notificationSound);
@@ -1844,8 +1838,6 @@ public class NotesListActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Failed to play notification sound.", e);
         }
-
-        // Show the Snackbar
         snackbar.show();
     }
 

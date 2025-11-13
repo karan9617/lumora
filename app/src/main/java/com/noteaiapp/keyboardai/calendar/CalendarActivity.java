@@ -44,6 +44,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
@@ -189,7 +190,7 @@ public class CalendarActivity extends AppCompatActivity {
 
             // Check if the note has a drawing and set its visibility
             byte[] drawingData = FileUtils.loadFileFromPath(note.getImagePath());
-            if (drawingData != null && drawingData.length > 0) {
+            if (note.getImagePath() != null && note.getImagePath().length() > 0) {
                 if(note.getContent() == null || (note.getContent() != null && note.getContent().length() == 0)){
                     holder.labeltext1.setVisibility(View.GONE);
                     holder.labeltext2.setVisibility(View.GONE);
@@ -198,16 +199,14 @@ public class CalendarActivity extends AppCompatActivity {
                     holder.labeltext1.setVisibility(View.VISIBLE);
                     holder.labeltext2.setVisibility(View.VISIBLE);
                 }
+                Glide.with(context)
+                        .load(note.getImagePath()) // Tell Glide to load the image from this file path
+                        .into(holder.noteDrawing);
+                // holder.noteDrawing.setImageBitmap(drawingBitmap);
+                holder.noteDrawing.setVisibility(View.VISIBLE);
                 try {
-                    Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-                    if (drawingBitmap != null) {
-                        holder.noteDrawing.setImageBitmap(drawingBitmap);
-                        holder.noteDrawing.setVisibility(View.VISIBLE);
-                        holder.noteContent.setVisibility(View.GONE);
-                    } else {
-                        holder.noteDrawing.setVisibility(View.GONE);
-                        holder.noteContent.setVisibility(View.GONE);
-                    }
+                    holder.noteDrawing.setVisibility(View.VISIBLE);
+                    holder.noteContent.setVisibility(View.GONE);
                 } catch (Exception e) {
                     e.printStackTrace();
                     holder.noteDrawing.setVisibility(View.GONE);
