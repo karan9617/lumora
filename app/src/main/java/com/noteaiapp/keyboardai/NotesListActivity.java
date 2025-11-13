@@ -1,5 +1,7 @@
 package com.noteaiapp.keyboardai;
 
+import static android.provider.Settings.ACTION_WIFI_SETTINGS;
+
 import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -16,10 +18,15 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
@@ -47,6 +54,7 @@ import com.bumptech.glide.request.transition.Transition;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.firebase.auth.FirebaseAuth;
@@ -116,7 +124,9 @@ public class NotesListActivity extends AppCompatActivity {
     }
     private RecyclerView notesRecyclerView;/// notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
-   // private NotesAdapterPinned notesAdapterPinned;
+    private boolean hasShownOfflineWarning = false;
+
+    // private NotesAdapterPinned notesAdapterPinned;
     View transparentOverlay;
     // In NotesListActivity.java, with your other class variables
 // In NotesListActivity.java, with your other class variables
@@ -1208,11 +1218,21 @@ public class NotesListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        checkNetworkAndNotify();
         LocalBroadcastManager.getInstance(this).registerReceiver(noteUpdateReceiver,
                 new IntentFilter("com.noteaiapp.ACTION_NOTE_UPDATED"));
         loadNotesFromDatabase();
     }
-
+    private void checkNetworkAndNotify() {
+        if (!isNetworkAvailable() && !hasShownOfflineWarning) {
+            // Show the gentle offline notification
+            showOfflineSnackbar();
+            hasShownOfflineWarning = true; // Only show once per session
+        } else if (isNetworkAvailable()) {
+            // Reset the flag when network is available
+            hasShownOfflineWarning = false;
+        }
+    }
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -1783,4 +1803,50 @@ public class NotesListActivity extends AppCompatActivity {
         intent.putExtra("image_path", imagePath);
         startActivity(intent);
     }
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.getActiveNetwork());
+            return capabilities != null && (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
+        }
+        return false;
+    }
+    private void showOfflineSnackbar() {
+        View rootView = findViewById(android.R.id.content);
+
+        // Create a gentle, informative Snackbar
+        Snackbar snackbar = Snackbar.make(
+                rootView,
+                "📶 "+getApplicationContext().getString(R.string.snackbar_text),
+                Snackbar.LENGTH_LONG
+        );
+        snackbar.setAction(R.string.connect, view -> {
+            try {
+                startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+            } catch (Exception e) {
+                // Fallback to general settings if WiFi settings not available
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            }
+        });
+
+        // Customize colors for a gentle, non-alarming appearance
+        snackbar.setBackgroundTint(Color.parseColor("#424242")); // Dark gray
+        snackbar.setTextColor(Color.parseColor("#FFFFFF")); // White text
+        snackbar.setActionTextColor(Color.parseColor("#64B5F6")); // Light blue action
+
+        // Play a soft notification sound
+        try {
+            Uri notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Ringtone ringtone = RingtoneManager.getRingtone(getApplicationContext(), notificationSound);
+            if (ringtone != null) {
+                ringtone.play();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to play notification sound.", e);
+        }
+
+        // Show the Snackbar
+        snackbar.show();
+    }
+
 }

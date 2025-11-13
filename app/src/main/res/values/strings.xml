@@ -221,5 +221,7 @@
 
     <string name="login_label">Login</string>
     <string name="drawer_logout_text">Logout</string>
+    <string name="snackbar_text">You are offline. Connect to internet for seamless sync.</string>
+    <string name="connect">CONNECT</string>
     <string name="default_web_client_id">1038951036645-qh5u6b25q4ni8pp0g0u8i6dhii9edcpn.apps.googleusercontent.com</string>
 </resources>
