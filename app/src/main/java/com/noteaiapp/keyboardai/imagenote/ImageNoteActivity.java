@@ -67,6 +67,9 @@ import androidx.core.view.ViewCompat;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -172,6 +175,108 @@ public class ImageNoteActivity extends AppCompatActivity {
     LinearLayout sideSheetHandle;
     private FirebaseStorage storage;
     private String currentNoteUuid = "";
+    private void fetchNoteFromFirebase(String cloudId) {
+
+        if (currentUser == null || cloudId == null || cloudId.length() == 0) {
+            Log.w(TAG, "User not logged in, falling back to local database.");
+            //loadNoteData();
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        // Show a ProgressBar if you have one
+        Log.d(TAG, "List item user uid:"+userId);
+        db.collection("users").document(userId).collection("notes").document(cloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Log.d(TAG, "Successfully fetched list note from Firestore.");
+                        Note cloudNote = documentSnapshot.toObject(Note.class);
+                        Log.d(TAG, "cloudNote :"+cloudNote.getTitle()+"|cloudNote content:"+cloudNote.getContent());
+
+                        if (cloudNote != null) {
+                            populateUiWithNoteData(cloudNote, cloudId);
+                        }
+                    } else {
+                        Log.w(TAG, "List note not found in Firestore, falling back to local.");
+                        //loadNoteData();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to fetch from Firestore. Falling back to local.", e);
+                    //loadNoteData();
+                });
+    }
+    public void populateUiWithNoteData(Note currentNode, String cloudId){
+        String noteTitle = (currentNode == null )? "":(currentNode.getTitle().split(";")[0]);
+        String noteContent = (currentNode == null )? "":currentNode.getContent();
+        noteDate = (currentNode == null )? "":currentNode.getDate();
+        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
+
+        DrawingActivity.DrawingDataManager.clearDrawingData();
+
+
+        isPinned = (currentNode == null )? false: currentNode.isPinned();
+        noteOrder = (currentNode == null )? -1:currentNode.getOrder();
+
+
+        imagePath = (currentNode == null )? imagePathFromIntent:currentNode.getImagePath();
+        //drawingData = (currentNode == null )? FileUtils.loadFileFromPath(imagePathFromIntent) : FileUtils.loadFileFromPath(currentNode.getImagePath());
+
+        // setting the imagesketch from the database
+        if(imagePath != null && imagePath.length() > 0){
+
+
+            Glide.with(this)
+                    .asBitmap() // Important: We need a Bitmap for the drawing view
+                    .load(imagePath)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                            // This callback runs when Glide has finished downloading/loading the Bitmap.
+                            // Now, set it as the background for the DrawingView.
+                            imagesketch.setImageBitmap(resource);
+                            imageframelayout.setVisibility(View.VISIBLE);
+                            imagesketch.setVisibility(View.VISIBLE);
+                            imageCard.setVisibility(View.VISIBLE);
+                            clearImageButton.setVisibility(View.VISIBLE);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // Handle case where the view is cleared
+                        }
+                    });
+            imagesketch.setVisibility(View.VISIBLE);
+            /*
+            Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
+            // Check if the bitmap was successfully created
+            if (savedBitmap != null) {
+                try {
+                    Bitmap rotatedBitmap = rotateImageIfRequired(savedBitmap, imagePath);
+                    imagesketch.setImageBitmap(rotatedBitmap);
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                // Assign the bitmap to your ImageView and make it visible
+                imageframelayout.setVisibility(View.VISIBLE);
+                imagesketch.setVisibility(View.VISIBLE);
+                imageCard.setVisibility(View.VISIBLE);
+                clearImageButton.setVisibility(View.VISIBLE);
+            }*/
+        }
+        if (currentNoteUuid != null && currentNoteUuid.length() > 0) {
+            titleText.setText(noteTitle);
+            loadNote(noteContent);
+            //resultText.setText(noteContent);
+            resultBuilder.append(noteContent);
+            titleBuilder.append(noteTitle);
+        } else {
+            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
+            titleText.setHint("Untitled");
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -228,8 +333,8 @@ public class ImageNoteActivity extends AppCompatActivity {
         else{
             this.folderName ="";
         }
-        imagePathFromIntent = getIntent().getStringExtra("image_path");
-        Note currentNode = noteRepository.getNoteByCloudId(currentNoteUuid);
+        //imagePathFromIntent = getIntent().getStringExtra("image_path");
+        //Note currentNode = noteRepository.getNoteByCloudId(currentNoteUuid);
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
         if(receivedDate != null && !receivedDate.isEmpty()){
             dateReceived = true;
@@ -238,62 +343,13 @@ public class ImageNoteActivity extends AppCompatActivity {
         else{
             receivedDateFromActivities = getCurrentDate();
         }
-        /*
-        String noteTitle = getIntent().getStringExtra("note_title");
-        String noteContent = getIntent().getStringExtra("note_content");
-        noteDate = getIntent().getStringExtra("note_date");
-        selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
-        imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
-        drawingData = FileUtils.loadFileFromPath(getIntent().getStringExtra("note_image_path"));
-        */
-        String noteTitle = (currentNode == null )? "":(currentNode.getTitle().split(";")[0]);
-        String noteContent = (currentNode == null )? "":currentNode.getContent();
-        noteDate = (currentNode == null )? "":currentNode.getDate();
-        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
-        imagePath = (currentNode == null )? imagePathFromIntent:currentNode.getImagePath();
-        drawingData = (currentNode == null )? FileUtils.loadFileFromPath(imagePathFromIntent) : FileUtils.loadFileFromPath(currentNode.getImagePath());
-        DrawingActivity.DrawingDataManager.clearDrawingData();
-        /*
-        // NEW: Retrieve the pinned status from the intent
-        isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
-        // NEW: Retrieve the note's order from the intent
-        noteOrder = getIntent().getIntExtra("note_order", -1);*/
-        isPinned = (currentNode == null )? false: currentNode.isPinned();
-        noteOrder = (currentNode == null )? -1:currentNode.getOrder();
-        // setting the imagesketch from the database
-        if(drawingData != null && drawingData.length > 0){
-
-            Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
-            // Check if the bitmap was successfully created
-            if (savedBitmap != null) {
-                try {
-                    Bitmap rotatedBitmap = rotateImageIfRequired(savedBitmap, imagePath);
-                    imagesketch.setImageBitmap(rotatedBitmap);
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                // Assign the bitmap to your ImageView and make it visible
-                imageframelayout.setVisibility(View.VISIBLE);
-                imagesketch.setVisibility(View.VISIBLE);
-                imageCard.setVisibility(View.VISIBLE);
-                clearImageButton.setVisibility(View.VISIBLE);
-            }
-        }
+        // fetching imagenote note from firebase
+        fetchNoteFromFirebase(this.currentNoteUuid);
 
         if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
         }
-        if (currentNoteUuid != null && currentNoteUuid.length() > 0) {
-            titleText.setText(noteTitle);
-            loadNote(noteContent);
-            //resultText.setText(noteContent);
-            resultBuilder.append(noteContent);
-            titleBuilder.append(noteTitle);
-        } else {
-            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
-            titleText.setHint("Untitled");
-        }
+
         // setting background
         mainContentLayout.setBackgroundColor(selectedColor);
         titleText.setBackground(null);
@@ -395,6 +451,9 @@ public class ImageNoteActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) {}
         });
 
+        speechRecognition();
+    }
+    public void speechRecognition() {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
         recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -465,7 +524,6 @@ public class ImageNoteActivity extends AppCompatActivity {
             @Override public void onEvent(int eventType, Bundle params) {}
         });
     }
-
     private void applyLinkToSelection() {
         final Editable editable = resultText.getText();
         if (editable == null) return;

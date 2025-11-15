@@ -20,6 +20,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
@@ -164,7 +165,7 @@ public class SignUpActivity extends AppCompatActivity {
     // their existing local notes are still claimed by that new account.
     private void checkForLocalNotesMigration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes", false);
+        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes101", false);
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (!hasMigrated && user != null) {
@@ -177,17 +178,18 @@ public class SignUpActivity extends AppCompatActivity {
                 String userId = user.getUid();
 
                 NoteRepository repository = new NoteRepository(getApplicationContext());
-                List<com.noteaiapp.keyboardai.Models.Note> localNotes = repository.getAllNotes();
+                List<Note> localNotes = repository.getAllNotes();
 
                 if (localNotes.isEmpty()) {
-                    prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
+                    prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
+                    Log.d(TAG, "No local notes found to migrate.");
                     return;
                 }
                 Set<String> uniqueFolders = new HashSet<>();
                 final int totalNotes = localNotes.size();
                 final int[] notesProcessed = {0};
 
-                for (com.noteaiapp.keyboardai.Models.Note note : localNotes) {
+                for (Note note : localNotes) {
                     String noteCloudId = UUID.randomUUID().toString();
                     note.setUserFirebaseId(noteCloudId);
 
@@ -272,7 +274,7 @@ public class SignUpActivity extends AppCompatActivity {
     private void checkIfMigrationIsComplete(FirebaseFirestore db, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
         notesProcessed[0]++;
         if (notesProcessed[0] >= totalNotes) {
-            prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
 
             // All notes have been processed, now upload the folder list
             Log.d(TAG, "All notes processed. Uploading folder list...");
@@ -285,7 +287,7 @@ public class SignUpActivity extends AppCompatActivity {
             }
 
             // CRITICAL: Set the migration flag so this never runs again
-            prefs.edit().putBoolean("has_migrated_local_notes", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
             Log.d(TAG, "Full data migration complete.");
 
             // Now that migration is fully complete, navigate to the main app

@@ -16,7 +16,11 @@
         android:textSize="28sp"
         android:textStyle="bold"
         android:layout_marginBottom="32dp"/>
-
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        app:hintEnabled="false">
     <EditText
         android:id="@+id/email_edit_text_signup"
         android:layout_width="match_parent"
@@ -24,23 +28,35 @@
         android:hint="Email"
         android:inputType="textEmailAddress"
         android:layout_marginBottom="16dp"/>
-
-    <EditText
-        android:id="@+id/password_edit_text_signup"
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Password (min. 6 characters)"
-        android:inputType="textPassword"
-        android:layout_marginBottom="16dp"/>
-
-    <EditText
-        android:id="@+id/confirm_password_edit_text_signup"
+        android:layout_marginBottom="24dp"
+        app:passwordToggleEnabled="true"
+        app:hintEnabled="false">
+        <EditText
+            android:id="@+id/password_edit_text_signup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Password (min. 6 characters)"
+            android:inputType="textPassword"
+            android:layout_marginBottom="16dp"/>
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Confirm Password"
-        android:inputType="textPassword"
-        android:layout_marginBottom="24dp"/>
-
+        app:passwordToggleEnabled="true"
+        android:layout_marginBottom="24dp"
+        app:hintEnabled="false">
+        <EditText
+            android:id="@+id/confirm_password_edit_text_signup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Confirm Password"
+            android:inputType="textPassword"
+            android:layout_marginBottom="24dp"/>
+    </com.google.android.material.textfield.TextInputLayout>
     <Button
         android:id="@+id/create_account_button"
         android:layout_width="match_parent"

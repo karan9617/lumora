@@ -133,7 +133,6 @@ public class LoginActivity extends AppCompatActivity {
         signUpTextView.setOnClickListener(v -> {
             // TODO: Create and launch SignUpActivity
             startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
-            Toast.makeText(this, "Sign Up screen not implemented yet.", Toast.LENGTH_SHORT).show();
         });
     }
     private void showForgotPasswordDialog() {
@@ -293,7 +292,7 @@ public class LoginActivity extends AppCompatActivity {
     // In LoginActivity.java
     private void checkForLocalNotesMigration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes09", false);
+        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes101", false);
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (!hasMigrated && user != null) {
@@ -313,7 +312,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 if (localNotes.isEmpty()) {
                     // If there's nothing to migrate, set the flag and navigate.
-                    prefs.edit().putBoolean("has_migrated_local_notes09", true).apply();
+                    prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
                     Log.d(TAG, "No local notes found to migrate.");
                     runOnUiThread(this::navigateToMainApp); // Use method reference for cleanliness
                     return;
@@ -394,6 +393,8 @@ public class LoginActivity extends AppCompatActivity {
             // --- MIGRATION IS NOT NEEDED ---
             // The flag is already true. Navigate to the main app immediately.
             Log.d(TAG, "Migration not needed. Navigating to main app.");
+            showLoading(false);
+
             navigateToMainApp();
         }
     }
@@ -414,7 +415,7 @@ public class LoginActivity extends AppCompatActivity {
     private void checkIfMigrationIsComplete(FirebaseFirestore db, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
         notesProcessed[0]++;
         if (notesProcessed[0] == totalNotes) {
-            prefs.edit().putBoolean("has_migrated_local_notes09", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
             // All notes have been processed, now upload the folder list
             Log.d(TAG, "All notes processed. Uploading folder list...");
             if (!uniqueFolders.isEmpty()) {
