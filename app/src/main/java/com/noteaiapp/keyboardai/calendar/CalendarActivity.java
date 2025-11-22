@@ -880,7 +880,7 @@ public class CalendarActivity extends AppCompatActivity {
     }
     private void launchImageNoteActivity(String imagePath) {
         Intent intent = new Intent(CalendarActivity.this, ImageNoteActivity.class);
-        intent.putExtra("image_path", imagePath);
+        intent.putExtra("note_image_path", imagePath);
         CalendarDay selectedDay = calendarView.getSelectedDate();
         if (selectedDay == null) {
             // If no day is selected for some reason, default to today.

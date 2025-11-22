@@ -175,11 +175,38 @@ public class ImageNoteActivity extends AppCompatActivity {
     LinearLayout sideSheetHandle;
     private FirebaseStorage storage;
     private String currentNoteUuid = "";
+    public void loadNoteData(){
+        if(this.imagePathFromIntent != null && this.imagePathFromIntent.length() > 0){
+
+
+            Glide.with(this)
+                    .asBitmap() // Important: We need a Bitmap for the drawing view
+                    .load(this.imagePathFromIntent)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                            // This callback runs when Glide has finished downloading/loading the Bitmap.
+                            // Now, set it as the background for the DrawingView.
+                            imagesketch.setImageBitmap(resource);
+                            imageframelayout.setVisibility(View.VISIBLE);
+                            imagesketch.setVisibility(View.VISIBLE);
+                            imageCard.setVisibility(View.VISIBLE);
+                            clearImageButton.setVisibility(View.VISIBLE);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // Handle case where the view is cleared
+                        }
+                    });
+            imagesketch.setVisibility(View.VISIBLE);
+        }
+    }
     private void fetchNoteFromFirebase(String cloudId) {
 
         if (currentUser == null || cloudId == null || cloudId.length() == 0) {
             Log.w(TAG, "User not logged in, falling back to local database.");
-            //loadNoteData();
+            loadNoteData();
             return;
         }
 
@@ -195,7 +222,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                         Log.d(TAG, "cloudNote :"+cloudNote.getTitle()+"|cloudNote content:"+cloudNote.getContent());
 
                         if (cloudNote != null) {
-                            populateUiWithNoteData(cloudNote, cloudId);
+                            populateUiWithNoteData(cloudNote);
                         }
                     } else {
                         Log.w(TAG, "List note not found in Firestore, falling back to local.");
@@ -207,29 +234,25 @@ public class ImageNoteActivity extends AppCompatActivity {
                     //loadNoteData();
                 });
     }
-    public void populateUiWithNoteData(Note currentNode, String cloudId){
+    public void populateUiWithNoteData(Note currentNode){
         String noteTitle = (currentNode == null )? "":(currentNode.getTitle().split(";")[0]);
         String noteContent = (currentNode == null )? "":currentNode.getContent();
-        noteDate = (currentNode == null )? "":currentNode.getDate();
         selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
 
         DrawingActivity.DrawingDataManager.clearDrawingData();
 
-
         isPinned = (currentNode == null )? false: currentNode.isPinned();
         noteOrder = (currentNode == null )? -1:currentNode.getOrder();
 
-
-        imagePath = (currentNode == null )? imagePathFromIntent:currentNode.getImagePath();
         //drawingData = (currentNode == null )? FileUtils.loadFileFromPath(imagePathFromIntent) : FileUtils.loadFileFromPath(currentNode.getImagePath());
 
         // setting the imagesketch from the database
-        if(imagePath != null && imagePath.length() > 0){
+        if(this.imagePathFromIntent != null && this.imagePathFromIntent.length() > 0){
 
 
             Glide.with(this)
                     .asBitmap() // Important: We need a Bitmap for the drawing view
-                    .load(imagePath)
+                    .load(this.imagePathFromIntent)
                     .into(new CustomTarget<Bitmap>() {
                         @Override
                         public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
@@ -333,7 +356,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         else{
             this.folderName ="";
         }
-        //imagePathFromIntent = getIntent().getStringExtra("image_path");
+        this.imagePathFromIntent = getIntent().getStringExtra("note_image_path");
         //Note currentNode = noteRepository.getNoteByCloudId(currentNoteUuid);
         String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
         if(receivedDate != null && !receivedDate.isEmpty()){
@@ -1640,24 +1663,18 @@ public class ImageNoteActivity extends AppCompatActivity {
             supportFinishAfterTransition();
             return;
         }
-
+        List<String> labels = getLabels(currentContent);
         ProgressBar saveProgressBar = findViewById(R.id.saveProgressBar);
         saveProgressBar.setVisibility(View.VISIBLE);
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            WordTokenizer tokenizer = new WordTokenizer(currentContent);
-            List<String> labels = tokenizer.getTokenizedWords();
-            if (labels == null || labels.size() < 2) {
-                if (labels == null) labels = new java.util.ArrayList<>();
-                if (labels.size() == 0) labels.add("quick-note");
-                if (labels.size() == 1) labels.add("brief");
-            }
+
             String finalTitle = currentTitle + ";" + labels.get(0) + ";" + labels.get(1);
 
             // 2. Process image/drawing data and save to a file
             String finalImagePath = this.imagePath;
             String filename = "";
-            if (drawingDataFromView != null && drawingDataFromView.length > 0) {
+            if (imagePath != null && imagePath.length() > 0) {
                 Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
                 if (drawingBitmap != null) {
                     filename = "drawing_" + System.currentTimeMillis() + ".png";
@@ -1767,6 +1784,7 @@ public class ImageNoteActivity extends AppCompatActivity {
             });
         });
     }
+
 
     // Updated uploadAndSyncNoteToFirebase method WITH callback
     private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename, FirebaseUploadCallback callback) {
@@ -1943,6 +1961,16 @@ public class ImageNoteActivity extends AppCompatActivity {
     private String getCurrentDate() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());
+    }
+    public List<String> getLabels(String currentContent){
+        WordTokenizer tokenizer = new WordTokenizer(currentContent);
+        List<String> labels = tokenizer.getTokenizedWords();
+        if (labels == null || labels.size() < 2) {
+            if (labels == null) labels = new java.util.ArrayList<>();
+            if (labels.size() == 0) labels.add("quick-note");
+            if (labels.size() == 1) labels.add("brief");
+        }
+        return labels;
     }
     /**
      * Replaces the deprecated AsyncTask with a modern Thread-based approach.

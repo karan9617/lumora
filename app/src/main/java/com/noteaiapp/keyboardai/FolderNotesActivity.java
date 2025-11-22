@@ -1618,7 +1618,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         Intent intent = new Intent(FolderNotesActivity.this, ImageNoteActivity.class);
         // We pass the image path so the activity knows which image to load.
         // The note doesn't exist yet, so we don't pass a note_id.
-        intent.putExtra("image_path", imagePath);
+        intent.putExtra("note_image_path", imagePath);
         intent.putExtra(EXTRA_FOLDER_NAME,this.folderName);
         startActivity(intent);
     }

@@ -193,6 +193,7 @@ public class NotesListActivity extends AppCompatActivity {
             finish();
             return; // Stop executing onCreate
         }
+
         getWindow().setAllowEnterTransitionOverlap(false);
         getWindow().setAllowReturnTransitionOverlap(false);
         transparentOverlay = findViewById(R.id.transparent_overlay);
@@ -705,7 +706,26 @@ public class NotesListActivity extends AppCompatActivity {
                 return false;
             }
         });
+        if (currentUser != null) {
+            // 1. Get the NavigationView's menu
+            Menu navMenu = navigationView.getMenu();
 
+            // 2. Find BOTH menu items by their ID
+            MenuItem logoutItem = navMenu.findItem(R.id.option_logout);
+            MenuItem emailDisplayItem = navMenu.findItem(R.id.option_logout_email);
+
+            // 3. Get the user's email address
+            String userEmail = currentUser.getEmail();
+
+            // 4. Check if the email display item and email string are valid
+            if (emailDisplayItem != null && userEmail != null && !userEmail.isEmpty()) {
+                // 5. Set the title of the email item
+                emailDisplayItem.setTitle(userEmail);
+            } else if (emailDisplayItem != null) {
+                // Optional: Hide the email item if there's no email to show
+                emailDisplayItem.setVisible(false);
+            }
+        }
     }
     private void launchCamera() {
         File imageFile = null;
@@ -1800,7 +1820,7 @@ public class NotesListActivity extends AppCompatActivity {
         Intent intent = new Intent(NotesListActivity.this, ImageNoteActivity.class);
         // We pass the image path so the activity knows which image to load.
         // The note doesn't exist yet, so we don't pass a note_id.
-        intent.putExtra("image_path", imagePath);
+        intent.putExtra("note_image_path", imagePath);
         startActivity(intent);
     }
     private boolean isNetworkAvailable() {
