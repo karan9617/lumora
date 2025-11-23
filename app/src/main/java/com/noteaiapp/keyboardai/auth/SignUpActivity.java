@@ -165,7 +165,7 @@ public class SignUpActivity extends AppCompatActivity {
     // their existing local notes are still claimed by that new account.
     private void checkForLocalNotesMigration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes101", false);
+        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes102", false);
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (!hasMigrated && user != null) {
@@ -181,7 +181,7 @@ public class SignUpActivity extends AppCompatActivity {
                 List<Note> localNotes = repository.getAllNotes();
 
                 if (localNotes.isEmpty()) {
-                    prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
+                    prefs.edit().putBoolean("has_migrated_local_notes102", true).apply();
                     Log.d(TAG, "No local notes found to migrate.");
                     return;
                 }
@@ -274,7 +274,7 @@ public class SignUpActivity extends AppCompatActivity {
     private void checkIfMigrationIsComplete(FirebaseFirestore db, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
         notesProcessed[0]++;
         if (notesProcessed[0] >= totalNotes) {
-            prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes102", true).apply();
 
             // All notes have been processed, now upload the folder list
             Log.d(TAG, "All notes processed. Uploading folder list...");
@@ -287,7 +287,7 @@ public class SignUpActivity extends AppCompatActivity {
             }
 
             // CRITICAL: Set the migration flag so this never runs again
-            prefs.edit().putBoolean("has_migrated_local_notes101", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes102", true).apply();
             Log.d(TAG, "Full data migration complete.");
 
             // Now that migration is fully complete, navigate to the main app

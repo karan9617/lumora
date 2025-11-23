@@ -111,7 +111,7 @@ public class ArchivesActivity extends AppCompatActivity {
     public static final String LIST_NOTE_PREFIX = "[LIST_NOTE_START]";
     NotesRepositoryTrash notesRepositoryTrash;
     ImageButton shuffle;
-    NavigationView navigationView;
+    //NavigationView navigationView;
     private enum DriveAction { BACKUP, RESTORE }
 
     private BroadcastReceiver noteUpdateReceiver = new BroadcastReceiver() {
@@ -129,6 +129,11 @@ public class ArchivesActivity extends AppCompatActivity {
 
         getWindow().setAllowEnterTransitionOverlap(false);
         getWindow().setAllowReturnTransitionOverlap(false);
+        if (getSupportActionBar() != null) {
+            // 2. This line tells the ActionBar NOT to show the drawer icon.
+            //    Instead, it will show nothing (or a "back" arrow if you enable it).
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        }
         // Add this inside your onCreate method in NotesListActivity.java
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         mAuth = FirebaseAuth.getInstance();
@@ -149,7 +154,7 @@ public class ArchivesActivity extends AppCompatActivity {
         noteRepository = new NoteRepository(this);
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
+        //navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         initialtext = findViewById(R.id.initialtext);
@@ -165,16 +170,10 @@ public class ArchivesActivity extends AppCompatActivity {
         final Animation slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
         final Animation slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
 
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-
-
-        toggle.syncState();
-        //loadFoldersToDrawer();
+        /*loadFoldersToDrawer();
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
-/*
+
             if (id == R.id.new_folder) {
                 // 1. Handle the "New folder" action
                 showNewFolderDialog();
@@ -189,7 +188,7 @@ public class ArchivesActivity extends AppCompatActivity {
 
                 Toast.makeText(this, "Loading notes from folder: " + folderName, Toast.LENGTH_SHORT).show();
                 // TODO: Implement actual data filtering logic here
-            }else */
+            }else
             if (id == R.id.nav_instructions) {
                 startActivity(new Intent(this, InstructionsActivity.class));
             } else if (id == R.id.nav_trash) {
@@ -208,7 +207,7 @@ public class ArchivesActivity extends AppCompatActivity {
             }
             drawerLayout.closeDrawers();
             return true;
-        });
+        });*/
         shuffle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

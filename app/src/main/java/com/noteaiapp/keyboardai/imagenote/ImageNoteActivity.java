@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
@@ -90,6 +91,7 @@ import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -112,6 +114,7 @@ public class ImageNoteActivity extends AppCompatActivity {
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
     private FirebaseUser currentUser;
 
+    private Bitmap drawingBitmap;
     private String folderName = "";
 
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -134,9 +137,7 @@ public class ImageNoteActivity extends AppCompatActivity {
     private TextView hintTextView;
     private Intent recognizerIntent;
     private NoteRepository noteRepository;
-    private DrawingView drawingView;
-    private Button toggleModeDrawSave;
-    ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton,pdfUploadButton,leftAlignButton,centerAlignButton,rightAlignButton;
+    ImageButton clearDrawingButton,clearImageButton,boldButton,italicsButton,linkCreationButton,pdfUploadButton,leftAlignButton,centerAlignButton,rightAlignButton;
     private String noteDate;
     private byte[] drawingData;
     private String imagePath;
@@ -188,6 +189,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                             // This callback runs when Glide has finished downloading/loading the Bitmap.
                             // Now, set it as the background for the DrawingView.
                             imagesketch.setImageBitmap(resource);
+                            drawingBitmap = resource;
                             imageframelayout.setVisibility(View.VISIBLE);
                             imagesketch.setVisibility(View.VISIBLE);
                             imageCard.setVisibility(View.VISIBLE);
@@ -239,7 +241,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         String noteContent = (currentNode == null )? "":currentNode.getContent();
         selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
 
-        DrawingActivity.DrawingDataManager.clearDrawingData();
+        //DrawingActivity.DrawingDataManager.clearDrawingData();
 
         isPinned = (currentNode == null )? false: currentNode.isPinned();
         noteOrder = (currentNode == null )? -1:currentNode.getOrder();
@@ -259,6 +261,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                             // This callback runs when Glide has finished downloading/loading the Bitmap.
                             // Now, set it as the background for the DrawingView.
                             imagesketch.setImageBitmap(resource);
+                            drawingBitmap = resource;
                             imageframelayout.setVisibility(View.VISIBLE);
                             imagesketch.setVisibility(View.VISIBLE);
                             imageCard.setVisibility(View.VISIBLE);
@@ -337,8 +340,8 @@ public class ImageNoteActivity extends AppCompatActivity {
                     }
                 }
         );
+
         noteRepository = new NoteRepository(this);
-        drawingView = findViewById(R.id.drawingView);
         italicsButton = findViewById(R.id.italicsButton);
         boldButton = findViewById(R.id.boldButton);
         if (boldButton != null) {
@@ -399,11 +402,10 @@ public class ImageNoteActivity extends AppCompatActivity {
         clearDrawingButton = findViewById(R.id.clearDrawingButton);
         clearDrawingButton.setOnClickListener(v -> {
             //drawingView.setColor(Color.TRANSPARENT);
-            drawingView.setErasing(true);
+            this.imagePathFromIntent = "";
             isNoteModified = true;
         });
         resultText.setVisibility(View.VISIBLE);
-        drawingView.setVisibility(View.GONE);
 
         handler = new Handler(Looper.getMainLooper());
 
@@ -1001,6 +1003,7 @@ public class ImageNoteActivity extends AppCompatActivity {
             public void onClick(View v) {
                 drawingData = null;
                 imagePath = null;
+                imagePathFromIntent = "";
                 imageframelayout.setVisibility(View.GONE);
                 saveNote();
             }
@@ -1122,13 +1125,7 @@ public class ImageNoteActivity extends AppCompatActivity {
             linkCreationButton.setOnClickListener(v -> applyLinkToSelection());
         }
 
-        black_pen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                drawingView.setErasing(false);
-                drawingView.setColor(Color.BLACK);
-            }
-        });
+
         voiceicon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1206,12 +1203,6 @@ public class ImageNoteActivity extends AppCompatActivity {
                 }
             }
         });
-        toggleModeDrawSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveNote();
-            }
-        });
 
         // NEW: OnClickListener for imagesketch
         /*
@@ -1222,29 +1213,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                 toggleMode();
             }
         });*/
-        red_pen.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                drawingView.setColor(Color.RED);
-            }
-        });
-    }
-    private void drawOnDrawingView(){
-        if (imagePath != null && imagePath.length() > 0) {
-            // Use a ViewTreeObserver to wait until the view is laid out
-            // and its dimensions are available before loading the bitmap.
-            drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    // Ensure the view has valid dimensions before loading the data
-                    if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
-                        drawingView.setDrawingData(drawingData);
-                        // Remove the listener to avoid repeated calls
-                        drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    }
-                }
-            });
-        }
+
     }
     private void toggleMode() {
         isDrawingMode = !isDrawingMode;
@@ -1255,8 +1224,6 @@ public class ImageNoteActivity extends AppCompatActivity {
             leftAlignButton.setVisibility(View.GONE);
             rightAlignButton.setVisibility(View.GONE);
             isDirty = true;
-            red_pen.setVisibility(View.VISIBLE);
-            black_pen.setVisibility(View.VISIBLE);
             voiceicon.setVisibility(View.GONE);
             clearDrawingButton.setVisibility(View.VISIBLE);
             toolbar.setVisibility(View.GONE);
@@ -1265,8 +1232,6 @@ public class ImageNoteActivity extends AppCompatActivity {
             imageCard.setVisibility(View.GONE);
             imageframelayout.setVisibility(View.GONE);
             clearImageButton.setVisibility(View.GONE);
-            drawingView.setVisibility(View.VISIBLE);
-            toggleModeDrawSave.setVisibility(View.VISIBLE);
 
         } else {
             titleText.setVisibility(View.VISIBLE);
@@ -1276,8 +1241,6 @@ public class ImageNoteActivity extends AppCompatActivity {
             italicsButton.setVisibility(View.VISIBLE);
             isDirty = false;
             voiceicon.setVisibility(View.VISIBLE);
-            red_pen.setVisibility(View.GONE);
-            black_pen.setVisibility(View.GONE);
             toolbar.setVisibility(View.VISIBLE);
             clearDrawingButton.setVisibility(View.GONE);
             resultText.setVisibility(View.VISIBLE);
@@ -1287,8 +1250,6 @@ public class ImageNoteActivity extends AppCompatActivity {
                 clearImageButton.setVisibility(View.VISIBLE);
                 imageframelayout.setVisibility(View.VISIBLE);
             }
-            drawingView.setVisibility(View.GONE);
-            toggleModeDrawSave.setVisibility(View.GONE);
         }
     }
 
@@ -1324,12 +1285,7 @@ public class ImageNoteActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if(id == R.id.action_draw){
-            drawOnDrawingView();
-            toggleMode();
-            return true;
-        }
-        else if (id == R.id.action_save) {
+        if (id == R.id.action_save) {
             saveNote();
             return true;
         } else if (id == R.id.action_color) {
@@ -1653,33 +1609,44 @@ public class ImageNoteActivity extends AppCompatActivity {
         // --- Step 1: Immediately get all necessary data from the UI thread ---
         final String currentTitle = titleText.getText().toString().trim();
         final String currentContent = saveNoteContent();
-        final byte[] drawingDataFromView = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
+        //final byte[] drawingDataFromView = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
         final int currentColor = selectedColor;
-
-        // --- Step 2: Perform a quick check to see if there's anything to save ---
-        if (currentTitle.isEmpty() && currentContent.isEmpty() && (imagePath == null || imagePath.isEmpty()) && (drawingDataFromView == null || drawingDataFromView.length == 0)) {
+        byte[] imageDataForUpload = null;
+        if (drawingBitmap != null) {
+            try {
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                drawingBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                imageDataForUpload = stream.toByteArray();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to compress bitmap on UI thread", e);
+                // imageDataForUpload will remain null
+            }
+        }
+        /*--- Step 2: Perform a quick check to see if there's anything to save ---
+        if (currentTitle.isEmpty() && currentContent.isEmpty() && (this.imagePathFromIntent == null || this.imagePathFromIntent.isEmpty() || this.imagePathFromIntent.length() == 0) ) {
             Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
             isNoteModified = false;
             supportFinishAfterTransition();
             return;
-        }
+        }*/
         List<String> labels = getLabels(currentContent);
         ProgressBar saveProgressBar = findViewById(R.id.saveProgressBar);
         saveProgressBar.setVisibility(View.VISIBLE);
 
+        byte[] finalImageDataForUpload2 = imageDataForUpload;
         Executors.newSingleThreadExecutor().execute(() -> {
 
             String finalTitle = currentTitle + ";" + labels.get(0) + ";" + labels.get(1);
 
             // 2. Process image/drawing data and save to a file
-            String finalImagePath = this.imagePath;
             String filename = "";
-            if (imagePath != null && imagePath.length() > 0) {
-                Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
+            String finalImagePath = "";
+            if (this.imagePathFromIntent != null && this.imagePathFromIntent.length() > 0) {
+                //Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingDataFromView, 0, drawingDataFromView.length);
                 if (drawingBitmap != null) {
                     filename = "drawing_" + System.currentTimeMillis() + ".png";
                     try {
-                        Bitmap bitmapToSave = rotateImageIfRequired(drawingBitmap, finalImagePath);
+                        Bitmap bitmapToSave = rotateImageIfRequired(drawingBitmap, this.imagePathFromIntent);
                         finalImagePath = noteRepository.saveImageToInternalStorage(bitmapToSave, filename);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -1697,7 +1664,7 @@ public class ImageNoteActivity extends AppCompatActivity {
                 noteToSave.setContent(currentContent);
                 noteToSave.setDate(receivedDateFromActivities);
                 noteToSave.setColor(currentColor);
-                noteToSave.setImagePath(finalImagePath);
+                noteToSave.setImagePath(this.imagePathFromIntent);
                 noteToSave.setOrder(noteOrder);
                 noteToSave.setFontColor("imagenote");
                 noteToSave.setPinned(isPinned);
@@ -1710,7 +1677,7 @@ public class ImageNoteActivity extends AppCompatActivity {
             } else {
                 // Create a new note
                 String noteCloudId = UUID.randomUUID().toString();
-                noteToSave = new Note(finalTitle, currentContent, receivedDateFromActivities, currentColor, 0, "imagenote", isPinned, finalImagePath);
+                noteToSave = new Note(finalTitle, currentContent, receivedDateFromActivities, currentColor, 0, "imagenote", isPinned, this.imagePathFromIntent);
                 noteToSave.setFontColor("imagenote");
                 noteToSave.setDate(this.receivedDateFromActivities);
                 if(this.folderName.length() != 0){
@@ -1724,16 +1691,16 @@ public class ImageNoteActivity extends AppCompatActivity {
 
             // *** THIS IS THE KEY FIX - Wait for Firebase upload before finishing ***
             final String finalToastMessage = toastMessage;
-            final byte[] finalDrawingData = drawingDataFromView;
+            //final byte[] finalDrawingData = drawingBitmap;
             final String finalFilename = filename;
 
-            uploadAndSyncNoteToFirebase(noteToSave, drawingDataFromView, filename, new FirebaseUploadCallback() {
+            uploadAndSyncNoteToFirebase(noteToSave, finalImageDataForUpload2, filename, new FirebaseUploadCallback() {
                 @Override
                 public void onUploadComplete() {
                     // --- Step 5: Update the UI AFTER Firebase upload completes ---
                     runOnUiThread(() -> {
                         // Update UI elements
-                        ImageNoteActivity.this.drawingData = finalDrawingData;
+                        ImageNoteActivity.this.drawingData = finalImageDataForUpload2;
                         saveProgressBar.setVisibility(View.GONE);
 
                         if (ImageNoteActivity.this.drawingData != null && ImageNoteActivity.this.drawingData.length > 0) {
@@ -1791,7 +1758,7 @@ public class ImageNoteActivity extends AppCompatActivity {
         String userId = this.currentUser.getUid();
         String noteCloudId = noteWithLocalPath.getUserFirebaseId();
         StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
-        if (imageData == null || imageData.length == 0) {
+        if (this.imagePathFromIntent == null || this.imagePathFromIntent.length() == 0) {
             // If there's no image, just save the note metadata to Firestore with an empty image path.
             Log.d(TAG, "No image data to upload. Saving note metadata directly to Firestore.");
 
@@ -1816,6 +1783,8 @@ public class ImageNoteActivity extends AppCompatActivity {
 
             return; // IMPORTANT: Stop execution here.
         }
+        // load bytearray from imagePathFromIntent
+
         imageRef.putBytes(imageData)
                 .continueWithTask(task -> {
                     if (!task.isSuccessful()) {
@@ -2100,12 +2069,8 @@ public class ImageNoteActivity extends AppCompatActivity {
         titleText = findViewById(R.id.noteTitleEditText);
         mainContentLayout = findViewById(R.id.main_content_layout);
         hintTextView = findViewById(R.id.hintTextView);
-        toggleModeDrawSave =  findViewById(R.id.toggleModeDrawSave);
-        red_pen = findViewById(R.id.red_pen);
-        toggleModeDrawSave.setVisibility(View.GONE);
         linear_layout_main = findViewById(R.id.linear_layout_main);
         imagesketch = findViewById(R.id.imagesketch);
-        black_pen = findViewById(R.id.black_pen);
         //linkPreviewHelper = new LinkPreviewHelper(this, resultText, linear_layout_main,linkImage);
         //linkPreviewHelper.setupLinkPreviewWatcher();
         resultText.setMovementMethod(LinkMovementMethod.getInstance());

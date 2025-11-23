@@ -260,7 +260,7 @@ public class Notepad extends AppCompatActivity {
             imageCard.setVisibility(View.GONE);
             clearImageButton.setVisibility(View.GONE);
         }
-        if(drawingData != null && drawingData.length > 0){
+        if(imagePath != null && imagePath.length() > 0){
             Glide.with(this)
                     .asBitmap() // Important: We need a Bitmap for the drawing view
                     .load(imagePath)
@@ -1690,7 +1690,27 @@ public class Notepad extends AppCompatActivity {
         labelcode(labels,content);
 
         String title = titleText.getText().toString().trim() + ";"+ labels.get(0) + ";" + labels.get(1);
-        byte[] drawingData = (drawingView.getDrawingData() == null || drawingView.getDrawingData().length == 0) ? this.drawingData: drawingView.getDrawingData() ;
+        //byte[] drawingData = (drawingView.getDrawingData() == null || drawingView.getDrawingData().length == 0) ? this.drawingData: drawingView.getDrawingData() ;
+        byte[] drawingData = null;
+        if (isDrawingMode) {
+            // If we are in drawing mode, the drawingView is the source of truth.
+            drawingData = drawingView.getDrawingData();
+        } else {
+            // If not in drawing mode, get the bitmap from the preview ImageView.
+            Drawable drawable = imagesketch.getDrawable();
+            if (drawable instanceof BitmapDrawable) {
+                Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                if (bitmap != null) {
+                    try {
+                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                        drawingData = stream.toByteArray();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error compressing bitmap from ImageView", e);
+                    }
+                }
+            }
+        }
 
         if (title.isEmpty() && content.isEmpty() && (imagePath == null || imagePath.isEmpty())) {
             Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
@@ -1701,6 +1721,7 @@ public class Notepad extends AppCompatActivity {
         String newimagePath = "";
         String filename = "drawing_" + System.currentTimeMillis() + ".png";
         if(drawingData != null && drawingData.length > 0){
+            Log.d("com.noteaiapp.keyboardai", "drawingData is not null");
             Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
             if(drawingBitmap != null){
                 newimagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
@@ -1710,6 +1731,7 @@ public class Notepad extends AppCompatActivity {
         final int finalColorToSave = getFinalBackgroundColorForNote();
         final String imagepathfinal = newimagePath;
 
+        byte[] finalDrawingData = drawingData;
         Executors.newSingleThreadExecutor().execute(() -> {
             Note notetoSave;
             if (currentUserUuid != null && currentUserUuid.length() != 0) {
@@ -1722,7 +1744,9 @@ public class Notepad extends AppCompatActivity {
                 notetoSave.setColor(finalColorToSave);
 
                 notetoSave.setPinned(false);
-                notetoSave.setImagePath(imagepathfinal);
+                notetoSave.setImagePath(imagePath);
+                Log.d("com.noteaiapp.keyboardai", "imagePath existing:"+imagePath);
+                Log.d("com.noteaiapp.keyboardai", "drawingData existing:"+ finalDrawingData);
                 //notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
                 if(this.folderName.length() != 0){
                     notetoSave.setFontFamily(this.folderName);
@@ -1754,7 +1778,7 @@ public class Notepad extends AppCompatActivity {
                     supportFinishAfterTransition();
                 });
             }
-            uploadAndSyncNoteToFirebase(notetoSave,drawingData,filename);
+            uploadAndSyncNoteToFirebase(notetoSave, finalDrawingData,filename);
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
