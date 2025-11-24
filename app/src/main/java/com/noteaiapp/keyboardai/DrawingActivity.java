@@ -37,6 +37,7 @@ import com.google.firebase.storage.StorageReference;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
 import com.noteaiapp.keyboardai.ui.DrawingView;
 import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 
@@ -260,73 +261,79 @@ public class DrawingActivity extends AppCompatActivity {
         if (drawingData != null && drawingData.length > 0) {
             new Thread(() -> {
                 try {
-                    // Decode inside the thread
-                    Bitmap originalBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
-                    if (originalBitmap == null) return;
 
-                    // Downscale large bitmaps to avoid crashes
-                    int maxSize = 2048;
-                    Bitmap drawingBitmap = scaleBitmap(originalBitmap, maxSize);
+                    getNoteFromFirebase(currentNoteUuid, new FirebaseNoteFetchCallback() {
+                        @Override
+                        public void onNoteFetched(Note noteToSync) {
+                            // Decode inside the thread
+                            Bitmap originalBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+                            if (originalBitmap == null) return;
 
-                    String filename = "drawing_" + System.currentTimeMillis() + ".png";
-                    String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
-                    Note noteToSync;
+                            // Downscale large bitmaps to avoid crashes
+                            int maxSize = 2048;
+                            Bitmap drawingBitmap = scaleBitmap(originalBitmap, maxSize);
 
-                    if (imagePath != null) {
-                        if (currentNoteUuid != null && currentNoteUuid.length() != 0) {
-                            noteToSync = noteRepository.getNoteByCloudId(currentNoteUuid);
-                            noteToSync.setImagePath(imagePath);
-                            noteToSync.setDate(receivedDateFromActivities);
-                            noteToSync.setUserFirebaseId(currentNoteUuid);
-                            noteToSync.setFontFamily(this.folderName);
-                            noteRepository.updateNote(noteToSync);
-                        } else {
-                            String noteCloudId = UUID.randomUUID().toString();
-                            noteToSync = new Note();
-                            noteToSync.setTitle("Sketch");
-                            noteToSync.setColor(Color.WHITE);
-                            noteToSync.setDate(receivedDateFromActivities);
-                            noteToSync.setContent("");
-                            noteToSync.setUserFirebaseId(noteCloudId);
-                            noteToSync.setPinned(false);
-                            noteToSync.setImagePath(imagePath);
-                            if (this.folderName.length() != 0)
-                                noteToSync.setFontFamily(this.folderName);
-                            long newId = noteRepository.addNote(noteToSync);
-                            noteToSync.setId(newId);
-                            Log.d("NoteApp", "Saved drawing successfully");
+                            String filename = "drawing_" + System.currentTimeMillis() + ".png";
+                            String imagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
+                            if (imagePath != null) {
+                                if (currentNoteUuid != null && currentNoteUuid.length() != 0) {
+                                    //noteToSync = noteRepository.getNoteByCloudId(currentNoteUuid);
+                                    noteToSync.setImagePath(imagePath);
+                                    noteToSync.setDate(receivedDateFromActivities);
+                                    noteToSync.setUserFirebaseId(currentNoteUuid);
+                                    noteToSync.setFontFamily(folderName);
+                                    noteRepository.updateNote(noteToSync);
+                                } else {
+                                    String noteCloudId = UUID.randomUUID().toString();
+                                    noteToSync = new Note();
+                                    noteToSync.setTitle("Sketch");
+                                    noteToSync.setColor(Color.WHITE);
+                                    noteToSync.setDate(receivedDateFromActivities);
+                                    noteToSync.setContent("");
+                                    noteToSync.setUserFirebaseId(noteCloudId);
+                                    noteToSync.setPinned(false);
+                                    noteToSync.setImagePath(imagePath);
+                                    if (folderName.length() != 0)
+                                        noteToSync.setFontFamily(folderName);
+                                    long newId = noteRepository.addNote(noteToSync);
+                                    noteToSync.setId(newId);
+                                    Log.d("NoteApp", "Saved drawing successfully");
+                                }
+                                uploadAndSyncNoteToFirebase(noteToSync, drawingData, filename, new FirebaseUploadCallback() {
+                                    @Override
+                                    public void onUploadComplete() {
+                                        // This runs AFTER Firebase upload succeeds
+                                        runOnUiThread(() -> {
+                                            isDirty = false;
+                                            Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                                            setResult(RESULT_OK);
+                                            finish();
+                                        });
+                                    }
+                                    @Override
+                                    public void onUploadFailed(Exception e) {
+                                        // Even if upload fails, still close the activity
+                                        // The local save was successful
+                                        runOnUiThread(() -> {
+                                            Log.w(TAG, "Firebase upload failed, but local save succeeded", e);
+                                            isDirty = false;
+                                            Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                                            setResult(RESULT_OK);
+                                            finish();
+                                        });
+                                    }
+                                });
+                            }
                         }
+                        @Override
+                        public void onFetchFailed(Exception e) {
+                            Log.e("NoteApp", "Error processing drawing for save", e);
+                            runOnUiThread(() -> Toast.makeText(DrawingActivity.this, "Error processing drawing", Toast.LENGTH_SHORT).show());
+                        }
+                    });
 
-                        // *** THIS IS THE KEY FIX ***
-                        // Upload to Firebase and WAIT for completion before finishing
-                        uploadAndSyncNoteToFirebase(noteToSync, drawingData, filename, new FirebaseUploadCallback() {
-                            @Override
-                            public void onUploadComplete() {
-                                // This runs AFTER Firebase upload succeeds
-                                runOnUiThread(() -> {
-                                    isDirty = false;
-                                    Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
-                                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-                                    setResult(RESULT_OK);
-                                    finish();
-                                });
-                            }
-
-                            @Override
-                            public void onUploadFailed(Exception e) {
-                                // Even if upload fails, still close the activity
-                                // The local save was successful
-                                runOnUiThread(() -> {
-                                    Log.w(TAG, "Firebase upload failed, but local save succeeded", e);
-                                    isDirty = false;
-                                    Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
-                                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-                                    setResult(RESULT_OK);
-                                    finish();
-                                });
-                            }
-                        });
-                    }
                 } catch (Exception e) {
                     Log.e("NoteApp", "Error saving drawing", e);
                     runOnUiThread(() -> {
@@ -336,6 +343,36 @@ public class DrawingActivity extends AppCompatActivity {
                 }
             }).start();
         }
+    }
+    private void getNoteFromFirebase(String noteCloudId, FirebaseNoteFetchCallback callback) {
+        if (currentUser == null) {
+            callback.onFetchFailed(new Exception("User not logged in."));
+            return;
+        }
+        if (noteCloudId == null || noteCloudId.isEmpty()) {
+            callback.onNoteFetched(null);
+            return;
+        }
+
+        db.collection("users").document(currentUser.getUid())
+                .collection("notes").document(noteCloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Convert the Firestore document into a Note object
+                        Note note = documentSnapshot.toObject(Note.class);
+                        // Return the note via the callback
+                        callback.onNoteFetched(note);
+                    } else {
+                        // The note doesn't exist in Firebase, which is an error state
+                        callback.onNoteFetched(null); // Pass null to indicate not found
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // An error occurred (e.g., no internet)
+                    Log.w(TAG, "Error fetching single note from Firebase", e);
+                    callback.onFetchFailed(e);
+                });
     }
 
     // Add this callback interface at the top of your DrawingActivity class

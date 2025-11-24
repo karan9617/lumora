@@ -82,6 +82,7 @@ import com.noteaiapp.keyboardai.camera.CameraActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.data.WordTokenizer;
+import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
 import com.noteaiapp.keyboardai.processor.WordProcessor;
 import com.noteaiapp.keyboardai.ui.DrawingView;
 import com.noteaiapp.keyboardai.ui.LinkPreviewHelper;
@@ -1058,6 +1059,9 @@ public class Notepad extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 drawingData = null;
+                // set imagesketch.getDrawable() to null
+                imagesketch.setImageDrawable(null);
+                imageCard.setVisibility(View.GONE);
                 imageframelayout.setVisibility(View.GONE);
                 saveNote();
             }
@@ -1733,60 +1737,100 @@ public class Notepad extends AppCompatActivity {
 
         byte[] finalDrawingData = drawingData;
         Executors.newSingleThreadExecutor().execute(() -> {
-            Note notetoSave;
-            if (currentUserUuid != null && currentUserUuid.length() != 0) {
-                // Update existing note with the new imagePath
-                notetoSave = noteRepository.getNoteByCloudId(currentUserUuid);
-                notetoSave.setTitle(title);
-                notetoSave.setContent(content);
-                notetoSave.setDate(receivedDateFromActivities);
-                notetoSave.setOrder(noteOrder);
-                notetoSave.setColor(finalColorToSave);
-
-                notetoSave.setPinned(false);
-                notetoSave.setImagePath(imagePath);
-                Log.d("com.noteaiapp.keyboardai", "imagePath existing:"+imagePath);
-                Log.d("com.noteaiapp.keyboardai", "drawingData existing:"+ finalDrawingData);
-                //notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
-                if(this.folderName.length() != 0){
-                    notetoSave.setFontFamily(this.folderName);
-                }
-                notetoSave.setUserFirebaseId(currentUserUuid);
-                noteRepository.updateNote(notetoSave);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, R.string.note_updated, Toast.LENGTH_SHORT).show();
-                    isNoteModified = false;
-                    supportFinishAfterTransition();
-                });
-            } else {
-                // Create a new note with the new imagePath
-                notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
-                if(this.folderName.length() != 0){
-                    notetoSave.setFontFamily(this.folderName);
-                }
-                String noteCloudId = UUID.randomUUID().toString(); // generate uuid
-                notetoSave.setUserFirebaseId(noteCloudId); // set the unique note id
-                notetoSave.setFontFamily(this.folderName);
-                notetoSave.setDate(receivedDateFromActivities);
-                long newNoteId = noteRepository.addNote(notetoSave); // save to sqlite
-                notetoSave.setId(newNoteId);
-                Log.d(TAG, "note family:"+notetoSave.getFontFamily()+"|folder name |"+this.folderName+"| note setUserFirebaseId:"+notetoSave.getUserFirebaseId());
-
-                runOnUiThread(() -> {
-                    Toast.makeText(this, R.string.note_saved_text, Toast.LENGTH_SHORT).show();
-                    isNoteModified = false;
-                    supportFinishAfterTransition();
-                });
-            }
-            uploadAndSyncNoteToFirebase(notetoSave, finalDrawingData,filename);
-            runOnUiThread(new Runnable() {
+            getNoteFromFirebase(currentUserUuid, new FirebaseNoteFetchCallback() {
                 @Override
-                public void run() {
-                    setUIChangesBasedOnImage();
+                public void onNoteFetched(Note notetoSave) {
+                    if (currentUserUuid != null && currentUserUuid.length() != 0) {
+                        // Update existing note with the new imagePath
+                        //notetoSave = noteRepository.getNoteByCloudId(currentUserUuid);
+                        notetoSave.setTitle(title);
+                        notetoSave.setContent(content);
+                        notetoSave.setDate(receivedDateFromActivities);
+                        notetoSave.setOrder(noteOrder);
+                        notetoSave.setColor(finalColorToSave);
+
+                        notetoSave.setPinned(false);
+                        notetoSave.setImagePath(imagePath);
+                        Log.d("com.noteaiapp.keyboardai", "imagePath existing:"+imagePath);
+                        Log.d("com.noteaiapp.keyboardai", "drawingData existing:"+ finalDrawingData);
+                        //notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
+                        if(folderName.length() != 0){
+                            notetoSave.setFontFamily(folderName);
+                        }
+                        notetoSave.setUserFirebaseId(currentUserUuid);
+                        noteRepository.updateNote(notetoSave);
+                        runOnUiThread(() -> {
+                            Toast.makeText(getApplicationContext(), R.string.note_updated, Toast.LENGTH_SHORT).show();
+                            isNoteModified = false;
+                            supportFinishAfterTransition();
+                        });
+                    } else {
+                        // Create a new note with the new imagePath
+                        notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
+                        if(folderName.length() != 0){
+                            notetoSave.setFontFamily(folderName);
+                        }
+                        String noteCloudId = UUID.randomUUID().toString(); // generate uuid
+                        notetoSave.setUserFirebaseId(noteCloudId); // set the unique note id
+                        notetoSave.setFontFamily(folderName);
+                        notetoSave.setDate(receivedDateFromActivities);
+                        long newNoteId = noteRepository.addNote(notetoSave); // save to sqlite
+                        notetoSave.setId(newNoteId);
+                        Log.d(TAG, "note family:"+notetoSave.getFontFamily()+"|folder name |"+folderName+"| note setUserFirebaseId:"+notetoSave.getUserFirebaseId());
+
+                        runOnUiThread(() -> {
+                            Toast.makeText(getApplicationContext(), R.string.note_saved_text, Toast.LENGTH_SHORT).show();
+                            isNoteModified = false;
+                            supportFinishAfterTransition();
+                        });
+                    }
+                    uploadAndSyncNoteToFirebase(notetoSave, finalDrawingData,filename);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            setUIChangesBasedOnImage();
+                        }
+                    });
+                }
+
+                @Override
+                public void onFetchFailed(Exception e) {
+
                 }
             });
+
         });
 
+    }
+    private void getNoteFromFirebase(String noteCloudId, FirebaseNoteFetchCallback callback) {
+        if (currentUser == null) {
+            callback.onFetchFailed(new Exception("User not logged in."));
+            return;
+        }
+        if (noteCloudId == null || noteCloudId.isEmpty()) {
+            callback.onNoteFetched(null);
+            return;
+        }
+
+        db.collection("users").document(currentUser.getUid())
+                .collection("notes").document(noteCloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Convert the Firestore document into a Note object
+                        Note note = documentSnapshot.toObject(Note.class);
+                        // Return the note via the callback
+                        callback.onNoteFetched(note);
+                    } else {
+                        // The note doesn't exist in Firebase, which is an error state
+                        callback.onNoteFetched(null); // Pass null to indicate not found
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // An error occurred (e.g., no internet)
+                    Log.w(TAG, "Error fetching single note from Firebase", e);
+                    callback.onFetchFailed(e);
+                });
     }
     public void setUIChangesBasedOnImage(){
         if (drawingData != null && drawingData.length > 0) {

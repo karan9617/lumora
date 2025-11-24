@@ -292,7 +292,7 @@ public class LoginActivity extends AppCompatActivity {
     // In LoginActivity.java
     private void checkForLocalNotesMigration() {
         SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes102", false);
+        boolean hasMigrated = prefs.getBoolean("has_migrated_local_notes103", false);
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (!hasMigrated && user != null) {
@@ -312,7 +312,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 if (localNotes.isEmpty()) {
                     // If there's nothing to migrate, set the flag and navigate.
-                    prefs.edit().putBoolean("has_migrated_local_notes102", true).apply();
+                    prefs.edit().putBoolean("has_migrated_local_notes103", true).apply();
                     Log.d(TAG, "No local notes found to migrate.");
                     runOnUiThread(this::navigateToMainApp); // Use method reference for cleanliness
                     return;
@@ -415,7 +415,7 @@ public class LoginActivity extends AppCompatActivity {
     private void checkIfMigrationIsComplete(FirebaseFirestore db, int totalNotes, int[] notesProcessed, SharedPreferences prefs, Set<String> uniqueFolders, String userId) {
         notesProcessed[0]++;
         if (notesProcessed[0] == totalNotes) {
-            prefs.edit().putBoolean("has_migrated_local_notes102", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes103", true).apply();
             // All notes have been processed, now upload the folder list
             Log.d(TAG, "All notes processed. Uploading folder list...");
             if (!uniqueFolders.isEmpty()) {
@@ -428,7 +428,7 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             // CRITICAL: Set the migration flag so this never runs again
-            prefs.edit().putBoolean("has_migrated_local_notes102", true).apply();
+            prefs.edit().putBoolean("has_migrated_local_notes103", true).apply();
             Log.d(TAG, "Full data migration complete.");
             runOnUiThread(() -> showLoading(false)); // Hide loading indicator
         }

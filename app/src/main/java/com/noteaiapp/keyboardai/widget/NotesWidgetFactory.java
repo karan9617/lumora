@@ -110,6 +110,7 @@ public class NotesWidgetFactory implements RemoteViewsService.RemoteViewsFactory
         // Fill in the intent for the individual list item
         Intent fillInIntent = new Intent();
         fillInIntent.putExtra("note_id", note.getId());
+        fillInIntent.putExtra("note_font_size", note.getUserFirebaseId());
         fillInIntent.putExtra("note_title", note.getTitle().split(";")[0]);
         fillInIntent.putExtra("note_content", note.getContent());
         fillInIntent.putExtra("note_date", note.getDate());

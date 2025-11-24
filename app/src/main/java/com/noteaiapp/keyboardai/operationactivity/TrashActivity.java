@@ -159,41 +159,117 @@ public class TrashActivity extends AppCompatActivity {
      * @param position The position of the note to be permanently deleted.
      */
     private void permanentlyDeleteNote(int position) {
+        // 1. First, perform a safety check on the position.
         if (position >= 0 && position < allTrashNotesFromDb.size()) {
-            Note selectedNote = allTrashNotesFromDb.remove(position);
-            notesRepositoryTrash.deleteNote(selectedNote.getId());
+
+            // 2. Remove the note from the adapter's list and notify the UI AT THE SAME TIME.
+            //    This is the safest way to update the RecyclerView.
+            final Note noteToDelete = allTrashNotesFromDb.remove(position);
             adapter.notifyItemRemoved(position);
+            adapter.notifyItemRangeChanged(position, allTrashNotesFromDb.size()); // Helps prevent inconsistency
+
+            // 3. Now, perform the slow database and cloud operations on a background thread.
+            new Thread(() -> {
+                // Delete from the local trash database
+                notesRepositoryTrash.deleteNote(noteToDelete.getId());
+
+                // Also delete the note from Firebase Storage if it has an image
+                if (noteToDelete.getImagePath() != null && !noteToDelete.getImagePath().isEmpty()) {
+                    // You would add your Firebase Storage deletion logic here
+                }
+                Log.d(TAG, "Note with ID " + noteToDelete.getId() + " permanently deleted from local DB.");
+
+            }).start();
+
+            // 4. Show immediate feedback to the user on the UI thread.
+            Toast.makeText(getApplicationContext(), R.string.note_deleted, Toast.LENGTH_SHORT).show();
         }
-        Toast.makeText(getApplicationContext(),R.string.note_deleted,Toast.LENGTH_SHORT).show();
     }
 
     /**
      * Restores all notes from the trash.
      */
-    private void restoreAllNotes() {
-        if(allTrashNotesFromDb.size() > 0){
-            new Thread(() -> {
-                for(Note currentNote: allTrashNotesFromDb){
-                    notesRepository.addNote(currentNote);
-                    notesRepositoryTrash.deleteNote(currentNote.getId());
-                }
-                allTrashNotesFromDb.clear();
-                NotesListActivity.allNotes.addAll(allTrashNotesFromDb);
+    // DELETE your old restoreAllNotes() method.
+// REPLACE it with this new version.
 
-                runOnUiThread(() -> {
-                    adapter.notifyDataSetChanged();
-                });
-
-            }).start();
-            Toast.makeText(getApplicationContext(),R.string.all_notes_restored,Toast.LENGTH_SHORT).show();
-        }
-        else{
-            Toast.makeText(getApplicationContext(),R.string.restore_note_trash,Toast.LENGTH_SHORT).show();
-            Intent i =new Intent(TrashActivity.this, NotesListActivity.class);
-            startActivity(i);
-        }
-
+    private void restoreAllNotes() {if (allTrashNotesFromDb == null || allTrashNotesFromDb.isEmpty()) {
+        Toast.makeText(getApplicationContext(), R.string.restore_note_trash, Toast.LENGTH_SHORT).show();
+        return;
     }
+
+        // Create a copy of the list to iterate over, as we will be modifying the original list.
+        final List<Note> notesToRestore = new ArrayList<>(allTrashNotesFromDb);
+        final int notesCount = notesToRestore.size();
+
+        // Show immediate feedback
+        Toast.makeText(getApplicationContext(), "Restoring " + notesCount + " notes...", Toast.LENGTH_SHORT).show();
+
+        // Perform all slow operations on a background thread.
+        new Thread(() -> {
+
+            for (Note partialNote : notesToRestore) {
+                // 1. For each note, fetch the FULL object from the trash DB to get its content.
+                Note fullNoteToRestore = notesRepositoryTrash.getNoteById(partialNote.getId());
+
+                if (fullNoteToRestore == null) {
+                    // If for some reason the full note can't be found, skip it.
+                    Log.w(TAG, "Could not find full note for ID: " + partialNote.getId() + ". Skipping restore.");
+                    continue;
+                }
+
+                // 2. Perform local DB operations: delete from trash, add to main.
+                notesRepositoryTrash.deleteNote(fullNoteToRestore.getId());
+                notesRepository.addNote(fullNoteToRestore);
+
+                // 3. Handle image re-download for cloud-based images, same as in restoreNote().
+                String imageUrl = fullNoteToRestore.getImagePath();
+                if (imageUrl != null && !imageUrl.isEmpty() && imageUrl.startsWith("http")) {
+                    try {
+                        File localImageFile = Glide.with(getApplicationContext())
+                                .asFile()
+                                .load(imageUrl)
+                                .submit()
+                                .get();
+                        // Update the path to the new local file before saving to Firebase.
+                        fullNoteToRestore.setImagePath(localImageFile.getAbsolutePath());
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to re-download image on restore for note ID: " + fullNoteToRestore.getId(), e);
+                        fullNoteToRestore.setImagePath(""); // Clear path on failure
+                    }
+                }
+
+                // 4. THIS IS THE FIX: Sync the restored note back to Firebase.
+                String noteCloudId = "";
+                if (noteCloudId == null || noteCloudId.isEmpty()) {
+                    // If it's an old note without a cloud ID, generate a new one.
+                    noteCloudId = UUID.randomUUID().toString();
+                    fullNoteToRestore.setUserFirebaseId(noteCloudId);
+                    // Also update the main local DB with this new UUID
+                    notesRepository.updateNote(fullNoteToRestore);
+                } else {
+                    noteCloudId = fullNoteToRestore.getUserFirebaseId();
+                }
+
+                if (currentUser != null) {
+                    // Set the note in the main 'notes' collection in Firestore.
+                    db.collection("users").document(currentUser.getUid()).collection("notes")
+                            .document(noteCloudId)
+                            .set(fullNoteToRestore);
+
+                }
+            } // End of for loop
+
+            // 5. AFTER all background work is done, update the UI on the main thread.
+            runOnUiThread(() -> {
+                // Clear the adapter's list and notify it that the data set is now empty.
+                allTrashNotesFromDb.clear();
+                adapter.notifyDataSetChanged();
+                Toast.makeText(getApplicationContext(), notesCount + " notes restored.", Toast.LENGTH_SHORT).show();
+            });
+
+        }).start();
+    }
+
 
     /**
      * Empties the trash permanently.

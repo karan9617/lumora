@@ -44,6 +44,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -1339,49 +1340,67 @@ public class NotesListActivity extends AppCompatActivity {
 
     // DELETE your old loadNotesFromDatabase method and REPLACE it with this new version.
     private void loadNotesFromDatabase() {
-        syncNotesFromFirebase(new FirestoreSyncCallback() {
-            @Override
-            public void onSyncComplete(List<Note> syncedNotes) {
-                Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
-                Executors.newSingleThreadExecutor().execute(() -> {
+        ProgressBar loadingProgressBar = findViewById(R.id.notes_loading_progressbar);
+        loadingProgressBar.setVisibility(View.VISIBLE);
 
-                    // Prepare to filter notes for UI display
-                    List<Note> filteredNotesForUi = new ArrayList<>();
+        db.collection("folder").document(currentUser.getUid()).get()
+                .addOnSuccessListener(folderDocument -> {
+                            // This runs when the folder list has been successfully downloaded.
+                            globalfolderlist.clear(); // Clear the old cache
+                            if (folderDocument.exists()) {
+                                List<String> folderArray = (List<String>) folderDocument.get("array");
+                                if (folderArray != null) {
+                                    globalfolderlist.addAll(folderArray);
+                                    Log.d(TAG, "Step 1/2: Successfully fetched " + globalfolderlist.size() + " folders.");
+                                }
+                            }
+                            syncNotesFromFirebase(new FirestoreSyncCallback() {
+                                @Override
+                                public void onSyncComplete(List<Note> syncedNotes) {
+                                    processNotes(syncedNotes,loadingProgressBar);
+                                }
+                                @Override
+                                public void onSyncFailed(Exception e) {
+                                    // Handle the failure case
+                                    runOnUiThread(() -> {
+                                        Toast.makeText(NotesListActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
+                                        // Hide the loading indicator.
+                                        // swipeRefreshLayout.setRefreshing(false);
+                                        // loadNotesFromLocalDatabase();
 
-                    // Filter the list of notes we just received
-                    for (Note note : syncedNotes) {
-                        if (note.getFontFamily() == null || note.getFontFamily().isEmpty() ||
-                                (!note.getFontFamily().equalsIgnoreCase("archived") && !globalfolderlist.contains(note.getFontFamily()))) {
-                            filteredNotesForUi.add(note);
-                        }
-                    }
+                                    });
+                                }
+                            });
+                        });
 
-                    // Update the UI on the main thread with the final, filtered list.
-                    runOnUiThread(() -> {
-                        allNotes.clear();
-                        allNotes.addAll(filteredNotesForUi);
-                        allNotesFromDb.clear();
-                        allNotesFromDb.addAll(filteredNotesForUi);
-                        notesList.clear();
-                        notesList.addAll(allNotes);
-                        notesAdapter.notifyDataSetChanged();
-                        updatePinnedSectionVisibility();
-                        Log.d(TAG, "UI has been refreshed with synced notes.");
-                    });
-                });
+    }
+    public void processNotes(List<Note> syncedNotes, ProgressBar loadingProgressBar) {
+        Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
+        Executors.newSingleThreadExecutor().execute(() -> {
+
+            // Prepare to filter notes for UI display
+            List<Note> filteredNotesForUi = new ArrayList<>();
+
+            // Filter the list of notes we just received
+            for (Note note : syncedNotes) {
+                if (note.getFontFamily() == null || note.getFontFamily().isEmpty() ||
+                        (!note.getFontFamily().equalsIgnoreCase("archived") && !globalfolderlist.contains(note.getFontFamily()))) {
+                    filteredNotesForUi.add(note);
+                }
             }
-
-            @Override
-            public void onSyncFailed(Exception e) {
-                // Handle the failure case
-                runOnUiThread(() -> {
-                    Toast.makeText(NotesListActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
-                    // Hide the loading indicator.
-                    // swipeRefreshLayout.setRefreshing(false);
-                   // loadNotesFromLocalDatabase();
-
-                });
-            }
+            // Update the UI on the main thread with the final, filtered list.
+            runOnUiThread(() -> {
+                allNotes.clear();
+                allNotes.addAll(filteredNotesForUi);
+                allNotesFromDb.clear();
+                allNotesFromDb.addAll(filteredNotesForUi);
+                notesList.clear();
+                notesList.addAll(allNotes);
+                notesAdapter.notifyDataSetChanged();
+                updatePinnedSectionVisibility();
+                loadingProgressBar.setVisibility(View.GONE);
+                Log.d(TAG, "UI has been refreshed with synced notes.");
+            });
         });
     }
     private void loadNotesFromLocalDatabase() {
