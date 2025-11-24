@@ -386,7 +386,7 @@ public class Notepad extends AppCompatActivity {
             italicsButton.setOnClickListener((v -> applyStyleToSelection(Typeface.ITALIC)));
         }
         this.folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) == null)? "":(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
-        this.receivedDateFromActivities = (getIntent().getStringExtra(DATE_EXTRA_KEY) == null)? getCurrentDate():(getIntent().getStringExtra(DATE_EXTRA_KEY));
+        this.receivedDateFromActivities = (getIntent().getStringExtra(DATE_EXTRA_KEY) == null)? ((getIntent().getStringExtra("note_date") == null)?getCurrentDate():getIntent().getStringExtra("note_date")):(getIntent().getStringExtra(DATE_EXTRA_KEY));
 
         //Note currentNode = noteRepository.getNoteById(noteId);
         fetchNoteFromFirebase(currentUserUuid);

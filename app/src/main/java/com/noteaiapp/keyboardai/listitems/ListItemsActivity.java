@@ -213,7 +213,7 @@ public class ListItemsActivity extends AppCompatActivity {
             this.receivedDateFromActivities = receivedDate;
         }
         else{
-            receivedDateFromActivities = getCurrentDate();
+            receivedDateFromActivities = (getIntent().getStringExtra("note_date") == null)? getCurrentDate(): getIntent().getStringExtra("note_date");
         }
 
         fetchNoteFromFirebase(currentNoteUuid);

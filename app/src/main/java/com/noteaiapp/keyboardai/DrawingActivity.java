@@ -206,7 +206,7 @@ public class DrawingActivity extends AppCompatActivity {
             this.receivedDateFromActivities = getIntent().getStringExtra(DATE_EXTRA_KEY);
         }
         else{
-            receivedDateFromActivities = getCurrentDate();
+            receivedDateFromActivities = (getIntent().getStringExtra("note_date") == null)? getCurrentDate(): getIntent().getStringExtra("note_date");
         }
         loadDataFromFirebase(currentNoteUuid);
     }

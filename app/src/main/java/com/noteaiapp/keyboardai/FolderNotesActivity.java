@@ -47,6 +47,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.noteaiapp.keyboardai.Models.Label;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
@@ -1505,7 +1506,16 @@ public class FolderNotesActivity extends AppCompatActivity {
                     for (Note note : selectedNotes) {
                         note.setFontFamily("");
                         noteRepository.updateNote(note);
+                        String noteCloudId = note.getUserFirebaseId();
+                        if (currentUser != null && noteCloudId != null && !noteCloudId.isEmpty()) {
+                            db.collection("users").document(currentUser.getUid())
+                                    .collection("notes").document(noteCloudId)
+                                    .set(note, SetOptions.merge()) // Use merge to safely update fields
+                                    .addOnSuccessListener(aVoid -> Log.d("FolderNotes", "Note " + noteCloudId + " removed from folder in Firestore."))
+                                    .addOnFailureListener(e -> Log.w("FolderNotes", "Error removing note " + noteCloudId + " from folder in Firestore.", e));
+                        }
                     }
+
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
                         loadNotesFromDatabase();
