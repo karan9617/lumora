@@ -202,4 +202,9 @@
     <string name="keep_notes_folder">Сохранить заметки, удалить папку</string>
     <string name="folder_deleted_toast">Папка и все её заметки удалены</string>
     <string name="folder_remove_desc">Что вы хотите сделать с заметками в этой папке?</string>
+
+    <string name="login_label">Войти</string>
+    <string name="drawer_logout_text">Выйти</string>
+    <string name="snackbar_text">Вы офлайн. Подключитесь к интернету для бесперебойной синхронизации.</string>
+    <string name="connect">ПОДКЛЮЧИТЬ</string>
 </resources>

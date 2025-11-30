@@ -86,6 +86,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = notes.get(position);
+        holder.noteContent.setText("");
+        holder.noteDrawing.setImageDrawable(null);
+        holder.noteDrawing.setVisibility(View.GONE);
+        holder.noteContent.setVisibility(View.GONE);
+        holder.noteTitle.setVisibility(View.VISIBLE);
+        holder.noteDate.setVisibility(View.VISIBLE);
+        holder.labeltext1.setVisibility(View.VISIBLE);
+        holder.labeltext2.setVisibility(View.VISIBLE);
         String[] titleArr = note.getTitle().split(";");
         if(titleArr.length >= 3){
             holder.labeltext1.setText(titleArr[1]);

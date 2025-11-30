@@ -202,4 +202,9 @@
     <string name="keep_notes_folder">नोट्स रखें, फ़ोल्डर हटाएं</string>
     <string name="folder_deleted_toast">फ़ोल्डर और उसके सभी नोट्स हटा दिए गए</string>
     <string name="folder_remove_desc">आप इस फ़ोल्डर के अंदर मौजूद नोट्स के साथ क्या करना चाहते हैं?</string>
+
+    <string name="login_label">लॉगिन</string>
+    <string name="drawer_logout_text">लॉगआउट</string>
+    <string name="snackbar_text">आप ऑफ़लाइन हैं। निर्बाध सिंक के लिए इंटरनेट से कनेक्ट करें।</string>
+    <string name="connect">कनेक्ट</string>
 </resources>

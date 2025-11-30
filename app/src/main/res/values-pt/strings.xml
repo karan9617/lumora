@@ -202,4 +202,9 @@
     <string name="keep_notes_folder">Manter notas, remover pasta</string>
     <string name="folder_deleted_toast">Pasta e todas as suas notas excluídas</string>
     <string name="folder_remove_desc">O que você gostaria de fazer com as notas dentro desta pasta?</string>
+
+    <string name="login_label">Entrar</string>
+    <string name="drawer_logout_text">Sair</string>
+    <string name="snackbar_text">Você está offline. Conecte-se à internet para uma sincronização perfeita.</string>
+    <string name="connect">CONECTAR</string>
 </resources>

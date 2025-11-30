@@ -201,4 +201,8 @@
     <string name="keep_notes_folder">Conservar notas, eliminar carpeta</string>
     <string name="folder_deleted_toast">Carpeta y todas sus notas eliminadas</string>
     <string name="folder_remove_desc">¿Qué te gustaría hacer con las notas dentro de esta carpeta?</string>
+    <string name="login_label">Iniciar sesión</string>
+    <string name="drawer_logout_text">Cerrar sesión</string>
+    <string name="snackbar_text">Estás sin conexión. Conéctate a Internet para una sincronización sin interrupciones.</string>
+    <string name="connect">CONECTAR</string>
 </resources>

@@ -129,6 +129,7 @@
     <string name="notes_pinned_heading">Pinned</string>
     <string name="all_notes_heading">All Notes</string>
     <string name="option_text_layout">Text</string>
+
     <string name="options_draw_layout">Draw</string>
     <string name="sort_notes_by">Sort notes by</string>
     <string name="sort_by_date">Sort by Date</string>
@@ -224,4 +225,7 @@
     <string name="snackbar_text">You are offline. Connect to internet for seamless sync.</string>
     <string name="connect">CONNECT</string>
     <string name="default_web_client_id">1038951036645-qh5u6b25q4ni8pp0g0u8i6dhii9edcpn.apps.googleusercontent.com</string>
+
+    <string name="option_ai_note_layout">AI Note</string>
+    <string name="mindmaplabel">MindMap</string>
 </resources>

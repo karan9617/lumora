@@ -203,4 +203,9 @@
     <string name="keep_notes_folder">Conserver les notes, supprimer le dossier</string>
     <string name="folder_deleted_toast">Dossier et toutes ses notes supprimés</string>
     <string name="folder_remove_desc">Que souhaitez-vous faire des notes contenues dans ce dossier ?</string>
+
+    <string name="login_label">Connexion</string>
+    <string name="drawer_logout_text">Déconnexion</string>
+    <string name="snackbar_text">Vous êtes hors ligne. Connectez-vous à Internet pour une synchronisation fluide.</string>
+    <string name="connect">CONNECTER</string>
 </resources>

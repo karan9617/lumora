@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_save"
+        android:title="@string/save_menu"
+        android:iconTint="@color/white"
+
+        app:showAsAction="ifRoom"
+        />
+
+    <item
+        android:id="@+id/action_translate"
+        android:title="@string/translate_text"
+        app:showAsAction="never"
+        android:contentDescription="Translate the current note" />
+
+    <item
+        android:id="@+id/action_correct_text"
+        android:title="@string/correct_text_values"
+        android:icon="@drawable/ic_spellcheck"
+        app:showAsAction="ifRoom"
+        android:contentDescription="Correct spelling and grammar" />
+
+
+</menu>

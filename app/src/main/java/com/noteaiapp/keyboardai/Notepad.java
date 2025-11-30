@@ -83,6 +83,7 @@ import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.data.WordTokenizer;
 import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
+import com.noteaiapp.keyboardai.mindmap.MindMapActivity;
 import com.noteaiapp.keyboardai.processor.WordProcessor;
 import com.noteaiapp.keyboardai.ui.DrawingView;
 import com.noteaiapp.keyboardai.ui.LinkPreviewHelper;
@@ -167,7 +168,7 @@ public class Notepad extends AppCompatActivity {
     private int noteOrder;
 
     // API Key for Gemini API, will be provided at runtime
-    private static final String API_KEY = "AIzaSyCes8zNYgUuYAfpKGLGYmG5r0oQW5cx_2o";
+    private static final String API_KEY = "AIzaSyAp7BZ1KN303y1iKQf6G-vkP5Th0dx6bz0";
    // private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
@@ -1314,6 +1315,12 @@ public class Notepad extends AppCompatActivity {
             showLanguageSelectionDialog();
             return true;
         }
+        else if (id == R.id.mindmap) {
+            Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+            intent.putExtra("notecontent",resultText.getText());
+            startActivity(intent);
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
     private void showLanguageSelectionDialog() {
@@ -1420,6 +1427,8 @@ public class Notepad extends AppCompatActivity {
      * Takes the current text from the notepad, sends it to the Gemini API for summarization,
      * and appends the result to the end of the note.
      */
+    // In Notepad.java
+
     private void summarizeNoteWithGemini() {
         String originalText = resultText.getText().toString();
         if (originalText.trim().isEmpty()) {
@@ -1427,19 +1436,25 @@ public class Notepad extends AppCompatActivity {
             return;
         }
 
-        // Reuse the same progress bar
         correctionProgressBar.setVisibility(View.VISIBLE);
 
-        // A clear prompt for summarization
-        String prompt = "Summarize the following text into a few concise bullet points. " +
-                "Do not include any introductory phrases or headings.\n\n" +
+        // --- START: THIS IS THE FIX ---
+        // A more detailed and explicit prompt for better formatting.
+        String prompt = "Please provide a summary of the following text. " +
+                "The summary should be well-structured and easy to read.\n\n" +
+                "Follow these rules precisely:\n" +
+                "1. Start with the heading 'Summary of the Note'.\n" +
+                "2. After the heading, present the summary in clean, natural language paragraphs.\n" +
+                "3. DO NOT use any markdown formatting like asterisks (*), dashes (-), or bullet points.\n" +
+                "4. The entire response should only contain the heading and the summary paragraphs.\n\n" +
                 "Original text:\n\"" + originalText + "\"";
+        // --- END: THIS IS THE FIX ---
 
         Executors.newSingleThreadExecutor().execute(() -> {
             OkHttpClient client = new OkHttpClient();
 
             try {
-                // Create the JSON payload for the Gemini API
+                // Create the JSON payload (This part of your code is correct)
                 JSONObject jsonBody = new JSONObject();
                 JSONObject contents = new JSONObject();
                 JSONArray parts = new JSONArray();
@@ -1451,33 +1466,37 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // You already have this defined
+                        .url(API_URL)
                         .post(body)
                         .build();
 
-                // Synchronous API call
                 okhttp3.Response response = client.newCall(request).execute();
 
                 if (response.isSuccessful() && response.body() != null) {
                     String responseBody = response.body().string();
                     JSONObject jsonResponse = new JSONObject(responseBody);
-                    JSONArray candidates = jsonResponse.getJSONArray("candidates");
-                    JSONObject firstCandidate = candidates.getJSONObject(0);
-                    JSONObject content = firstCandidate.getJSONObject("content");
-                    JSONArray partsArray = content.getJSONArray("parts");
-                    String summary = partsArray.getJSONObject(0).getString("text").trim();
+                    String summary = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
 
-                    // *** This is the key part: Append the summary to the existing text ***
-                    String textToAppend = "\n\n---\n\n**Summarized Note:**\n" + summary;
-                    Spannable summaryHtml = (Spannable) HtmlCompat.fromHtml(textToAppend, HtmlCompat.FROM_HTML_MODE_LEGACY);
+                    // --- START: IMPROVED UI UPDATE ---
+                    // We will append the summary with a clear separator.
+                    final String textToAppend = "\n\n" + summary;
 
                     // Update the UI on the main thread
                     runOnUiThread(() -> {
-                        resultText.append(summaryHtml);
+                        // Use append() for plain text. Using HtmlCompat is not necessary here
+                        // as we instructed the AI to not use HTML or Markdown.
+                        resultText.append(textToAppend);
                         isNoteModified = true; // Mark the note as modified
                         correctionProgressBar.setVisibility(View.GONE);
                         Toast.makeText(Notepad.this, "Summary appended!", Toast.LENGTH_SHORT).show();
                     });
+                    // --- END: IMPROVED UI UPDATE ---
 
                 } else {
                     // Handle API errors on the main thread
@@ -1495,6 +1514,7 @@ public class Notepad extends AppCompatActivity {
             }
         });
     }
+
 
     /**
      * Takes the current text from the notepad, sends it to the Gemini API for correction,

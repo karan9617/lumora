@@ -202,4 +202,9 @@
     <string name="keep_notes_folder">保留笔记，删除文件夹</string>
     <string name="folder_deleted_toast">文件夹及其所有笔记已删除</string>
     <string name="folder_remove_desc">您希望如何处理此文件夹中的笔记？</string>
+
+    <string name="login_label">登录</string>
+    <string name="drawer_logout_text">退出登录</string>
+    <string name="snackbar_text">您已离线。请连接互联网以实现无缝同步。</string>
+    <string name="connect">连接</string>
 </resources>

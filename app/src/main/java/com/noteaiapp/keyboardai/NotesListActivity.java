@@ -68,6 +68,7 @@ import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
+import com.noteaiapp.keyboardai.customnote.GeminiNoteActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
@@ -165,6 +166,7 @@ public class NotesListActivity extends AppCompatActivity {
     private boolean isOptionsVisible = false;
     ImageButton shuffle,themeColor;
     NavigationView navigationView;
+    LinearLayout option_ai_note_layout;
     private enum DriveAction { BACKUP, RESTORE }
 
     private BroadcastReceiver noteUpdateReceiver = new BroadcastReceiver() {
@@ -251,6 +253,7 @@ public class NotesListActivity extends AppCompatActivity {
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
+        option_ai_note_layout = findViewById(R.id.option_ai_note_layout);
         option_list_layout = findViewById(R.id.option_list_layout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -408,6 +411,14 @@ public class NotesListActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(NotesListActivity.this, DrawingActivity.class);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
+        option_ai_note_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(NotesListActivity.this, GeminiNoteActivity.class);
                 startActivity(intent);
                 hideOptions();
             }
