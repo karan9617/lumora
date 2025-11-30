@@ -52,6 +52,12 @@ public class MindMapView extends View {
     private Paint linePaint;
     private Paint collapsedIndicatorPaint;
     private int[] nodeColors;
+    private boolean isPanning = false;
+    // Spacing configuration
+    private static final float NODE_MARGIN = 120f; // Margin around each node
+    private static final float MIN_NODE_WIDTH = 250f; // Minimum node width estimate
+    private static final float MIN_NODE_HEIGHT = 150f; // Minimum node height estimate
+
 
     // Zoom and pan variables
     private Matrix matrix = new Matrix();
@@ -141,12 +147,15 @@ public class MindMapView extends View {
     }
 
     private Node parseNoteToMindMap(String noteText) {
+        if (noteText == null || noteText.trim().isEmpty()) {
+            return new Node("Empty Note");
+        }
+
         String[] lines = noteText.split("\n");
         List<String> nonEmptyLines = new ArrayList<>();
-
         for (String line : lines) {
-            if (!line.trim().isEmpty()) {
-                nonEmptyLines.add(line);
+            if (line.trim().length() > 0) {
+                nonEmptyLines.add(rtrim(line));
             }
         }
 
@@ -154,403 +163,53 @@ public class MindMapView extends View {
             return new Node("Empty Note");
         }
 
-        // Intelligent parsing: detect structure type
-        StructureType structureType = detectStructureType(nonEmptyLines);
-
-        Node root;
-
-        switch (structureType) {
-            case MARKDOWN_HEADERS:
-                root = parseMarkdownHeaders(nonEmptyLines);
-                break;
-            case NUMBERED_LIST:
-                root = parseNumberedList(nonEmptyLines);
-                break;
-            case OUTLINED:
-                root = parseOutlinedStructure(nonEmptyLines);
-                break;
-            case KEY_VALUE:
-                root = parseKeyValuePairs(nonEmptyLines);
-                break;
-            case PARAGRAPHS:
-                root = parseIntoParagraphs(nonEmptyLines);
-                break;
-            case BULLET_INDENT:
-            default:
-                root = parseBulletIndent(nonEmptyLines);
-                break;
-        }
-
-        // Smart summarization: extract key concepts
-        enhanceWithKeywords(root);
-
-        return root;
-    }
-
-    private enum StructureType {
-        MARKDOWN_HEADERS,  // # Header, ## Subheader
-        NUMBERED_LIST,     // 1. 2. 3. or 1.1, 1.2
-        OUTLINED,          // I. A. 1. a.
-        KEY_VALUE,         // Key: Value pairs
-        PARAGRAPHS,        // Plain paragraphs
-        BULLET_INDENT      // Bullet points with indentation
-    }
-
-    private StructureType detectStructureType(List<String> lines) {
-        int headerCount = 0;
-        int numberedCount = 0;
-        int outlineCount = 0;
-        int keyValueCount = 0;
-        int bulletCount = 0;
-
-        for (String line : lines) {
-            String trimmed = line.trim();
-
-            if (trimmed.matches("^#{1,6}\\s+.+")) headerCount++;
-            if (trimmed.matches("^\\d+\\.\\s+.+") || trimmed.matches("^\\d+\\.\\d+.*")) numberedCount++;
-            if (trimmed.matches("^[IVX]+\\.\\s+.+") || trimmed.matches("^[A-Z]\\.\\s+.+")) outlineCount++;
-            if (trimmed.matches("^[^:]+:\\s*.+")) keyValueCount++;
-            if (trimmed.matches("^[-•*]\\s+.+")) bulletCount++;
-        }
-
-        int total = lines.size();
-        if (headerCount > total * 0.3) return StructureType.MARKDOWN_HEADERS;
-        if (numberedCount > total * 0.3) return StructureType.NUMBERED_LIST;
-        if (outlineCount > total * 0.3) return StructureType.OUTLINED;
-        if (keyValueCount > total * 0.4) return StructureType.KEY_VALUE;
-        if (bulletCount > total * 0.3) return StructureType.BULLET_INDENT;
-
-        return StructureType.PARAGRAPHS;
-    }
-
-    private Node parseMarkdownHeaders(List<String> lines) {
-        Node root = new Node(extractTitle(lines.get(0)));
+        Node root = new Node(nonEmptyLines.get(0).trim());
         root.level = 0;
 
         List<Node> stack = new ArrayList<>();
         stack.add(root);
 
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i).trim();
+        for (int i = 1; i < nonEmptyLines.size(); i++) {
+            String line = nonEmptyLines.get(i);
+            int indentLevel = getIndentLevel1(line);
+            String nodeText = line.trim();
 
-            if (line.matches("^#{1,6}\\s+.+")) {
-                int level = 0;
-                while (level < line.length() && line.charAt(level) == '#') level++;
+            Node newNode = new Node(nodeText);
+            newNode.level = indentLevel;
 
-                String text = line.substring(level).trim();
-                Node node = new Node(text);
-                node.level = level;
-
-                // Find correct parent
-                while (stack.size() > level) {
-                    stack.remove(stack.size() - 1);
-                }
-
-                Node parent = stack.get(stack.size() - 1);
-                node.parent = parent;
-                parent.children.add(node);
-                stack.add(node);
-            } else if (!line.isEmpty()) {
-                // Content under current header
-                Node parent = stack.get(stack.size() - 1);
-                if (!parent.children.isEmpty() || line.length() > 50) {
-                    Node contentNode = new Node(truncate(line, 30));
-                    contentNode.level = parent.level + 1;
-                    contentNode.parent = parent;
-                    parent.children.add(contentNode);
-                }
-            }
-        }
-
-        return root;
-    }
-
-    private Node parseNumberedList(List<String> lines) {
-        Node root = new Node(extractTitle(lines.get(0)));
-        root.level = 0;
-
-        Node currentParent = root;
-        int lastLevel = 0;
-        List<Node> stack = new ArrayList<>();
-        stack.add(root);
-
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i).trim();
-
-            if (line.matches("^\\d+(\\.\\d+)*\\.?\\s+.+")) {
-                String[] parts = line.split("\\s+", 2);
-                String number = parts[0];
-                String text = parts.length > 1 ? parts[1] : line;
-
-                int level = (int) number.chars().filter(ch -> ch == '.').count();
-
-                Node node = new Node(text);
-                node.level = level + 1;
-
-                while (stack.size() > level + 1) {
-                    stack.remove(stack.size() - 1);
-                }
-
-                Node parent = stack.get(stack.size() - 1);
-                node.parent = parent;
-                parent.children.add(node);
-                stack.add(node);
-            }
-        }
-
-        return root;
-    }
-
-    private Node parseOutlinedStructure(List<String> lines) {
-        Node root = new Node(extractTitle(lines.get(0)));
-        root.level = 0;
-
-        List<Node> stack = new ArrayList<>();
-        stack.add(root);
-
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i).trim();
-
-            int level = 0;
-            if (line.matches("^[IVX]+\\.\\s+.+")) level = 1;
-            else if (line.matches("^[A-Z]\\.\\s+.+")) level = 2;
-            else if (line.matches("^\\d+\\.\\s+.+")) level = 3;
-            else if (line.matches("^[a-z]\\.\\s+.+")) level = 4;
-            else continue;
-
-            String text = line.replaceFirst("^[IVXa-z0-9]+\\.\\s+", "");
-            Node node = new Node(text);
-            node.level = level;
-
-            while (stack.size() > level) {
+            while (stack.size() > indentLevel) {
                 stack.remove(stack.size() - 1);
             }
 
-            Node parent = stack.get(stack.size() - 1);
-            node.parent = parent;
-            parent.children.add(node);
-            stack.add(node);
-        }
-
-        return root;
-    }
-
-    private Node parseKeyValuePairs(List<String> lines) {
-        Node root = new Node("Key Concepts");
-        root.level = 0;
-
-        Node currentCategory = null;
-
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty()) continue;
-
-            if (trimmed.contains(":")) {
-                String[] parts = trimmed.split(":", 2);
-                String key = parts[0].trim();
-                String value = parts.length > 1 ? parts[1].trim() : "";
-
-                if (!value.isEmpty()) {
-                    Node keyNode = new Node(key);
-                    keyNode.level = 1;
-                    keyNode.parent = root;
-                    root.children.add(keyNode);
-
-                    if (value.length() > 30) {
-                        String[] sentences = value.split("[.!?]");
-                        for (String sentence : sentences) {
-                            if (sentence.trim().length() > 10) {
-                                Node valueNode = new Node(truncate(sentence.trim(), 40));
-                                valueNode.level = 2;
-                                valueNode.parent = keyNode;
-                                keyNode.children.add(valueNode);
-                            }
-                        }
-                    } else {
-                        Node valueNode = new Node(value);
-                        valueNode.level = 2;
-                        valueNode.parent = keyNode;
-                        keyNode.children.add(valueNode);
-                    }
-
-                    currentCategory = keyNode;
-                } else {
-                    currentCategory = new Node(key);
-                    currentCategory.level = 1;
-                    currentCategory.parent = root;
-                    root.children.add(currentCategory);
-                }
-            } else if (currentCategory != null) {
-                Node item = new Node(truncate(trimmed, 40));
-                item.level = 2;
-                item.parent = currentCategory;
-                currentCategory.children.add(item);
-            }
-        }
-
-        return root;
-    }
-
-    private Node parseIntoParagraphs(List<String> lines) {
-        Node root = new Node(extractTitle(lines.get(0)));
-        root.level = 0;
-
-        List<String> paragraphs = new ArrayList<>();
-        StringBuilder currentPara = new StringBuilder();
-
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i).trim();
-
-            if (line.isEmpty() && currentPara.length() > 0) {
-                paragraphs.add(currentPara.toString());
-                currentPara = new StringBuilder();
+            if (!stack.isEmpty()) {
+                Node parent = stack.get(stack.size() - 1);
+                newNode.parent = parent;
+                parent.children.add(newNode);
             } else {
-                if (currentPara.length() > 0) currentPara.append(" ");
-                currentPara.append(line);
+                newNode.parent = root;
+                root.children.add(newNode);
             }
-        }
-        if (currentPara.length() > 0) paragraphs.add(currentPara.toString());
 
-        for (String para : paragraphs) {
-            String[] sentences = para.split("[.!?]+");
-            if (sentences.length > 0) {
-                Node paraNode = new Node(extractKeyPhrase(sentences[0]));
-                paraNode.level = 1;
-                paraNode.parent = root;
-                root.children.add(paraNode);
-
-                for (int i = 1; i < Math.min(sentences.length, 4); i++) {
-                    String sentence = sentences[i].trim();
-                    if (sentence.length() > 15) {
-                        Node sentNode = new Node(truncate(sentence, 35));
-                        sentNode.level = 2;
-                        sentNode.parent = paraNode;
-                        paraNode.children.add(sentNode);
-                    }
-                }
-            }
+            stack.add(newNode);
         }
 
         return root;
     }
 
-    private Node parseBulletIndent(List<String> lines) {
-        Node root = new Node(extractTitle(lines.get(0)));
-        root.level = 0;
-
-        List<NodeWithIndent> nodesWithIndent = new ArrayList<>();
-
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i);
-            int indent = getIndentLevel(line);
-            String text = line.trim().replaceFirst("^[-•*]\\s*", "");
-
-            nodesWithIndent.add(new NodeWithIndent(text, indent));
-        }
-
-        buildHierarchy(root, nodesWithIndent, 0, 0);
-
-        return root;
-    }
-
-    private void enhanceWithKeywords(Node node) {
-        // Extract keywords from node text (simple version)
-        String text = node.text.toLowerCase();
-
-        // Common stop words to filter
-        String[] stopWords = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for"};
-
-        for (String stop : stopWords) {
-            text = text.replaceAll("\\b" + stop + "\\b", "");
-        }
-
-        // Recursively enhance children
-        for (Node child : node.children) {
-            enhanceWithKeywords(child);
-        }
-    }
-
-    private String extractTitle(String firstLine) {
-        String title = firstLine.trim();
-        title = title.replaceFirst("^#{1,6}\\s+", "");
-        title = title.replaceFirst("^[IVX0-9]+\\.\\s+", "");
-        title = title.replaceFirst("^[-•*]\\s+", "");
-
-        if (title.contains(":")) {
-            title = title.split(":")[0];
-        }
-
-        return truncate(title, 50);
-    }
-
-    private String extractKeyPhrase(String sentence) {
-        sentence = sentence.trim();
-        String[] words = sentence.split("\\s+");
-
-        if (words.length <= 5) return sentence;
-
-        // Extract first meaningful phrase (up to 5 words)
-        StringBuilder phrase = new StringBuilder();
-        int count = 0;
-        for (String word : words) {
-            if (count >= 5) break;
-            if (word.length() > 2) {
-                if (phrase.length() > 0) phrase.append(" ");
-                phrase.append(word);
-                count++;
-            }
-        }
-
-        return phrase.toString();
-    }
-
-    private String truncate(String text, int maxLength) {
-        if (text.length() <= maxLength) return text;
-        return text.substring(0, maxLength - 3) + "...";
-    }
-
-    private static class NodeWithIndent {
-        String text;
-        int indent;
-
-        NodeWithIndent(String text, int indent) {
-            this.text = text;
-            this.indent = indent;
-        }
-    }
-
-    private int getIndentLevel(String line) {
+    private int getIndentLevel1(String line) {
         int spaces = 0;
-        for (char c : line.toCharArray()) {
-            if (c == ' ') spaces++;
-            else if (c == '\t') spaces += 4;
-            else break;
+        while (spaces < line.length() && line.charAt(spaces) == ' ') {
+            spaces++;
         }
-        return spaces / 2; // 2 spaces = 1 indent level
+        return (spaces + 1) / 2;
     }
 
-    private int buildHierarchy(Node parent, List<NodeWithIndent> items, int startIndex, int parentIndent) {
-        int i = startIndex;
-        while (i < items.size()) {
-            NodeWithIndent item = items.get(i);
-
-            if (item.indent <= parentIndent) {
-                break; // Return to parent level
-            }
-
-            if (item.indent == parentIndent + 1) {
-                Node child = new Node(item.text);
-                child.level = parent.level + 1;
-                child.parent = parent;
-                parent.children.add(child);
-
-                // Recursively add children
-                i = buildHierarchy(child, items, i + 1, item.indent);
-            } else {
-                i++;
-            }
+    private String rtrim(String s) {
+        int i = s.length() - 1;
+        while (i >= 0 && Character.isWhitespace(s.charAt(i))) {
+            i--;
         }
-        return i;
+        return s.substring(0, i + 1);
     }
 
     private void calculatePositions() {
@@ -576,7 +235,21 @@ public class MindMapView extends View {
                 break;
         }
     }
+    public void zoomIn() {
+        // Zoom in by a fixed factor, e.g., 20%
+        float newScale = scaleFactor * 1.2f;
+        // Apply the new scale, respecting the maximum zoom limit
+        scaleFactor = Math.min(newScale, 3.0f); // 3.0f is the max zoom from your ScaleListener
+        invalidate(); // Redraw the view with the new scale
+    }
 
+    public void zoomOut() {
+        // Zoom out by a fixed factor
+        float newScale = scaleFactor / 1.2f;
+        // Apply the new scale, respecting the minimum zoom limit
+        scaleFactor = Math.max(newScale, 0.2f); // 0.2f is the min zoom from your ScaleListener
+        invalidate(); // Redraw the view with the new scale
+    }
     private void calculateRadialLayout(int width, int height) {
         rootNode.x = width / 2f;
         rootNode.y = height / 2f;
@@ -588,7 +261,27 @@ public class MindMapView extends View {
         if (parent.isCollapsed || parent.children.isEmpty()) return;
 
         int visibleChildren = parent.children.size();
+
+        // Calculate minimum radius needed to prevent overlap'
+
+
+        float nodeMargin = 80f; // Margin around each node
+        float minNodeSize = 250f + nodeMargin; // Approximate node width/height + margin
+        float circumference = 2 * (float)Math.PI * radius;
+        float neededCircumference = visibleChildren * minNodeSize * 1.5f; // 1.5x for spacing
+
+        // Increase radius if nodes would overlap
+        if (neededCircumference > circumference) {
+            radius = neededCircumference / (2 * (float)Math.PI);
+        }
+
         float angleStep = (endAngle - startAngle) / visibleChildren;
+
+        // Ensure minimum angle step to prevent overlap
+        float minAngleStep = 15f; // Minimum degrees between nodes
+        if (angleStep < minAngleStep && visibleChildren > 1) {
+            angleStep = minAngleStep;
+        }
 
         for (int i = 0; i < visibleChildren; i++) {
             Node child = parent.children.get(i);
@@ -598,11 +291,20 @@ public class MindMapView extends View {
             child.x = parent.x + (float)(Math.cos(angleRad) * radius);
             child.y = parent.y + (float)(Math.sin(angleRad) * radius);
 
-            // Recursively position grandchildren
             if (!child.children.isEmpty()) {
                 float childStartAngle = angle - angleStep / 2;
                 float childEndAngle = angle + angleStep / 2;
-                positionChildrenRadial(child, radius * 0.7f, childStartAngle, childEndAngle);
+
+                // Increase radius for each level to spread out more
+                float childRadius = radius * 0.85f;
+
+                // Ensure minimum radius for child level
+                float minChildRadius = 200f + nodeMargin;
+                if (childRadius < minChildRadius) {
+                    childRadius = minChildRadius;
+                }
+
+                positionChildrenRadial(child, childRadius, childStartAngle, childEndAngle);
             }
         }
     }
@@ -611,14 +313,33 @@ public class MindMapView extends View {
         rootNode.x = width / 2f;
         rootNode.y = 150f;
 
-        positionChildrenTree(rootNode, width / 2f, 150f, width, 250f);
+        positionChildrenTree(rootNode, width / 2f, 150f, width * 1.5f, 300f);
     }
 
     private void positionChildrenTree(Node parent, float centerX, float y, float availableWidth, float verticalSpacing) {
         if (parent.isCollapsed || parent.children.isEmpty()) return;
 
         int childCount = parent.children.size();
+
+        // Calculate minimum width needed for all children
+        float nodeMargin = 80f; // Margin around each node
+        float minNodeWidth = 220f + nodeMargin; // Approximate node width with padding + margin
+        float totalMinWidth = childCount * minNodeWidth * 1.3f; // 1.3x for spacing
+
+        // Expand available width if needed
+        if (totalMinWidth > availableWidth) {
+            availableWidth = totalMinWidth;
+        }
+
         float spacing = availableWidth / (childCount + 1);
+
+        // Ensure minimum spacing between nodes
+        float minSpacing = 240f + nodeMargin;
+        if (spacing < minSpacing) {
+            spacing = minSpacing;
+            availableWidth = spacing * (childCount + 1);
+        }
+
         float startX = centerX - (availableWidth / 2) + spacing;
 
         for (int i = 0; i < childCount; i++) {
@@ -626,9 +347,12 @@ public class MindMapView extends View {
             child.x = startX + i * spacing;
             child.y = y + verticalSpacing;
 
-            // Recursively position children
             if (!child.children.isEmpty()) {
-                positionChildrenTree(child, child.x, child.y, spacing * 0.8f, verticalSpacing);
+                // Calculate width needed for this subtree
+                int grandchildCount = countVisibleChildren(child);
+                float subtreeWidth = spacing * Math.max(1.5f, grandchildCount * 0.8f);
+
+                positionChildrenTree(child, child.x, child.y, subtreeWidth, verticalSpacing);
             }
         }
     }
@@ -644,19 +368,45 @@ public class MindMapView extends View {
         if (parent.isCollapsed || parent.children.isEmpty()) return;
 
         int childCount = parent.children.size();
-        float totalHeight = childCount * 150f;
+
+        // Calculate minimum vertical spacing needed
+        float nodeMargin = 80f; // Margin around each node
+        float minNodeHeight = 120f + nodeMargin; // Approximate node height with padding + margin
+        float totalMinHeight = childCount * minNodeHeight * 1.5f; // 1.5x for spacing
+
+        float verticalSpacing = 180f + nodeMargin; // Base spacing between nodes + margin
+        float totalHeight = childCount * verticalSpacing;
+
+        // Expand spacing if nodes would overlap
+        if (totalMinHeight > totalHeight) {
+            verticalSpacing = totalMinHeight / childCount;
+            totalHeight = totalMinHeight;
+        }
+
         float startY = centerY - totalHeight / 2;
 
         for (int i = 0; i < childCount; i++) {
             Node child = parent.children.get(i);
             child.x = x + horizontalSpacing;
-            child.y = startY + i * 150f + 75f;
+            child.y = startY + i * verticalSpacing + verticalSpacing / 2;
 
-            // Recursively position children
             if (!child.children.isEmpty()) {
+                // Calculate vertical space needed for this subtree
+                int subtreeSize = countVisibleChildren(child);
+                float subtreeHeight = Math.max(verticalSpacing, subtreeSize * minNodeHeight);
+
                 positionChildrenHierarchical(child, child.x, child.y, horizontalSpacing);
             }
         }
+    }
+    private int countVisibleChildren(Node node) {
+        if (node.isCollapsed || node.children.isEmpty()) return 0;
+
+        int count = node.children.size();
+        for (Node child : node.children) {
+            count += countVisibleChildren(child);
+        }
+        return count;
     }
 
     @Override
@@ -671,18 +421,13 @@ public class MindMapView extends View {
 
         if (rootNode == null) return;
 
-        // Save canvas state
         canvas.save();
-
-        // Apply transformations - simplified to only translate and scale
         canvas.translate(translateX, translateY);
         canvas.scale(scaleFactor, scaleFactor);
 
-        // Draw connections and nodes
         drawConnections(canvas, rootNode);
         drawNodeRecursive(canvas, rootNode);
 
-        // Restore canvas state
         canvas.restore();
     }
 
@@ -692,7 +437,6 @@ public class MindMapView extends View {
         for (Node child : node.children) {
             linePaint.setColor(nodeColors[child.level % nodeColors.length]);
 
-            // Draw curved connection
             Path path = new Path();
             path.moveTo(node.x, node.y);
 
@@ -704,7 +448,6 @@ public class MindMapView extends View {
             path.cubicTo(ctrlX1, ctrlY1, ctrlX2, ctrlY2, child.x, child.y);
             canvas.drawPath(path, linePaint);
 
-            // Recursively draw child connections
             drawConnections(canvas, child);
         }
     }
@@ -722,8 +465,7 @@ public class MindMapView extends View {
     private void drawNode(Canvas canvas, Node node) {
         String displayText = node.text;
 
-        // Multi-line text wrapping
-        List<String> lines = wrapText(displayText, 300f); // Max width for text
+        List<String> lines = wrapText(displayText, 300f);
 
         float maxLineWidth = 0;
         for (String line : lines) {
@@ -732,11 +474,11 @@ public class MindMapView extends View {
         }
 
         Paint.FontMetrics fm = textPaint.getFontMetrics();
-        float lineHeight = fm.descent - fm.ascent + 10f; // Add line spacing
+        float lineHeight = fm.descent - fm.ascent + 10f;
         float totalTextHeight = lineHeight * lines.size();
 
         float padding = 40f;
-        float rectWidth = Math.max(maxLineWidth + padding * 2, 200f); // Min width 200
+        float rectWidth = Math.max(maxLineWidth + padding * 2, 200f);
         float rectHeight = totalTextHeight + padding * 2;
 
         node.bounds.set(
@@ -749,7 +491,6 @@ public class MindMapView extends View {
         paint.setColor(nodeColors[node.level % nodeColors.length]);
         canvas.drawRoundRect(node.bounds, 25f, 25f, paint);
 
-        // Draw multi-line text
         float textStartY = node.y - (totalTextHeight / 2) - fm.ascent;
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
@@ -759,7 +500,6 @@ public class MindMapView extends View {
             canvas.drawText(line, textX, textY, textPaint);
         }
 
-        // Draw collapse/expand indicator
         if (!node.children.isEmpty()) {
             String indicator = node.isCollapsed ? "+" : "−";
             float indicatorX = node.bounds.right - 50f;
@@ -791,7 +531,6 @@ public class MindMapView extends View {
             lines.add(currentLine.toString());
         }
 
-        // Limit to 4 lines max with ellipsis
         if (lines.size() > 4) {
             lines = lines.subList(0, 4);
             String lastLine = lines.get(3);
@@ -805,19 +544,18 @@ public class MindMapView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        // Let scale detector handle pinch gestures
         scaleDetector.onTouchEvent(event);
 
-        // Handle node dragging
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 handleTouchDown(event);
+                isPanning = false;
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
-                // Multi-touch detected, stop node dragging
                 isDraggingNode = false;
                 draggedNode = null;
+                isPanning = false;
                 break;
 
             case MotionEvent.ACTION_MOVE:
@@ -825,23 +563,29 @@ public class MindMapView extends View {
                     handleNodeDrag(event);
                     return true;
                 } else if (event.getPointerCount() == 1) {
-                    // Single finger pan
+                    float dx = Math.abs(event.getX() - dragStartX * scaleFactor - translateX);
+                    float dy = Math.abs(event.getY() - dragStartY * scaleFactor - translateY);
+                    if (dx > 10 || dy > 10) {
+                        isPanning = true;
+                    }
                     gestureDetector.onTouchEvent(event);
                 }
                 break;
 
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
-                if (!isDraggingNode) {
+                if (!isDraggingNode && !isPanning) {
                     handleNodeClick(event);
                 }
                 isDraggingNode = false;
                 draggedNode = null;
+                isPanning = false;
                 break;
 
             case MotionEvent.ACTION_CANCEL:
                 isDraggingNode = false;
                 draggedNode = null;
+                isPanning = false;
                 break;
         }
 
@@ -851,37 +595,33 @@ public class MindMapView extends View {
     private void handleTouchDown(MotionEvent event) {
         if (rootNode == null) return;
 
-        // Transform touch coordinates to canvas coordinates
-        float[] points = new float[]{event.getX(), event.getY()};
-        Matrix inverse = new Matrix();
-        inverse.postTranslate(-translateX, -translateY);
-        inverse.postScale(1/scaleFactor, 1/scaleFactor);
-        inverse.mapPoints(points);
+        float touchX = event.getX();
+        float touchY = event.getY();
 
-        dragStartX = points[0];
-        dragStartY = points[1];
+        float canvasX = (touchX - translateX) / scaleFactor;
+        float canvasY = (touchY - translateY) / scaleFactor;
 
-        // Check if user touched a node
-        Node touchedNode = findNodeAt(rootNode, points[0], points[1]);
+        dragStartX = canvasX;
+        dragStartY = canvasY;
+
+        Node touchedNode = findNodeAt(rootNode, canvasX, canvasY);
         if (touchedNode != null) {
             draggedNode = touchedNode;
-            nodeDragOffsetX = touchedNode.x - points[0];
-            nodeDragOffsetY = touchedNode.y - points[1];
+            nodeDragOffsetX = touchedNode.x - canvasX;
+            nodeDragOffsetY = touchedNode.y - canvasY;
             isDraggingNode = true;
         }
     }
 
     private void handleNodeDrag(MotionEvent event) {
-        // Transform touch coordinates to canvas coordinates
-        float[] points = new float[]{event.getX(), event.getY()};
-        Matrix inverse = new Matrix();
-        inverse.postTranslate(-translateX, -translateY);
-        inverse.postScale(1/scaleFactor, 1/scaleFactor);
-        inverse.mapPoints(points);
+        float touchX = event.getX();
+        float touchY = event.getY();
 
-        // Update dragged node position
-        draggedNode.x = points[0] + nodeDragOffsetX;
-        draggedNode.y = points[1] + nodeDragOffsetY;
+        float canvasX = (touchX - translateX) / scaleFactor;
+        float canvasY = (touchY - translateY) / scaleFactor;
+
+        draggedNode.x = canvasX + nodeDragOffsetX;
+        draggedNode.y = canvasY + nodeDragOffsetY;
 
         invalidate();
     }
@@ -889,16 +629,19 @@ public class MindMapView extends View {
     private void handleNodeClick(MotionEvent event) {
         if (rootNode == null) return;
 
-        // Transform touch coordinates to canvas coordinates
-        float[] points = new float[]{event.getX(), event.getY()};
-        Matrix inverse = new Matrix();
-        inverse.postTranslate(-translateX, -translateY);
-        inverse.postScale(1/scaleFactor, 1/scaleFactor);
-        inverse.mapPoints(points);
+        float touchX = event.getX();
+        float touchY = event.getY();
 
-        Node clickedNode = findNodeAt(rootNode, points[0], points[1]);
+        float canvasX = (touchX - translateX) / scaleFactor;
+        float canvasY = (touchY - translateY) / scaleFactor;
+
+        Node clickedNode = findNodeAt(rootNode, canvasX, canvasY);
         if (clickedNode != null && !clickedNode.children.isEmpty()) {
             clickedNode.isCollapsed = !clickedNode.isCollapsed;
+
+            // Recalculate positions after collapse/expand
+            calculatePositions();
+
             invalidate();
         }
     }
@@ -921,7 +664,6 @@ public class MindMapView extends View {
     public Bitmap exportToImage() {
         if (rootNode == null) return null;
 
-        // Create a large bitmap to capture the entire mindmap
         int width = getWidth() > 0 ? getWidth() : 1080;
         int height = getHeight() > 0 ? getHeight() : 1920;
 
@@ -929,7 +671,6 @@ public class MindMapView extends View {
         Canvas canvas = new Canvas(bitmap);
         canvas.drawColor(Color.WHITE);
 
-        // Temporarily reset transformations for export
         float oldScale = scaleFactor;
         float oldTransX = translateX;
         float oldTransY = translateY;
@@ -940,7 +681,6 @@ public class MindMapView extends View {
 
         draw(canvas);
 
-        // Restore transformations
         scaleFactor = oldScale;
         translateX = oldTransX;
         translateY = oldTransY;
@@ -949,11 +689,8 @@ public class MindMapView extends View {
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
-        private float lastScaleFactor = 1.0f;
-
         @Override
         public boolean onScaleBegin(ScaleGestureDetector detector) {
-            lastScaleFactor = scaleFactor;
             focusX = detector.getFocusX();
             focusY = detector.getFocusY();
             return true;
@@ -965,7 +702,6 @@ public class MindMapView extends View {
             scaleFactor *= detector.getScaleFactor();
             scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 5.0f));
 
-            // Adjust translation to zoom towards focus point
             float scaleChange = scaleFactor / oldScale;
             translateX = focusX + (translateX - focusX) * scaleChange;
             translateY = focusY + (translateY - focusY) * scaleChange;
@@ -978,7 +714,6 @@ public class MindMapView extends View {
     private class GestureListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-            // Only pan if not dragging a node
             if (!isDraggingNode) {
                 translateX -= distanceX;
                 translateY -= distanceY;
@@ -993,180 +728,97 @@ public class MindMapView extends View {
         }
     }
 
-    // Helper method to enable/disable node dragging
-    public void setNodeDraggingEnabled(boolean enabled) {
-        // This allows you to toggle between dragging mode and pan mode
-        // For now, both are always enabled with smart detection
-    }
-
-    // Helper method to reset all node positions to original layout
     public void resetNodePositions() {
         calculatePositions();
         invalidate();
     }
 
-    // Helper method to get current node position (useful for saving state)
-    public void saveNodePositions() {
-        // You can implement this to save positions to SharedPreferences
-        // or return a Map<String, PointF> of node positions
+    public void centerMindMap() {
+        if (rootNode == null) return;
+
+        RectF bounds = calculateBoundingBox(rootNode);
+
+        if (bounds.isEmpty()) return;
+
+        int viewWidth = getWidth();
+        int viewHeight = getHeight();
+
+        if (viewWidth == 0 || viewHeight == 0) return;
+
+        float mindMapCenterX = bounds.centerX();
+        float mindMapCenterY = bounds.centerY();
+
+        float padding = 100f;
+        float scaleX = (viewWidth - padding * 2) / bounds.width();
+        float scaleY = (viewHeight - padding * 2) / bounds.height();
+
+        scaleFactor = Math.min(scaleX, scaleY);
+        scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 2.0f));
+
+        translateX = viewWidth / 2f - mindMapCenterX * scaleFactor;
+        translateY = viewHeight / 2f - mindMapCenterY * scaleFactor;
+
+        invalidate();
     }
 
-    // Helper method to restore node positions
-    public void restoreNodePositions() {
-        // Implement this to restore saved positions
-    }
-}
+    public void centerMindMapAnimated() {
+        if (rootNode == null) return;
 
-// Example Activity Implementation
-/*
-import android.graphics.Bitmap;
-import android.os.Bundle;
-import android.os.Environment;
-import android.widget.Button;
-import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+        RectF bounds = calculateBoundingBox(rootNode);
 
-public class MainActivity extends AppCompatActivity {
+        if (bounds.isEmpty()) return;
 
-    private MindMapView mindMapView;
-    private String noteContent = "Project Planning\n" +
-            "  Development\n" +
-            "    Frontend\n" +
-            "      React components\n" +
-            "      State management\n" +
-            "    Backend\n" +
-            "      API design\n" +
-            "      Database schema\n" +
-            "  Design\n" +
-            "    UI mockups\n" +
-            "    User flow\n" +
-            "  Testing\n" +
-            "    Unit tests\n" +
-            "    Integration tests";
+        int viewWidth = getWidth();
+        int viewHeight = getHeight();
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        if (viewWidth == 0 || viewHeight == 0) return;
 
-        mindMapView = findViewById(R.id.mindMapView);
-        Button btnGenerate = findViewById(R.id.btnGenerateMindMap);
-        Button btnRadial = findViewById(R.id.btnRadialLayout);
-        Button btnTree = findViewById(R.id.btnTreeLayout);
-        Button btnHierarchical = findViewById(R.id.btnHierarchicalLayout);
-        Button btnExport = findViewById(R.id.btnExport);
+        float mindMapCenterX = bounds.centerX();
+        float mindMapCenterY = bounds.centerY();
 
-        btnGenerate.setOnClickListener(v -> {
-            mindMapView.setNote(noteContent);
-            Toast.makeText(this, "Tap nodes to expand/collapse", Toast.LENGTH_SHORT).show();
+        float padding = 100f;
+        float scaleX = (viewWidth - padding * 2) / bounds.width();
+        float scaleY = (viewHeight - padding * 2) / bounds.height();
+
+        float targetScale = Math.min(scaleX, scaleY);
+        targetScale = Math.max(0.1f, Math.min(targetScale, 2.0f));
+
+        float targetTranslateX = viewWidth / 2f - mindMapCenterX * targetScale;
+        float targetTranslateY = viewHeight / 2f - mindMapCenterY * targetScale;
+
+        android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(0f, 1f);
+        animator.setDuration(300);
+
+        final float startScale = scaleFactor;
+        final float startTransX = translateX;
+        final float startTransY = translateY;
+
+        float finalTargetScale = targetScale;
+        animator.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(android.animation.ValueAnimator animation) {
+                float progress = (float) animation.getAnimatedValue();
+                scaleFactor = startScale + (finalTargetScale - startScale) * progress;
+                translateX = startTransX + (targetTranslateX - startTransX) * progress;
+                translateY = startTransY + (targetTranslateY - startTransY) * progress;
+                invalidate();
+            }
         });
 
-        btnRadial.setOnClickListener(v -> {
-            mindMapView.setLayoutType(MindMapView.LayoutType.RADIAL);
-        });
-
-        btnTree.setOnClickListener(v -> {
-            mindMapView.setLayoutType(MindMapView.LayoutType.TREE);
-        });
-
-        btnHierarchical.setOnClickListener(v -> {
-            mindMapView.setLayoutType(MindMapView.LayoutType.HIERARCHICAL);
-        });
-
-        btnExport.setOnClickListener(v -> {
-            exportMindMap();
-        });
+        animator.start();
     }
 
-    private void exportMindMap() {
-        Bitmap bitmap = mindMapView.exportToImage();
-        if (bitmap != null) {
-            try {
-                File file = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES),
-                    "mindmap_" + System.currentTimeMillis() + ".png");
-                FileOutputStream fos = new FileOutputStream(file);
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                fos.close();
-                Toast.makeText(this, "Saved to: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
-            } catch (IOException e) {
-                Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+    private RectF calculateBoundingBox(Node node) {
+        RectF bounds = new RectF(node.x, node.y, node.x, node.y);
+
+        if (!node.isCollapsed) {
+            for (Node child : node.children) {
+                RectF childBounds = calculateBoundingBox(child);
+                bounds.union(childBounds);
             }
         }
+
+        bounds.inset(-150f, -100f);
+        return bounds;
     }
 }
-*/
-
-// Layout XML
-/*
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="8dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/btnGenerateMindMap"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Generate"
-            android:layout_margin="4dp"/>
-
-        <Button
-            android:id="@+id/btnExport"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Export"
-            android:layout_margin="4dp"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/btnRadialLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Radial"
-            android:layout_margin="4dp"/>
-
-        <Button
-            android:id="@+id/btnTreeLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Tree"
-            android:layout_margin="4dp"/>
-
-        <Button
-            android:id="@+id/btnHierarchicalLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Hierarchical"
-            android:layout_margin="4dp"/>
-    </LinearLayout>
-
-    <com.yourpackage.MindMapView
-        android:id="@+id/mindMapView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_margin="4dp"
-        android:background="#F5F5F5"/>
-
-</LinearLayout>
-*/
