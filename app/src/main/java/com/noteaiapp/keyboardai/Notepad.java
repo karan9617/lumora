@@ -83,6 +83,8 @@ import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.data.WordTokenizer;
 import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
+import com.noteaiapp.keyboardai.interfaces.GeminiAPIKey;
+import com.noteaiapp.keyboardai.interfaces.GeminiMindMapCallback;
 import com.noteaiapp.keyboardai.mindmap.MindMapActivity;
 import com.noteaiapp.keyboardai.processor.WordProcessor;
 import com.noteaiapp.keyboardai.ui.DrawingView;
@@ -168,9 +170,8 @@ public class Notepad extends AppCompatActivity {
     private int noteOrder;
 
     // API Key for Gemini API, will be provided at runtime
-    private static final String API_KEY = "AIzaSyAp7BZ1KN303y1iKQf6G-vkP5Th0dx6bz0";
-   // private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
-   private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
+     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
+   //private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
@@ -1316,12 +1317,120 @@ public class Notepad extends AppCompatActivity {
             return true;
         }
         else if (id == R.id.mindmap) {
-            Intent intent = new Intent(Notepad.this, MindMapActivity.class);
-            intent.putExtra("notecontent",resultText.getText());
-            startActivity(intent);
+
+            String noteContent = resultText.getText().toString();
+
+            // 1. Show a loading indicator to the user
+            correctionProgressBar.setVisibility(View.VISIBLE);
+            Toast.makeText(this, "Generating smart mind map...", Toast.LENGTH_SHORT).show();
+
+            // 2. Call the new Gemini method
+            generateMindMapStructureWithGemini(noteContent, new GeminiMindMapCallback() {
+                @Override
+                public void onStructureGenerated(String structuredText) {
+                    // This runs on success
+
+                    // 3. Hide the loading indicator
+                    correctionProgressBar.setVisibility(View.GONE);
+
+                    // 4. Create the intent and launch MindMapActivity with the NEW structured text
+                    Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                    intent.putExtra("notecontent", structuredText); // Pass the AI-generated structure
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onGenerationFailed(Exception e) {
+                    // This runs on failure
+
+                    // 3. Hide the loading indicator
+                    correctionProgressBar.setVisibility(View.GONE);
+
+                    // 4. Inform the user and fall back to the old behavior
+                    Log.e(TAG, "Gemini mind map generation failed.", e);
+                    Toast.makeText(Notepad.this, "AI analysis failed. Showing basic map.", Toast.LENGTH_LONG).show();
+
+                    // Fallback: Launch with the original raw text
+                    Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                    intent.putExtra("notecontent", resultText.getText().toString());
+                    startActivity(intent);
+                }
+            });
+            // --- END: THIS IS THE FIX ---
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    // 2. Add the new method to call the Gemini API
+    private void generateMindMapStructureWithGemini(String noteContent, GeminiMindMapCallback callback) {
+        if (noteContent == null || noteContent.trim().isEmpty()) {
+            callback.onGenerationFailed(new Exception("Note is empty."));
+            return;
+        }
+
+        // --- Create a powerful, specific prompt for the AI ---
+        String prompt = "You are a helpful assistant that specializes in creating structured mind maps from unstructured text.\n" +
+                "Analyze the following note and generate a hierarchical mind map structure for it.\n\n" +
+                "RULES:\n" +
+                "1. Identify the central, root topic of the note. This will be the main node.\n" +
+                "2. Identify the main sub-topics and their children. Add more contextual parent nodes if it makes the hierarchy more logical (e.g., if the note lists vegetables, you can create a 'Types of Vegetables' node).\n" +
+                "3. Your output MUST be a simple indented list. Use two spaces for each level of indentation.\n" +
+                "4. Do NOT use any bullet points, dashes, asterisks, numbers (like 1. or 1.1), or any other characters before the text.\n\n" +
+                "EXAMPLE OUTPUT FORMAT:\n" +
+                "Root Topic\n" +
+                "  Sub-Topic 1\n" +
+                "    Detail A\n" +
+                "    Detail B\n" +
+                "  Sub-Topic 2\n\n" +
+                "Here is the note text:\n\n\"" + noteContent + "\"";
+
+
+        // Use a background thread for the network call
+        Executors.newSingleThreadExecutor().execute(() -> {
+            OkHttpClient client = new OkHttpClient();
+            try {
+                // NOTE: Ensure your API_URL constant is defined in this class.
+                // It should look something like: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=YOUR_API_KEY"
+
+                // Create the JSON payload
+                JSONObject jsonBody = new JSONObject();
+                JSONObject contents = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", prompt);
+                parts.put(textPart);
+                contents.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(contents));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+                Request request = new Request.Builder()
+                        .url(API_URL+ GeminiAPIKey.API_KEY)
+                        .post(body)
+                        .build();
+
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String structuredText = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
+
+                    // Use the callback to return the result to the UI thread
+                    runOnUiThread(() -> callback.onStructureGenerated(structuredText));
+                } else {
+                    throw new IOException("API call failed with code: " + response.code());
+                }
+            } catch (Exception e) {
+                runOnUiThread(() -> callback.onGenerationFailed(e));
+            }
+        });
     }
     private void showLanguageSelectionDialog() {
         final String[] languages = {getApplicationContext().getString(R.string.spanish_text),
@@ -1375,7 +1484,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // Your existing API_URL
+                        .url(API_URL+GeminiAPIKey.API_KEY) // Your existing API_URL
                         .post(body)
                         .build();
 
@@ -1466,7 +1575,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL)
+                        .url(API_URL+GeminiAPIKey.API_KEY)
                         .post(body)
                         .build();
 
@@ -1551,7 +1660,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // You already have this defined
+                        .url(API_URL+GeminiAPIKey.API_KEY) // You already have this defined
                         .post(body)
                         .build();
 
@@ -2011,7 +2120,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL)
+                        .url(API_URL+GeminiAPIKey.API_KEY)
                         .post(body)
                         .build();
 

@@ -85,6 +85,7 @@ import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.data.WordTokenizer;
 import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
+import com.noteaiapp.keyboardai.interfaces.GeminiAPIKey;
 import com.noteaiapp.keyboardai.processor.WordProcessor;
 import com.noteaiapp.keyboardai.ui.DrawingView;
 import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
@@ -165,9 +166,9 @@ public class ImageNoteActivity extends AppCompatActivity {
     private int noteOrder;
 
     // API Key for Gemini API, will be provided at runtime
-    private static final String API_KEY = "AIzaSyCes8zNYgUuYAfpKGLGYmG5r0oQW5cx_2o";
+
     // private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
-    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
+    private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=";
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
@@ -1353,7 +1354,7 @@ public class ImageNoteActivity extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // Your existing API_URL
+                        .url(API_URL+GeminiAPIKey.API_KEY) // Your existing API_URL
                         .post(body)
                         .build();
 
@@ -1436,7 +1437,7 @@ public class ImageNoteActivity extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // You already have this defined
+                        .url(API_URL+GeminiAPIKey.API_KEY) // You already have this defined
                         .post(body)
                         .build();
 
@@ -1516,7 +1517,7 @@ public class ImageNoteActivity extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // You already have this defined
+                        .url(API_URL+GeminiAPIKey.API_KEY) // You already have this defined
                         .post(body)
                         .build();
 
@@ -2027,7 +2028,7 @@ public class ImageNoteActivity extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL)
+                        .url(API_URL+GeminiAPIKey.API_KEY)
                         .post(body)
                         .build();
 
