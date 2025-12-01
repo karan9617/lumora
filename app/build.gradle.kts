@@ -12,7 +12,7 @@ android {
         applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
         targetSdk = 35
-        versionCode = 20
+        versionCode = 21
         versionName = "1.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -103,4 +103,6 @@ dependencies {
 
     // 2. For Cloud Storage (to store images)
     implementation("com.google.firebase:firebase-storage")
+    implementation("com.itextpdf:kernel:7.2.5")
+    implementation("com.itextpdf:layout:7.2.5")
 }

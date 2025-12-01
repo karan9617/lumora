@@ -27,10 +27,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.noteaiapp.keyboardai" />
+                  <option name="mobileSdkAppId" value="1:1038951036645:android:00f3b4005d53f7cc8c060c" />
+                  <option name="projectId" value="notesai-8474f" />
+                  <option name="projectNumber" value="1038951036645" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

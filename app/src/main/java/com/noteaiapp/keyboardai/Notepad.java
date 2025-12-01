@@ -12,6 +12,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.pdf.PdfDocument;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -77,6 +78,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.camera.CameraActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
@@ -91,6 +93,7 @@ import com.noteaiapp.keyboardai.ui.DrawingView;
 import com.noteaiapp.keyboardai.ui.LinkPreviewHelper;
 import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.noteaiapp.keyboardai.interfaces.PdfTextExtractionCallback;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -111,6 +114,12 @@ import okhttp3.RequestBody;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+
+import java.io.InputStream;
+import android.text.style.URLSpan;
+import android.text.Editable;
+import android.net.Uri;
 
 public class Notepad extends AppCompatActivity {
 
@@ -660,7 +669,32 @@ public class Notepad extends AppCompatActivity {
             return index;
         }
     }
-
+/*
+    private void extractTextFromPdf(Uri pdfUri, PdfTextExtractionCallback callback) {
+        new Thread(() -> {
+            try (
+                    // Use ContentResolver to open an InputStream from the URI
+                    InputStream inputStream = getContentResolver().openInputStream(pdfUri);
+                    // Create a PdfReader from the stream
+                    PdfReader reader = new PdfReader(inputStream);
+                    // Create a PdfDocument
+                    PdfDocument pdfDocument = new PdfDocument(reader)
+            ) {
+                StringBuilder extractedText = new StringBuilder();
+                // Loop through all pages in the PDF
+                for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++) {
+                    // Use PdfTextExtractor to get the text from each page
+                    String pageText = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(i));
+                    extractedText.append(pageText).append("\n"); // Append page text with a newline
+                }
+                // Return the result on the UI thread
+                runOnUiThread(() -> callback.onTextExtracted(extractedText.toString()));
+            } catch (Exception e) {
+                // Handle any errors on the UI thread
+                runOnUiThread(() -> callback.onExtractionFailed(e));
+            }
+        }).start();
+    }*/
     private void insertPdfLink(Uri uri, String fileName) {
         // The display text will be the file name, possibly prefixed with a PDF icon/label
         String linkText = "[PDF] " + fileName;
@@ -1317,8 +1351,8 @@ public class Notepad extends AppCompatActivity {
             return true;
         }
         else if (id == R.id.mindmap) {
-
-            String noteContent = resultText.getText().toString();
+// Show a loading indicator immediately
+            /*String noteContent = resultText.getText().toString();
 
             // 1. Show a loading indicator to the user
             correctionProgressBar.setVisibility(View.VISIBLE);
@@ -1356,12 +1390,221 @@ public class Notepad extends AppCompatActivity {
                     startActivity(intent);
                 }
             });
-            // --- END: THIS IS THE FIX ---
+            // --- END: THIS IS THE FIX ---*/
+            String noteContent = resultText.getText().toString();
+
+            // 1. Check if there are any PDF links in the note
+            List<Uri> pdfUris = extractPdfLinksFromNote();
+
+            if (pdfUris.isEmpty()) {
+                // No PDFs found, proceed with normal mind map generation
+                generateMindMapWithContent(noteContent);
+            } else {
+                // PDFs found, show dialog to ask user
+                showPdfInclusionDialog(noteContent, pdfUris);
+            }
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
+    private List<Uri> extractPdfLinksFromNote() {
+        List<Uri> pdfUris = new ArrayList<>();
+        Editable editable = resultText.getText();
 
+        if (editable == null) {
+            return pdfUris;
+        }
+
+        // Get all URLSpan objects from the text
+        URLSpan[] urlSpans = editable.getSpans(0, editable.length(), URLSpan.class);
+
+        for (URLSpan span : urlSpans) {
+            String url = span.getURL();
+
+            // Check if this is a content URI (local file) or a PDF URL
+            if (url != null && (url.startsWith("content://") || url.toLowerCase().endsWith(".pdf"))) {
+                try {
+                    Uri uri = Uri.parse(url);
+
+                    // Verify it's actually a PDF by checking the MIME type
+                    String mimeType = getContentResolver().getType(uri);
+                    if (mimeType != null && mimeType.equals("application/pdf")) {
+                        pdfUris.add(uri);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing PDF URI: " + url, e);
+                }
+            }
+        }
+
+        return pdfUris;
+    }
+
+    // New method to show dialog asking user about PDF inclusion
+    private void showPdfInclusionDialog(String noteContent, List<Uri> pdfUris) {
+        String message = pdfUris.size() == 1
+                ? "This note contains 1 PDF. Include PDF content in the mind map?"
+                : "This note contains " + pdfUris.size() + " PDFs. Include PDF content in the mind map?";
+
+        new AlertDialog.Builder(this)
+                .setTitle("PDF Content Found")
+                .setMessage(message)
+                .setPositiveButton("Include PDF", (dialog, which) -> {
+                    // Extract text from all PDFs and combine with note content
+                    extractAndGenerateMindMap(noteContent, pdfUris);
+                })
+                .setNegativeButton("Note Only", (dialog, which) -> {
+                    // Generate mind map with just the note content
+                    generateMindMapWithContent(noteContent);
+                })
+                .setNeutralButton("Cancel", null)
+                .show();
+    }
+
+    // New method to extract text from all PDFs and generate mind map
+    private void extractAndGenerateMindMap(String noteContent, List<Uri> pdfUris) {
+        // Show loading indicator
+        correctionProgressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Extracting PDF content...", Toast.LENGTH_SHORT).show();
+
+        // Use a thread to extract all PDF texts
+        new Thread(() -> {
+            StringBuilder combinedContent = new StringBuilder();
+            combinedContent.append(noteContent);
+
+            // Add separator
+            if (!noteContent.trim().isEmpty()) {
+                combinedContent.append("\n\n=== PDF Content ===\n\n");
+            }
+
+            // Extract text from each PDF
+            for (int i = 0; i < pdfUris.size(); i++) {
+                Uri pdfUri = pdfUris.get(i);
+                String fileName = getFileName(pdfUri);
+
+                try {
+                    String pdfText = extractTextFromPdfSync(pdfUri);
+
+                    if (pdfText != null && !pdfText.trim().isEmpty()) {
+                        combinedContent.append("--- From: ").append(fileName).append(" ---\n\n");
+                        combinedContent.append(pdfText).append("\n\n");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error extracting text from PDF: " + fileName, e);
+                    runOnUiThread(() ->
+                            Toast.makeText(this,
+                                    "Warning: Could not extract text from " + fileName,
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                }
+            }
+
+            // Now generate mind map with combined content
+            String finalContent = combinedContent.toString();
+            runOnUiThread(() -> generateMindMapWithContent(finalContent));
+
+        }).start();
+    }
+
+    // Synchronous version of PDF text extraction (for use in thread)
+    private String extractTextFromPdfSync(Uri pdfUri) throws Exception {
+        InputStream inputStream = getContentResolver().openInputStream(pdfUri);
+
+        if (inputStream == null) {
+            throw new Exception("Could not open PDF file");
+        }
+
+        com.itextpdf.kernel.pdf.PdfReader reader = new com.itextpdf.kernel.pdf.PdfReader(inputStream);
+        com.itextpdf.kernel.pdf.PdfDocument pdfDocument = new com.itextpdf.kernel.pdf.PdfDocument(reader);
+
+        StringBuilder extractedText = new StringBuilder();
+
+        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++) {
+            String pageText = com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor.getTextFromPage(
+                    pdfDocument.getPage(i)
+            );
+            extractedText.append(pageText).append("\n");
+        }
+
+        pdfDocument.close();
+        reader.close();
+        inputStream.close();
+
+        return extractedText.toString();
+    }
+
+    // New centralized method to generate mind map with given content
+    private void generateMindMapWithContent(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            Toast.makeText(this, "No content to generate mind map", Toast.LENGTH_SHORT).show();
+            correctionProgressBar.setVisibility(View.GONE);
+            return;
+        }
+
+        // Show loading indicator
+        correctionProgressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Generating smart mind map...", Toast.LENGTH_SHORT).show();
+
+        // Call Gemini to generate structured mind map
+        generateMindMapStructureWithGemini(content, new GeminiMindMapCallback() {
+            @Override
+            public void onStructureGenerated(String structuredText) {
+                correctionProgressBar.setVisibility(View.GONE);
+
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", structuredText);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onGenerationFailed(Exception e) {
+                correctionProgressBar.setVisibility(View.GONE);
+
+                Log.e(TAG, "Gemini mind map generation failed.", e);
+                Toast.makeText(Notepad.this,
+                        "AI analysis failed. Showing basic map.",
+                        Toast.LENGTH_LONG).show();
+
+                // Fallback: Launch with the original text
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", content);
+                startActivity(intent);
+            }
+        });
+    }
+
+    // Optional: Helper method to get a readable name for the PDF
+    private String getPdfDisplayName(Uri pdfUri, int index) {
+        String fileName = getFileName(pdfUri);
+        if (fileName != null && !fileName.isEmpty()) {
+            return fileName;
+        }
+        return "PDF " + (index + 1);
+    }
+    private GeminiMindMapCallback getGeminiCallback() {
+        return new GeminiMindMapCallback() {
+            @Override
+            public void onStructureGenerated(String structuredText) {
+                // This runs on success from Gemini
+                correctionProgressBar.setVisibility(View.GONE);
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", structuredText); // Pass the AI-generated structure
+                startActivity(intent);
+            }
+
+            @Override
+            public void onGenerationFailed(Exception e) {
+                // This runs on failure from Gemini
+                correctionProgressBar.setVisibility(View.GONE);
+                Log.e(TAG, "Gemini mind map generation failed.", e);
+                Toast.makeText(Notepad.this, "AI analysis failed. Showing basic map.", Toast.LENGTH_LONG).show();
+                // Fallback: Launch with the original raw text
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", resultText.getText().toString());
+                startActivity(intent);
+            }
+        };
+    }
     // 2. Add the new method to call the Gemini API
     private void generateMindMapStructureWithGemini(String noteContent, GeminiMindMapCallback callback) {
         if (noteContent == null || noteContent.trim().isEmpty()) {
@@ -1369,30 +1612,48 @@ public class Notepad extends AppCompatActivity {
             return;
         }
 
-        // --- Create a powerful, specific prompt for the AI ---
-        String prompt = "You are a helpful assistant that specializes in creating structured mind maps from unstructured text.\n" +
-                "Analyze the following note and generate a hierarchical mind map structure for it.\n\n" +
+        // Check content length and truncate if necessary (Gemini has token limits)
+        String processedContent = noteContent;
+        boolean isTruncated = false;
+
+        // Rough estimate: 1 token ≈ 4 characters, limit to ~30k characters for safety
+        int maxChars = 30000;
+        if (processedContent.length() > maxChars) {
+            processedContent = processedContent.substring(0, maxChars);
+            isTruncated = true;
+        }
+
+        // Enhanced prompt for potentially complex/long content from PDFs
+        String prompt = "You are a helpful assistant that specializes in creating structured mind maps from text content.\n" +
+                "Analyze the following content and generate a comprehensive hierarchical mind map structure.\n\n" +
                 "RULES:\n" +
-                "1. Identify the central, root topic of the note. This will be the main node.\n" +
-                "2. Identify the main sub-topics and their children. Add more contextual parent nodes if it makes the hierarchy more logical (e.g., if the note lists vegetables, you can create a 'Types of Vegetables' node).\n" +
-                "3. Your output MUST be a simple indented list. Use two spaces for each level of indentation.\n" +
-                "4. Do NOT use any bullet points, dashes, asterisks, numbers (like 1. or 1.1), or any other characters before the text.\n\n" +
+                "1. Identify the main themes/topics. These will be your primary nodes.\n" +
+                "2. Group related information under appropriate parent nodes.\n" +
+                "3. Create a logical hierarchy with clear parent-child relationships.\n" +
+                "4. If the content is from multiple sources (note + PDFs), organize them coherently.\n" +
+                "5. Your output MUST be a simple indented list. Use two spaces for each level of indentation.\n" +
+                "6. Do NOT use any bullet points, dashes, asterisks, numbers (like 1. or 1.1), or any other characters before the text.\n" +
+                "7. Keep node text concise but meaningful (under 50 characters per node when possible).\n" +
+                "8. Maximum depth of 4 levels to keep the mind map readable.\n\n" +
                 "EXAMPLE OUTPUT FORMAT:\n" +
-                "Root Topic\n" +
+                "Main Topic\n" +
                 "  Sub-Topic 1\n" +
                 "    Detail A\n" +
                 "    Detail B\n" +
-                "  Sub-Topic 2\n\n" +
-                "Here is the note text:\n\n\"" + noteContent + "\"";
-
+                "  Sub-Topic 2\n" +
+                "    Detail C\n\n" +
+                (isTruncated ? "NOTE: The content was truncated due to length. Focus on the main themes and key points.\n\n" : "") +
+                "Content to analyze:\n\n\"" + processedContent + "\"";
 
         // Use a background thread for the network call
         Executors.newSingleThreadExecutor().execute(() -> {
-            OkHttpClient client = new OkHttpClient();
-            try {
-                // NOTE: Ensure your API_URL constant is defined in this class.
-                // It should look something like: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=YOUR_API_KEY"
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .build();
 
+            try {
                 // Create the JSON payload
                 JSONObject jsonBody = new JSONObject();
                 JSONObject contents = new JSONObject();
@@ -1405,7 +1666,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL+ GeminiAPIKey.API_KEY)
+                        .url(API_URL + GeminiAPIKey.API_KEY)
                         .post(body)
                         .build();
 

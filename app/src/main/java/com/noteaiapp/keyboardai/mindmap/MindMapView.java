@@ -78,6 +78,8 @@ public class MindMapView extends View {
 
     // Gesture detectors
     private ScaleGestureDetector scaleDetector;
+    private Paint highlightPaint;   // A new paint for drawing the highlight
+    private Node selectedNode = null; // To keep track of the currently selected node
     private GestureDetector gestureDetector;
 
     // Layout type
@@ -105,6 +107,11 @@ public class MindMapView extends View {
         linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         linePaint.setStrokeWidth(4f);
         linePaint.setStyle(Paint.Style.STROKE);
+
+        highlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        highlightPaint.setStyle(Paint.Style.STROKE); // To draw a border
+        highlightPaint.setColor(Color.parseColor("#007AFF")); // A nice blue highlight color
+        highlightPaint.setStrokeWidth(8f); // A thick, visible border
 
         collapsedIndicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         collapsedIndicatorPaint.setColor(Color.WHITE);
@@ -508,6 +515,12 @@ public class MindMapView extends View {
         paint.setColor(nodeColors[node.level % nodeColors.length]);
         canvas.drawRoundRect(node.bounds, 25f, 25f, paint);
 
+        if (node == selectedNode) {
+            // 2. If it is, draw the highlight border on top of the regular node.
+            // We can slightly inset it for a better look.
+            canvas.drawRoundRect(node.bounds, 25f, 25f, highlightPaint);
+        }
+
         float textStartY = node.y - (totalTextHeight / 2) - fm.ascent;
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
@@ -650,35 +663,62 @@ public class MindMapView extends View {
     private void handleNodeClick(MotionEvent event) {
         if (rootNode == null) return;
 
+        // Convert screen touch coordinates to canvas "world" coordinates
         float touchX = event.getX();
         float touchY = event.getY();
-
         float canvasX = (touchX - translateX) / scaleFactor;
         float canvasY = (touchY - translateY) / scaleFactor;
 
         Node clickedNode = findNodeAt(rootNode, canvasX, canvasY);
-        if (clickedNode != null && !clickedNode.children.isEmpty()) {
-            clickedNode.isCollapsed = !clickedNode.isCollapsed;
 
-            // Recalculate positions after collapse/expand
-            calculatePositions();
-
-            invalidate();
+        // --- START: THIS IS THE FIX ---
+        // 1. Logic for selecting and deselecting nodes
+        if (clickedNode != null) {
+            // If the clicked node is the SAME as the already selected node,
+            // we check if it has children. If so, we collapse/expand it.
+            if (clickedNode == selectedNode && !clickedNode.children.isEmpty()) {
+                clickedNode.isCollapsed = !clickedNode.isCollapsed;
+                calculatePositions(); // Recalculate layout after state change
+            } else {
+                // Otherwise, we set the clicked node as the new selected node.
+                selectedNode = clickedNode;
+            }
+        } else {
+            // If the user clicked on an empty area of the canvas, deselect any active node.
+            selectedNode = null;
         }
+        // --- END: THIS IS THE FIX ---
+
+        // Redraw the entire canvas to show the new selection and/or layout changes.
+        invalidate();
     }
 
     private Node findNodeAt(Node node, float x, float y) {
-        if (node.bounds.contains(x, y)) {
-            return node;
+        if (node == null) {
+            return null;
         }
 
+        // --- THIS IS THE FIX ---
+        // 1. Check children FIRST, but in reverse order (top-most views).
+        //    Only check children if the parent is not collapsed.
         if (!node.isCollapsed) {
-            for (Node child : node.children) {
-                Node found = findNodeAt(child, x, y);
-                if (found != null) return found;
+            for (int i = node.children.size() - 1; i >= 0; i--) {
+                Node foundInChild = findNodeAt(node.children.get(i), x, y);
+                if (foundInChild != null) {
+                    // If a child node was clicked, it has higher priority. Return it immediately.
+                    return foundInChild;
+                }
             }
         }
 
+        // 2. If no children were clicked (or if the node is collapsed),
+        //    check if the current node itself was clicked.
+        if (node.bounds.contains(x, y)) {
+            return node;
+        }
+        // --- END OF FIX ---
+
+        // 3. If neither the node nor any of its children were clicked, return null.
         return null;
     }
 
