@@ -59,11 +59,35 @@
                     android:layout_marginStart="8dp"
                     android:contentDescription="Export as Image"
                     app:srcCompat="@drawable/outline_download_24" />
+                <ImageButton
+                    android:id="@+id/shareButton"
+                    style="?attr/materialIconButtonFilledTonalStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Share as Image"
+                    app:srcCompat="@drawable/ic_share" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </com.google.android.material.appbar.AppBarLayout>
 
+    <TextView
+        android:id="@+id/hint_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="100dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        android:background="@drawable/rounded_darkblack_background"
+        android:text="Hint: Drag the nodes to position them."
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:elevation="13dp"
+
+        android:alpha="0.0"
+        android:visibility="gone" />
 
     <!-- Floating Action Buttons (FABs) for Layout Options -->
     <LinearLayout

@@ -415,6 +415,7 @@ public class NotesListActivity extends AppCompatActivity {
                 hideOptions();
             }
         });
+
         option_ai_note_layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

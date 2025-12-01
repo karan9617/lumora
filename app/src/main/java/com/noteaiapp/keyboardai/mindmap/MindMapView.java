@@ -242,7 +242,24 @@ public class MindMapView extends View {
         scaleFactor = Math.min(newScale, 3.0f); // 3.0f is the max zoom from your ScaleListener
         invalidate(); // Redraw the view with the new scale
     }
+    /**
+     * Recursively calculates the total bounding box that contains all nodes in the mind map.
+     * @param node The current node to process.
+     * @param bounds The RectF object to accumulate the total bounds into.
+     */
+    private void calculateTotalBounds(Node node, RectF bounds) {
+        if (node == null) return;
 
+        // Union the current node's bounds with the total bounds
+        bounds.union(node.bounds);
+
+        // Recurse through children if not collapsed
+        if (!node.isCollapsed) {
+            for (Node child : node.children) {
+                calculateTotalBounds(child, bounds);
+            }
+        }
+    }
     public void zoomOut() {
         // Zoom out by a fixed factor
         float newScale = scaleFactor / 1.2f;
@@ -560,14 +577,11 @@ public class MindMapView extends View {
 
             case MotionEvent.ACTION_MOVE:
                 if (isDraggingNode && draggedNode != null) {
+                    // If we are in node-drag mode, handle it manually.
                     handleNodeDrag(event);
-                    return true;
-                } else if (event.getPointerCount() == 1) {
-                    float dx = Math.abs(event.getX() - dragStartX * scaleFactor - translateX);
-                    float dy = Math.abs(event.getY() - dragStartY * scaleFactor - translateY);
-                    if (dx > 10 || dy > 10) {
-                        isPanning = true;
-                    }
+                } else {
+                    // Otherwise, let the gesture detector handle the event.
+                    // This will correctly trigger onScroll for panning.
                     gestureDetector.onTouchEvent(event);
                 }
                 break;
@@ -595,21 +609,28 @@ public class MindMapView extends View {
     private void handleTouchDown(MotionEvent event) {
         if (rootNode == null) return;
 
+        // We only need to find out if a node was touched.
+        // The GestureDetector will handle the starting coordinates for scrolling.
+
         float touchX = event.getX();
         float touchY = event.getY();
 
+        // Convert to canvas coordinates to find the node under the touch point
         float canvasX = (touchX - translateX) / scaleFactor;
         float canvasY = (touchY - translateY) / scaleFactor;
 
-        dragStartX = canvasX;
-        dragStartY = canvasY;
-
         Node touchedNode = findNodeAt(rootNode, canvasX, canvasY);
+
         if (touchedNode != null) {
+            // Prepare for a potential node drag. This is correct.
             draggedNode = touchedNode;
             nodeDragOffsetX = touchedNode.x - canvasX;
             nodeDragOffsetY = touchedNode.y - canvasY;
             isDraggingNode = true;
+        } else {
+            // If no node is touched, do nothing here. The onScroll will handle panning.
+            isDraggingNode = false;
+            draggedNode = null;
         }
     }
 
@@ -661,33 +682,60 @@ public class MindMapView extends View {
         return null;
     }
 
+
+    // --- NEW, CORRECTED METHOD ---
     public Bitmap exportToImage() {
         if (rootNode == null) return null;
 
-        int width = getWidth() > 0 ? getWidth() : 1080;
-        int height = getHeight() > 0 ? getHeight() : 1920;
+        // 1. Calculate the actual bounds of the entire mind map.
+        RectF totalBounds = new RectF();
+        calculateTotalBounds(rootNode, totalBounds);
 
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        if (totalBounds.isEmpty()) {
+            return null; // Nothing to draw
+        }
+
+        // 2. Create a new bitmap with the exact size of the total bounds.
+        // Add some padding for a nice margin.
+        int padding = 50;
+        int bitmapWidth = (int) totalBounds.width() + (padding * 2);
+        int bitmapHeight = (int) totalBounds.height() + (padding * 2);
+
+        Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
+
+        // Fill the background of the exported image.
         canvas.drawColor(Color.WHITE);
 
-        float oldScale = scaleFactor;
-        float oldTransX = translateX;
-        float oldTransY = translateY;
+        // 3. Temporarily save the current on-screen transformations.
+        float oldTranslateX = this.translateX;
+        float oldTranslateY = this.translateY;
+        float oldScaleFactor = this.scaleFactor;
 
-        scaleFactor = 1.0f;
-        translateX = 0f;
-        translateY = 0f;
+        // 4. Reset transformations for the export drawing.
+        // We want to draw the mind map from the top-left of our new canvas.
+        // We translate it so the top-left corner of the mind map content is at (padding, padding).
+        this.translateX = -totalBounds.left + padding;
+        this.translateY = -totalBounds.top + padding;
+        this.scaleFactor = 1.0f; // No zoom
 
-        draw(canvas);
+        // 5. Redraw the entire mind map onto the new canvas with the temporary transformations.
+        // This is like calling onDraw() but we do it manually to control the canvas.
+        canvas.save();
+        canvas.translate(this.translateX, this.translateY);
+        canvas.scale(this.scaleFactor, this.scaleFactor);
+        drawConnections(canvas, rootNode);
+        drawNodeRecursive(canvas, rootNode);
+        canvas.restore();
 
-        scaleFactor = oldScale;
-        translateX = oldTransX;
-        translateY = oldTransY;
+        // 6. IMPORTANT: Restore the original on-screen transformations.
+        this.translateX = oldTranslateX;
+        this.translateY = oldTranslateY;
+        this.scaleFactor = oldScaleFactor;
 
+        // 7. Return the complete, correctly sized bitmap.
         return bitmap;
     }
-
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScaleBegin(ScaleGestureDetector detector) {
