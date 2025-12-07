@@ -68,7 +68,6 @@ public class GeminiChatActivity extends AppCompatActivity {
 
     private static final String TAG = "GeminiChatActivity";
     // IMPORTANT: Make sure you have your API Key here, or load it securely
-    private static final String API_KEY = GeminiAPIKey.API_KEY;
     private boolean isListening = false;
     private SpeechRecognizer speechRecognizer;
     // 1. Add these member variables at the top of the class
@@ -80,7 +79,7 @@ public class GeminiChatActivity extends AppCompatActivity {
     private Intent recognizerIntent;
     //private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+API_KEY;
 
-    private static final String API_URL = GeminiAPIKey.API_URL_GEMINI+API_KEY;
+    private static final String API_URL = GeminiAPIKey.API_URL_GEMINI+GeminiAPIKey.API_KEY;
 
     private RecyclerView chatRecyclerView;
     private EditText inputEditText;
@@ -307,26 +306,6 @@ public class GeminiChatActivity extends AppCompatActivity {
                 int start = Math.max(chatMessages.size() - 10, 0); // last 10 messages
 
 
-                JSONObject systemMsg = new JSONObject();
-                JSONObject systemAuthor = new JSONObject();
-                systemAuthor.put("role", "system");
-                systemMsg.put("author", systemAuthor);
-
-                JSONArray systemContent = new JSONArray();
-                JSONObject systemPart = new JSONObject();
-                systemPart.put("type", "text");
-                systemPart.put("text",
-                        "You are a helpful assistant. Format all responses strictly in HTML for Android display:" +
-                                "<br>1. Use <b>Heading</b> for titles." +
-                                "<br>2. Use <ol><li>Item</li></ol> for numbered lists." +
-                                "<br>3. Use <ul><li>Item</li></ul> for bullet points." +
-                                "<br>4. Use <pre><code>code</code></pre> for code blocks." +
-                                "<br>5. Use <br> for line breaks." +
-                                "<br>Do NOT use Markdown like *** or ** or ##.");
-                systemContent.put(systemPart);
-                systemMsg.put("content", systemContent);
-                contentsArray.put(systemMsg);
-
 
                 for (int i = start; i < chatMessages.size(); i++) {
                     ChatMessage msg = chatMessages.get(i);
@@ -358,7 +337,7 @@ public class GeminiChatActivity extends AppCompatActivity {
 
                 // Synchronous API call
                 okhttp3.Response response = client.newCall(request).execute();
-
+                Log.d("com.noteaiapp.keyboardai", "Response: " + response.toString());
                 if (response.isSuccessful() && response.body() != null) {
                     String responseBody = response.body().string();
                     JSONObject jsonResponse = new JSONObject(responseBody);

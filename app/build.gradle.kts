@@ -1,3 +1,11 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -8,6 +16,9 @@ android {
     namespace = "com.noteaiapp.keyboardai"
     compileSdk = 35
 
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
@@ -19,6 +30,11 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField(
+            "String",
+            "GEMINI_API_KEY",
+            "\"${localProperties.getProperty("GEMINI_API_KEY")}\""
+        )
     }
 
     buildTypes {
