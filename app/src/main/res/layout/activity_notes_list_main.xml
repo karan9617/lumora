@@ -203,7 +203,6 @@
                 android:layout_marginBottom="7dp"
                 android:background="@drawable/rounded_background"
                 android:padding="12dp"
-                android:visibility="gone"
                 android:elevation="4dp">
                 <TextView
                     android:id="@+id/option_ai_note"

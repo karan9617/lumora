@@ -179,7 +179,7 @@ public class Notepad extends AppCompatActivity {
     private int noteOrder;
 
     // API Key for Gemini API, will be provided at runtime
-     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
+    private static final String API_URL = GeminiAPIKey.API_URL_GEMINI;
    //private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     private boolean dateReceived = false;
@@ -1752,6 +1752,10 @@ public class Notepad extends AppCompatActivity {
                 okhttp3.Response response = client.newCall(request).execute();
 
                 if (response.isSuccessful() && response.body() != null) {
+                    String errorBody = response.body() != null ? response.body().string() : "No error body";
+
+                    Log.e("com.noteaiapp.keyboardai", "Gemini API Error: HTTP " + response.code() + " → " + errorBody);
+
                     String responseBody = response.body().string();
                     JSONObject jsonResponse = new JSONObject(responseBody);
                     String translatedText = jsonResponse.getJSONArray("candidates")

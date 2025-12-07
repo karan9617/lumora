@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- In res/layout/chat_item_pdf.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:background="@drawable/user_chat_bubble"> <!-- Use the user bubble background -->
+
+        <ImageView
+            android:id="@+id/pdf_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/pdf_icon"
+            app:tint="@color/white" /> <!-- Make sure the icon is visible on the bubble -->
+
+        <TextView
+            android:id="@+id/pdf_message_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="PDF Attached. What would you like to know?"
+            android:textColor="@color/white"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+</LinearLayout>

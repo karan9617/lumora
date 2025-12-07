@@ -70,6 +70,7 @@ import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.customnote.GeminiNoteActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.geminichat.GeminiChatActivity;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.noteaiapp.keyboardai.operationactivity.ArchivesActivity;
@@ -419,7 +420,7 @@ public class NotesListActivity extends AppCompatActivity {
         option_ai_note_layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(NotesListActivity.this, GeminiNoteActivity.class);
+                Intent intent = new Intent(NotesListActivity.this, GeminiChatActivity.class);
                 startActivity(intent);
                 hideOptions();
             }

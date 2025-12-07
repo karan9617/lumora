@@ -12,7 +12,7 @@ android {
         applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
         targetSdk = 35
-        versionCode = 21
+        versionCode = 22
         versionName = "1.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -96,8 +96,7 @@ dependencies {
 
     // 1. Add the dependency for Firebase Authentication
     implementation("com.google.firebase:firebase-auth")
-
-    // 2. Add the dependency for Google Sign-In
+    // 2. Add the dependency for Google Sign-I
     implementation("com.google.android.gms:play-services-auth:21.1.0")
     implementation("com.google.firebase:firebase-firestore")
 

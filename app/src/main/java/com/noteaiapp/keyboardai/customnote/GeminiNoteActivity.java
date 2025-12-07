@@ -139,7 +139,7 @@ public class GeminiNoteActivity extends AppCompatActivity {
     private EditText resultText;
     private EditText titleText;
     CardView imageCard;
-    private TextView hintTextView;
+
     private Intent recognizerIntent;
     private NoteRepository noteRepository;
     private DrawingView drawingView;
@@ -389,7 +389,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
         mainContentLayout.setBackgroundColor(selectedColor);
         titleText.setBackground(null);
         resultText.setBackground(null);
-        hintTextView.setBackground(null);
         if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
         }
@@ -435,7 +434,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
                     String expected = typedText + currentHint;
                     if (!expected.startsWith(typedText)) {
                         currentHint = "";
-                        hintTextView.setText(typedText);
                     }
                 }
 
@@ -448,7 +446,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
                     suggestionRunnable = () -> generateSuggestions(s.toString());
                     handler.postDelayed(suggestionRunnable, 300); // reduced debounce for speed
                 } else if (s.length() == 0) {
-                    hintTextView.setText("");
                     currentHint = "";
                 }
             }
@@ -463,7 +460,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
                 if (keyCode == KeyEvent.KEYCODE_SPACE || keyCode == KeyEvent.KEYCODE_ENTER) {
                     if (!currentHint.isEmpty()) {
                         resultText.append(currentHint);
-                        hintTextView.setText("");
                         currentHint = "";
                         return true;
                     }
@@ -475,7 +471,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
         resultText.setOnClickListener(v -> {
             if (!currentHint.isEmpty() && resultText.getSelectionEnd() == resultText.getText().length()) {
                 resultText.append(currentHint);
-                hintTextView.setText("");
                 currentHint = "";
             }
         });
@@ -519,7 +514,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
 
                         if (spokenText.equalsIgnoreCase("done") || spokenText.equalsIgnoreCase("stop")) {
                             isListening = false;
-                            hintTextView.setVisibility(View.INVISIBLE);
                             speechRecognizer.stopListening();
                             listeningProgress.setVisibility(ProgressBar.GONE);
                             return;
@@ -527,7 +521,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
                         else if(spokenText.contains("save")) {
                             saveNote();
                             isListening = false;
-                            hintTextView.setVisibility(View.INVISIBLE);
                             speechRecognizer.stopListening();
                             listeningProgress.setVisibility(ProgressBar.GONE);
                             return;
@@ -1076,13 +1069,11 @@ public class GeminiNoteActivity extends AppCompatActivity {
                     }
                     if (!isListening) {
                         isListening = true;
-                        hintTextView.setVisibility(View.VISIBLE);
                         voiceicon.setBackground(ContextCompat.getDrawable(getApplicationContext(),R.drawable.rounded_purple_background));
                         speechRecognizer.startListening(recognizerIntent);
                         Toast.makeText(getApplicationContext(), R.string.listening_text, Toast.LENGTH_SHORT).show();
                     } else {
                         isListening = false;
-                        hintTextView.setVisibility(View.INVISIBLE);
                         voiceicon.setBackground(ContextCompat.getDrawable(getApplicationContext(),R.drawable.round_voice_bg));
                         speechRecognizer.stopListening();
                         listeningProgress.setVisibility(ProgressBar.GONE);
@@ -1535,7 +1526,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
             mainContentLayout.setBackgroundColor(selectedColor);
             titleText.setBackgroundColor(selectedColor);
             resultText.setBackgroundColor(selectedColor);
-            hintTextView.setBackgroundColor(selectedColor);
             isNoteModified = true;
         });
         builder.show();
@@ -1881,7 +1871,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
     private void generateSuggestions(String text) {
         if (text == null || text.trim().isEmpty()) {
             runOnUiThread(() -> {
-                hintTextView.setText("");
                 currentHint = "";
             });
             return;
@@ -1924,7 +1913,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
                     public void onFailure(okhttp3.Call call, IOException e) {
                         Log.e(TAG, "Gemini API call failed: " + e.getMessage());
                         runOnUiThread(() -> {
-                            hintTextView.setText("");
                             currentHint = "";
                         });
                     }
@@ -1933,7 +1921,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
                     public void onResponse(okhttp3.Call call, okhttp3.Response response) throws IOException {
                         if (!response.isSuccessful() || response.body() == null) {
                             runOnUiThread(() -> {
-                                hintTextView.setText("");
                                 currentHint = "";
                             });
                             return;
@@ -1961,14 +1948,12 @@ public class GeminiNoteActivity extends AppCompatActivity {
                                     final String finalGeneratedText = generatedText;
                                     runOnUiThread(() -> {
                                         currentHint = finalGeneratedText;
-                                        hintTextView.setText(text + currentHint);
                                     });
                                 }
                             }
                         } catch (Exception e) {
                             Log.e(TAG, "Error parsing Gemini response: " + e.getMessage(), e);
                             runOnUiThread(() -> {
-                                hintTextView.setText("");
                                 currentHint = "";
                             });
                         }
@@ -1998,7 +1983,6 @@ public class GeminiNoteActivity extends AppCompatActivity {
         resultText = findViewById(R.id.resultText);
         titleText = findViewById(R.id.noteTitleEditText);
         mainContentLayout = findViewById(R.id.main_content_layout);
-        hintTextView = findViewById(R.id.hintTextView);
         toggleModeDrawSave =  findViewById(R.id.toggleModeDrawSave);
         toggleModeDrawSave.setVisibility(View.GONE);
         linear_layout_main = findViewById(R.id.linear_layout_main);

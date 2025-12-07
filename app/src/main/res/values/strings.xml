@@ -228,4 +228,5 @@
 
     <string name="option_ai_note_layout">AI Note</string>
     <string name="mindmaplabel">MindMap</string>
+    <string name="attach">Attach</string>
 </resources>
