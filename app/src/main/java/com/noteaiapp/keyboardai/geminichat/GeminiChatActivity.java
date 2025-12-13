@@ -78,7 +78,7 @@ import okhttp3.RequestBody;
 
 public class GeminiChatActivity extends AppCompatActivity {
 
-    private static final String TAG = "GeminiChatActivity";
+    private static final String TAG = "com.noteaiapp.keyboardai";
     // IMPORTANT: Make sure you have your API Key here, or load it securely
     private boolean isListening = false;
     private SpeechRecognizer speechRecognizer;
@@ -286,7 +286,12 @@ public class GeminiChatActivity extends AppCompatActivity {
     }
     private void loadChatHistoryFromFirebase() {
         progressBar.setVisibility(View.VISIBLE);
-
+        if(getIntent().getStringExtra("note_title") != null && getIntent().getStringExtra("note_title").length() > 0){
+            noteTitleEditText.setText(getIntent().getStringExtra("note_title"));
+        }
+        else{
+            noteTitleEditText.setText("AI chat");
+        }
         if (currentNoteUuid == null || currentUser == null) {
             Toast.makeText(this, "Error: Note ID or user is missing.", Toast.LENGTH_SHORT).show();
             progressBar.setVisibility(View.GONE);
@@ -320,12 +325,14 @@ public class GeminiChatActivity extends AppCompatActivity {
         if (htmlContent == null || htmlContent.isEmpty()) return;
 
         chatMessages.clear();
+        Log.d(TAG, "HTML Content: " + htmlContent);
+
         // This is a simplified parser. It splits the content by the "<h3>" tags.
         // A more robust solution might use an HTML parsing library like Jsoup.
         String[] parts = htmlContent.split("<h3>");
         for (String part : parts) {
+            Log.d(TAG, "Part: " + part);
             if (part.trim().isEmpty()) continue;
-
             boolean isUser = part.startsWith("You:");
             String message;
 
@@ -338,7 +345,6 @@ public class GeminiChatActivity extends AppCompatActivity {
             } else {
                 continue; // Skip parts that don't match, like the initial <h1>
             }
-
             chatMessages.add(new ChatMessage(message, isUser));
         }
         chatAdapter.notifyDataSetChanged();
@@ -639,22 +645,15 @@ public class GeminiChatActivity extends AppCompatActivity {
             return;
         }
         final String title = noteTitleEditText.getText().toString().trim();
-
+        Log.d(TAG, "Saving ai chat with title: ");
         progressBar.setVisibility(View.VISIBLE);
         Toast.makeText(this, "Saving chat...", Toast.LENGTH_SHORT).show();
 
         Executors.newSingleThreadExecutor().execute(() -> {
             // --- Convert chat history to a single HTML string ---
             StringBuilder chatHtmlBuilder = new StringBuilder();
-            chatHtmlBuilder.append("<h1>Notes AI Chat Summary</h1>");
-
-            boolean isFirstMessage = true;
             for (ChatMessage message : chatMessages) {
-                // Skip the default welcome message if it's the first one
-                if (isFirstMessage && !message.isUser()) {
-                    isFirstMessage = false;
-                    continue;
-                }
+                Log.d(TAG, "saving Message: " + message.getMessage());
                 if (message.getMessage() == null || message.getMessage().trim().isEmpty()) continue;
 
                 if (message.isUser()) {
@@ -669,6 +668,7 @@ public class GeminiChatActivity extends AppCompatActivity {
                 chatHtmlBuilder.append("<br>");
             }
             String finalNoteContent = chatHtmlBuilder.toString();
+            Log.d(TAG, "Final HTML: " + finalNoteContent);
             // ---
             getNoteFromFirebase(currentNoteUuid, new FirebaseNoteFetchCallback() {
                 @Override
@@ -696,7 +696,7 @@ public class GeminiChatActivity extends AppCompatActivity {
                     // --- Set/Update note properties ---
                     note.setContent(finalNoteContent);
                     note.setDate(receivedDateFromActivities); // Update the last modified date
-
+                    note.setImagePath("");
                     // --- Save DIRECTLY to Firebase ---
                     if (currentUser != null) {
 
