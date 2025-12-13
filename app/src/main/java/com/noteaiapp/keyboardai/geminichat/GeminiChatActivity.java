@@ -286,14 +286,10 @@ public class GeminiChatActivity extends AppCompatActivity {
     }
     private void loadChatHistoryFromFirebase() {
         progressBar.setVisibility(View.VISIBLE);
-        if(getIntent().getStringExtra("note_title") != null && getIntent().getStringExtra("note_title").length() > 0){
-            noteTitleEditText.setText(getIntent().getStringExtra("note_title"));
-        }
-        else{
-            noteTitleEditText.setText("AI chat");
-        }
+
         if (currentNoteUuid == null || currentUser == null) {
             Toast.makeText(this, "Error: Note ID or user is missing.", Toast.LENGTH_SHORT).show();
+            noteTitleEditText.setText("AI Chat...");
             progressBar.setVisibility(View.GONE);
             return;
         }
@@ -309,6 +305,7 @@ public class GeminiChatActivity extends AppCompatActivity {
                         if (existingNote != null && existingNote.getContent() != null) {
                             // Parse the note's HTML content back into ChatMessage objects
                             parseAndDisplayChatHistory(existingNote.getContent());
+                            noteTitleEditText.setText(existingNote.getTitle().toString());
                             generateDynamicSuggestions(); // Generate suggestions based on the loaded chat
                         }
                     } else {
@@ -675,22 +672,20 @@ public class GeminiChatActivity extends AppCompatActivity {
                 public void onNoteFetched(Note note){
                     if (isExistingNote && currentNoteUuid != null && currentNoteUuid.length() > 0) {
                         note.setUserFirebaseId(currentNoteUuid);
-                        note.setTitle("AI Chat on " + receivedDateFromActivities); // Update title with new date
                     } else {
                         note = new Note();
                         String newNoteId = UUID.randomUUID().toString();
                         note.setUserFirebaseId(newNoteId);
-                        note.setTitle("AI Chat on " + receivedDateFromActivities);
                         // Update activity state so subsequent saves are updates
                         currentNoteUuid = newNoteId;
                         isExistingNote = true;
                     }
-
-                    StringBuilder stringBuilder = new StringBuilder();
-                    if(title.length() == 0){
-                        stringBuilder.append("AI note" + receivedDateFromActivities);
+                    if(title != null && title.length() > 0){
+                        note.setTitle(title);
                     }
-                    note.setTitle(stringBuilder.toString());
+                    else{
+                        note.setTitle("Notes AI Chat");
+                    }
                     note.setFontColor("ainote");
 
                     // --- Set/Update note properties ---
@@ -709,11 +704,13 @@ public class GeminiChatActivity extends AppCompatActivity {
                                     // Inform NotesListActivity to refresh its list from Firebase
                                     Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
                                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                                    supportFinishAfterTransition();
                                 }))
                                 .addOnFailureListener(e -> runOnUiThread(() -> {
                                     progressBar.setVisibility(View.GONE);
                                     Log.e(TAG, "Error saving chat note to Firebase.", e);
                                     Toast.makeText(GeminiChatActivity.this, "Error saving chat.", Toast.LENGTH_SHORT).show();
+                                    supportFinishAfterTransition();
                                 }));
                     }
                 }

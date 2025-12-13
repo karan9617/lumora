@@ -104,11 +104,9 @@ public class NotesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             // 1. Cast the generic holder to your specific AiNoteViewHolder.
             AiNoteViewHolder aiHolder = (AiNoteViewHolder) holder1;
 
-            // --- BINDING BASIC NOTE DATA ---
-
             // Set the title from the note object
             String[] titleArr = note.getTitle().split(";");
-            aiHolder.noteTitle.setText(titleArr[0]);
+            aiHolder.noteTitle.setText(titleArr[0].trim().substring(0, Math.min(titleArr[0].length(), 10)) + "...");
 
             // Set the date (using your existing parsing logic for consistency)
             try {
