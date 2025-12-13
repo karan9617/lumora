@@ -1752,10 +1752,6 @@ public class Notepad extends AppCompatActivity {
                 okhttp3.Response response = client.newCall(request).execute();
 
                 if (response.isSuccessful() && response.body() != null) {
-                    String errorBody = response.body() != null ? response.body().string() : "No error body";
-
-                    Log.e("com.noteaiapp.keyboardai", "Gemini API Error: HTTP " + response.code() + " → " + errorBody);
-
                     String responseBody = response.body().string();
                     JSONObject jsonResponse = new JSONObject(responseBody);
                     String translatedText = jsonResponse.getJSONArray("candidates")

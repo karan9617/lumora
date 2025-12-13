@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- In res/layout/suggestion_chip_item.xml -->
+<TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/suggestion_chip_text"    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Suggestion"
+    android:textColor="@color/white"
+    android:background="@drawable/suggestion_chip_background"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:layout_margin="4dp" />
+
+

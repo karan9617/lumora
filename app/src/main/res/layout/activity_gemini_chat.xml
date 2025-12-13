@@ -36,6 +36,17 @@
         android:layout_marginTop="70dp"
         android:layout_above="@+id/input_layout"
         android:padding="8dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/suggestion_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/input_layout"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp" />
+
+
     <ProgressBar
         android:id="@+id/listeningProgress"
         android:layout_width="40dp"

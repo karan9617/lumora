@@ -4,6 +4,10 @@ package com.noteaiapp.keyboardai.adapter;
 
 import static android.view.View.GONE;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.text.Spannable;
 import android.text.style.BackgroundColorSpan;
@@ -12,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.text.HtmlCompat;
@@ -31,9 +36,11 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int VIEW_TYPE_PDF = 3;
 
     private final List<ChatMessage> chatMessages;
+    Context context;
 
-    public ChatAdapter(List<ChatMessage> chatMessages) {
+    public ChatAdapter(List<ChatMessage> chatMessages, Context context) {
         this.chatMessages = chatMessages;
+        this.context = context;
     }
 
     // --- getItemViewType is now correct ---
@@ -57,10 +64,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (viewType == VIEW_TYPE_PDF) {
             view = LayoutInflater.from(parent.getContext()).inflate(R.layout.chat_item_pdf, parent, false);
             return new PdfViewHolder(view); // Return a PdfViewHolder
-        } else { // Handles both USER and GEMINI text types
+        } else if (viewType == VIEW_TYPE_USER) { // Handles both USER and GEMINI text types
             // We assume item_chat_user and item_chat_gemini's root TextView ID is the same
             view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_user, parent, false);
             return new TextViewHolder(view); // Return a TextViewHolder
+        }
+        else{
+            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_gemini, parent, false);
+            return new GeminiViewHolder(view); // Return a TextViewHolder
         }
     }
 
@@ -86,12 +97,31 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 break;
 
             case VIEW_TYPE_GEMINI:
-                TextViewHolder geminiViewHolder = (TextViewHolder) holder;
-                Spannable styledText = (Spannable) HtmlCompat.fromHtml(chatMessage.getMessage(), HtmlCompat.FROM_HTML_MODE_LEGACY);
-                styleCodeBlocks(styledText); // Your styleCodeBlocks method is fine
+                GeminiViewHolder geminiViewHolder = (GeminiViewHolder) holder;
+                String messageText = chatMessage.getMessage();
+
+                // --- FIX: Use HtmlCompat to render styled text ---
+                Spannable styledText = (Spannable) HtmlCompat.fromHtml(messageText, HtmlCompat.FROM_HTML_MODE_LEGACY);
+                styleCodeBlocks(styledText);
                 geminiViewHolder.messageText.setText(styledText);
-                geminiViewHolder.messageText.setBackgroundResource(R.drawable.gemini_chat_bubble);
-                geminiViewHolder.messageText.setTextColor(Color.BLACK);
+
+                // --- START: ADD CLICK LISTENERS ---
+                geminiViewHolder.copyButton.setOnClickListener(v -> {
+                    ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    // Use the styled text for copying, which will paste as plain text
+                    ClipData clip = ClipData.newPlainText("Copied Text", geminiViewHolder.messageText.getText());
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show();
+                });
+
+                geminiViewHolder.shareButton.setOnClickListener(v -> {
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, geminiViewHolder.messageText.getText().toString());
+                    context.startActivity(Intent.createChooser(shareIntent, "Share via"));
+                });
+                // --- END: ADD CLICK LISTENERS ---
+
                 break;
         }
     }
@@ -126,6 +156,19 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             // Assumes your item_chat_user.xml's TextView has this ID.
             // If the root element IS the TextView, this could be just `(TextView) itemView`.
             messageText = itemView.findViewById(R.id.chat_message_text);
+        }
+    }
+
+    static class GeminiViewHolder extends RecyclerView.ViewHolder {
+        TextView messageText;
+        ImageView copyButton;
+        ImageView shareButton;
+
+        public GeminiViewHolder(@NonNull View itemView) {
+            super(itemView);
+            messageText = itemView.findViewById(R.id.chat_message_text);
+            copyButton = itemView.findViewById(R.id.copyMessageButton);
+            shareButton = itemView.findViewById(R.id.shareButton);
         }
     }
 

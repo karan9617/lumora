@@ -45,6 +45,7 @@ import com.noteaiapp.keyboardai.Models.ChatMessage;
 import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.adapter.ChatAdapter;
+import com.noteaiapp.keyboardai.adapter.SuggestionAdapter;
 import com.noteaiapp.keyboardai.interfaces.GeminiAPIKey;
 
 
@@ -53,6 +54,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executors;
@@ -71,7 +73,7 @@ public class GeminiChatActivity extends AppCompatActivity {
     private boolean isListening = false;
     private SpeechRecognizer speechRecognizer;
     // 1. Add these member variables at the top of the class
-    private static final int MAX_PDF_SIZE_MB = 5; // Set a 5MB limit
+    private static final int MAX_PDF_SIZE_MB = 1; // Set a 5MB limit
     private ActivityResultLauncher<Intent> pdfPickerLauncher;
     private String attachedPdfText = ""; // To hold the extracted text
 
@@ -89,6 +91,9 @@ public class GeminiChatActivity extends AppCompatActivity {
     private ProgressBar progressBar,listeningProgress;
 
     private ChatAdapter chatAdapter;
+    private RecyclerView suggestionRecyclerView;
+    private SuggestionAdapter suggestionAdapter;
+    private List<String> suggestionList = new ArrayList<>();
     private List<ChatMessage> chatMessages;
     public MaterialToolbar toolbar;
     private final OkHttpClient client = new OkHttpClient.Builder()
@@ -229,7 +234,7 @@ public class GeminiChatActivity extends AppCompatActivity {
 
         // Set up the RecyclerView
         chatMessages = new ArrayList<>();
-        chatAdapter = new ChatAdapter(chatMessages);
+        chatAdapter = new ChatAdapter(chatMessages, GeminiChatActivity.this);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         chatRecyclerView.setLayoutManager(layoutManager);
         chatRecyclerView.setAdapter(chatAdapter);
@@ -287,25 +292,27 @@ public class GeminiChatActivity extends AppCompatActivity {
     }
     private void getGeminiResponse(String prompt1) {
         progressBar.setVisibility(View.VISIBLE);
-        String prompt = "Please respond to the following user prompt. " +
-                "Format your response for display in an Android app using simple HTML tags. " +
-                "Follow these rules precisely:\n" +
-                "1. Use <b>Your Heading</b> for any headings.\n" +
-                "2. For numbered lists, use <ol><li>Item 1</li><li>Item 2</li></ol>.\n" +
-                "3. For bullet points, use <ul><li>Item 1</li><li>Item 2</li></ul>.\n" +
-                "4. For code snippets, wrap the code inside <pre><code>...code...</code></pre> tags.\n" +
-                "5. Use <br> for line breaks between paragraphs.\n" +
-                "6. Keep the response concise, around 200 words.\n\n" +
-                "User prompt: \"" + prompt1 + "\"";
+
+        // Optimized prompt for better HTML formatting
+        String prompt = "Respond to this prompt using clean HTML formatting:\n\n" +
+                "Rules:\n" +
+                "- Use <h3> for main headings\n" +
+                "- Use <p> for paragraphs (never use plain text)\n" +
+                "- Use <ul><li> for bullet points\n" +
+                "- Use <ol><li> for numbered lists\n" +
+                "- Use <b> for bold, <i> for italic\n" +
+                "- Use <br> only between major sections\n" +
+                "- Use <code> for inline code\n" +
+                "- Use <pre><code> for code blocks\n" +
+                "- Keep response around 200 words\n" +
+                "- NO markdown symbols (*, **, ***)\n" +
+                "- Start directly with content, no preamble\n\n" +
+                "User: " + prompt1;
+
         Executors.newSingleThreadExecutor().execute(() -> {
-            //OkHttpClient client = new OkHttpClient();
             try {
-                // Construct the JSON payload for the Gemini API
-
                 JSONArray contentsArray = new JSONArray();
-                int start = Math.max(chatMessages.size() - 10, 0); // last 10 messages
-
-
+                int start = Math.max(chatMessages.size() - 10, 0);
 
                 for (int i = start; i < chatMessages.size(); i++) {
                     ChatMessage msg = chatMessages.get(i);
@@ -315,18 +322,11 @@ public class GeminiChatActivity extends AppCompatActivity {
                     part.put("text", msg.getMessage());
                     parts.put(part);
                     contentObj.put("parts", parts);
-                    contentObj.put("role", msg.isUser() ? "user" : "assistant");
+                    contentObj.put("role", msg.isUser() ? "user" : "model");
                     contentsArray.put(contentObj);
                 }
 
-
                 JSONObject jsonBody = new JSONObject();
-                JSONObject contents = new JSONObject();
-                JSONArray parts = new JSONArray();
-                JSONObject textPart = new JSONObject();
-                textPart.put("text", prompt);
-                parts.put(textPart);
-                contents.put("parts", parts);
                 jsonBody.put("contents", contentsArray);
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
@@ -335,46 +335,141 @@ public class GeminiChatActivity extends AppCompatActivity {
                         .post(body)
                         .build();
 
-                // Synchronous API call
                 okhttp3.Response response = client.newCall(request).execute();
-                Log.d("com.noteaiapp.keyboardai", "Response: " + response.toString());
+
                 if (response.isSuccessful() && response.body() != null) {
                     String responseBody = response.body().string();
                     JSONObject jsonResponse = new JSONObject(responseBody);
-                    // Extract the text from the response
+
                     String geminiResponse = jsonResponse.getJSONArray("candidates")
                             .getJSONObject(0)
                             .getJSONObject("content")
                             .getJSONArray("parts")
                             .getJSONObject(0)
                             .getString("text")
-                            .trim().replace("```","").replace("html","");
+                            .trim();
+
+                    // Clean up markdown code blocks
                     geminiResponse = geminiResponse
-                            .replaceAll("\\*\\*\\*(.*?)\\*\\*\\*", "<b>$1</b>")   // ***heading*** -> <b>heading</b>
-                            .replaceAll("\\*\\*(.*?)\\*\\*", "<b>$1</b>")         // **bold** -> <b>bold</b>
-                            .replaceAll("\\*(.*?)\\*", "<i>$1</i>");
+                            .replaceAll("```html\\s*", "")
+                            .replaceAll("```\\s*", "")
+                            .trim();
+
+                    // Convert remaining markdown to HTML (fallback)
+                    geminiResponse = geminiResponse
+                            .replaceAll("### (.*?)\\n", "<h3>$1</h3>")
+                            .replaceAll("## (.*?)\\n", "<h2>$1</h2>")
+                            .replaceAll("# (.*?)\\n", "<h1>$1</h1>")
+                            .replaceAll("\\*\\*\\*(.*?)\\*\\*\\*", "<b><i>$1</i></b>")
+                            .replaceAll("\\*\\*(.*?)\\*\\*", "<b>$1</b>")
+                            .replaceAll("(?<!\\*)\\*(?!\\*)(.*?)\\*(?!\\*)", "<i>$1</i>")
+                            .replaceAll("\\n\\n", "<br><br>")
+                            .replaceAll("^- (.*?)$", "<li>$1</li>")
+                            .replaceAll("^\\d+\\. (.*?)$", "<li>$1</li>");
+
+                    // Wrap orphaned <li> tags in <ul>
+                    geminiResponse = geminiResponse.replaceAll("(<li>.*?</li>)+", "<ul>$0</ul>");
+
                     String finalGeminiResponse = geminiResponse;
+
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
-
-                        // Add Gemini's response to the chat
                         addMessage(finalGeminiResponse, false);
+                        generateDynamicSuggestions();
                     });
                 } else {
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
-                        Toast.makeText(GeminiChatActivity.this, "Error: Failed to get response.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(GeminiChatActivity.this,
+                                "Error: Failed to get response.", Toast.LENGTH_SHORT).show();
                     });
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error calling Gemini API: " + e.getMessage(), e);
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(GeminiChatActivity.this, "An error occurred.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(GeminiChatActivity.this,
+                            "An error occurred.", Toast.LENGTH_SHORT).show();
                 });
             }
         });
     }
+
+    // In GeminiChatActivity.java
+
+    private void generateDynamicSuggestions() {
+        // 1. Create a prompt specifically for generating suggestions.
+        // We will send the last few messages as context.
+        String historyForSuggestions = "";
+        int start = Math.max(0, chatMessages.size() - 4); // Use last 4 messages for context
+        for (int i = start; i < chatMessages.size(); i++) {
+            ChatMessage msg = chatMessages.get(i);
+            String role = msg.isUser() ? "User" : "Model";
+            historyForSuggestions += role + ": " + msg.getMessage() + "\n";
+        }
+
+        String suggestionPrompt = "Based on the last part of this conversation, generate exactly 3 short, relevant follow-up questions or prompts. " +
+                "RULES:\n" +
+                "1. Your entire response must ONLY be the 3 prompts.\n" +
+                "2. Each prompt must be on a new line.\n" +
+                "3. Do NOT number the prompts or use bullet points.\n\n" +
+                "CONVERSATION:\n" + historyForSuggestions;
+
+        // 2. This must run on a background thread.
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                // 3. Construct the JSON payload for this separate, quick request.
+                JSONObject jsonBody = new JSONObject();
+                JSONObject content = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", suggestionPrompt);
+                parts.put(textPart);
+                content.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(content));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+
+                // Use the UNARY endpoint. It's faster for this simple task.
+                String unaryApiUrl = GeminiAPIKey.API_URL_GEMINI + GeminiAPIKey.API_KEY;
+
+                Request request = new Request.Builder()
+                        .url(unaryApiUrl)
+                        .post(body)
+                        .build();
+
+                // 4. Execute the API call synchronously.
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String suggestionsText = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text");
+
+                    // 5. Split the response into a list and update the UI.
+                    String[] newSuggestions = suggestionsText.trim().split("\n");
+                    runOnUiThread(() -> {
+                        suggestionList.clear();
+                        suggestionList.addAll(Arrays.asList(newSuggestions));
+                        suggestionAdapter.notifyDataSetChanged();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error generating dynamic suggestions: " + e.getMessage(), e);
+                // If it fails, we can just clear the suggestions or do nothing.
+                runOnUiThread(() -> {
+                    suggestionList.clear();
+                    suggestionAdapter.notifyDataSetChanged();
+                });
+            }
+        });
+    }
+
 
 
     @Override
@@ -391,11 +486,19 @@ public class GeminiChatActivity extends AppCompatActivity {
         if (id == R.id.action_translate) {
             showLanguageSelectionDialog();
             return true;
+        } if (id == R.id.action_share) {
+            shareAINote();
+            return true;
         } else if (id == R.id.mindmap) {
             return true;
         }
         return true;
     }
+    public void shareAINote(){
+
+    }
+
+
     public void attachfile(){
         Toast.makeText(getApplicationContext(),"pdf clicked",Toast.LENGTH_LONG).show();
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -481,8 +584,43 @@ public class GeminiChatActivity extends AppCompatActivity {
             }
         }
     }
+
+    private void loadInitialSuggestions() {
+        suggestionList.clear();
+        suggestionList.add("Summarize this document");
+        suggestionList.add("Generate ideas for a project.");
+        suggestionList.add("Which is the largest word in English?");
+        suggestionList.add("who is the president of India?");
+        suggestionList.add("best places of tacos");
+        suggestionAdapter.notifyDataSetChanged();
+    }
+
+    // You can create another method to dynamically change suggestions based on context
+    private void loadFollowUpSuggestions() {
+        suggestionList.clear();
+        suggestionList.add("Elaborate on the first point");    suggestionList.add("Give me an example");
+        suggestionList.add("What are the counter-arguments?");
+        suggestionAdapter.notifyDataSetChanged();
+    }
+
     public void init(){
-        pdfPickerLauncher = registerForActivityResult(
+
+        suggestionRecyclerView = findViewById(R.id.suggestion_recycler_view);
+
+        // 3. Set up the suggestion adapter and click listener
+        suggestionAdapter = new SuggestionAdapter(suggestionList, suggestion -> {
+            inputEditText.setText(suggestion);sendMessage();
+        });
+
+        // 4. Set the LayoutManager for the horizontal list
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        suggestionRecyclerView.setLayoutManager(layoutManager);
+        suggestionRecyclerView.setAdapter(suggestionAdapter);    // 5. Populate the initial list of suggestions
+        loadInitialSuggestions();
+        // --- END: SETUP SUGGESTIONS ---
+
+
+            pdfPickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
@@ -526,6 +664,18 @@ public class GeminiChatActivity extends AppCompatActivity {
 
                 StringBuilder extractedTextBuilder = new StringBuilder();
                 int numPages = pdfDocument.getNumberOfPages();
+                final int MAX_PDF_PAGES = 4; // Your new page limit
+                // 2. Check if the page count exceeds the limit.
+                if (numPages > MAX_PDF_PAGES) {
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(this, "PDF has too many pages (Max " + MAX_PDF_PAGES + ").", Toast.LENGTH_LONG).show();
+                    });
+                    // Clean up and stop processing
+                    pdfDocument.close();
+                    inputStream.close();
+                    return; // Exit the background thread
+                }
 
                 for (int i = 1; i <= numPages; i++) {
                     PdfPage page = pdfDocument.getPage(i);
