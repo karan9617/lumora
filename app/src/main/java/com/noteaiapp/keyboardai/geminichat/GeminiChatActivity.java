@@ -34,18 +34,25 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
 import com.noteaiapp.keyboardai.Models.ChatMessage;
+import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.adapter.ChatAdapter;
 import com.noteaiapp.keyboardai.adapter.SuggestionAdapter;
+import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
 import com.noteaiapp.keyboardai.interfaces.GeminiAPIKey;
 
 
@@ -53,10 +60,13 @@ import java.io.InputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -76,6 +86,7 @@ public class GeminiChatActivity extends AppCompatActivity {
     private static final int MAX_PDF_SIZE_MB = 1; // Set a 5MB limit
     private ActivityResultLauncher<Intent> pdfPickerLauncher;
     private String attachedPdfText = ""; // To hold the extracted text
+    EditText noteTitleEditText;
 
     private ImageView voiceicon;
     private Intent recognizerIntent;
@@ -84,6 +95,7 @@ public class GeminiChatActivity extends AppCompatActivity {
     private static final String API_URL = GeminiAPIKey.API_URL_GEMINI+GeminiAPIKey.API_KEY;
 
     private RecyclerView chatRecyclerView;
+    private boolean isExistingNote = false;
     private EditText inputEditText;
     private static final int PERMISSION_REQUEST_CODE = 1;
 
@@ -96,6 +108,14 @@ public class GeminiChatActivity extends AppCompatActivity {
     private List<String> suggestionList = new ArrayList<>();
     private List<ChatMessage> chatMessages;
     public MaterialToolbar toolbar;
+    private FirebaseUser currentUser;
+    private FirebaseFirestore db;
+    private FirebaseStorage storage;
+    private String currentNoteUuid = "";
+    private static final String DATE_EXTRA_KEY = "date_specific_notes";
+    private boolean dateReceived = false;
+    private String receivedDateFromActivities = "";
+
     private final OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS) // Set connection timeout
             .readTimeout(60, TimeUnit.SECONDS)    // Set read timeout
@@ -108,13 +128,39 @@ public class GeminiChatActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
 
         setContentView(R.layout.activity_gemini_chat);
+        progressBar = findViewById(R.id.chat_progress_bar);
         init();
+        chatMessages = new ArrayList<>();
+        chatAdapter = new ChatAdapter(chatMessages, GeminiChatActivity.this);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        chatRecyclerView.setLayoutManager(layoutManager);
+        chatRecyclerView.setAdapter(chatAdapter);
+
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
+        this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
+
+        if (currentNoteUuid.length() > 0) {
+            isExistingNote = true;
+            loadChatHistoryFromFirebase();
+        } else {
+            addMessage("Hello! How can I help you today?", false);
+        }
+        if(getIntent().getStringExtra(DATE_EXTRA_KEY) != null && !getIntent().getStringExtra(DATE_EXTRA_KEY).isEmpty()){
+            dateReceived = true;
+            this.receivedDateFromActivities = getIntent().getStringExtra(DATE_EXTRA_KEY);
+        }
+        else{
+            receivedDateFromActivities = (getIntent().getStringExtra("note_date") == null)? getCurrentDate(): getIntent().getStringExtra("note_date");
+        }
+
         // Initialize UI components
-        chatRecyclerView = findViewById(R.id.chat_recycler_view);
+
         inputEditText = findViewById(R.id.chat_input_edit_text);
         listeningProgress = findViewById(R.id.listeningProgress);
         sendButton = findViewById(R.id.send_button);
-        progressBar = findViewById(R.id.chat_progress_bar);
+
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
         toolbar.setOnMenuItemClickListener(this::onOptionsItemSelected);
@@ -233,16 +279,73 @@ public class GeminiChatActivity extends AppCompatActivity {
 
 
         // Set up the RecyclerView
-        chatMessages = new ArrayList<>();
-        chatAdapter = new ChatAdapter(chatMessages, GeminiChatActivity.this);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        chatRecyclerView.setLayoutManager(layoutManager);
-        chatRecyclerView.setAdapter(chatAdapter);
+
 
         // Set up the send button listener
         sendButton.setOnClickListener(v -> sendMessage());
     }
+    private void loadChatHistoryFromFirebase() {
+        progressBar.setVisibility(View.VISIBLE);
 
+        if (currentNoteUuid == null || currentUser == null) {
+            Toast.makeText(this, "Error: Note ID or user is missing.", Toast.LENGTH_SHORT).show();
+            progressBar.setVisibility(View.GONE);
+            return;
+        }
+
+        // Fetch the specific note document from Firestore
+        db.collection("users").document(currentUser.getUid())
+                .collection("notes").document(currentNoteUuid)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    progressBar.setVisibility(View.GONE);
+                    if (documentSnapshot.exists()) {
+                        Note existingNote = documentSnapshot.toObject(Note.class);
+                        if (existingNote != null && existingNote.getContent() != null) {
+                            // Parse the note's HTML content back into ChatMessage objects
+                            parseAndDisplayChatHistory(existingNote.getContent());
+                            generateDynamicSuggestions(); // Generate suggestions based on the loaded chat
+                        }
+                    } else {
+                        Toast.makeText(this, "Error: Could not find chat history.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    progressBar.setVisibility(View.GONE);
+                    Log.e(TAG, "Error loading chat note from Firebase", e);
+                    Toast.makeText(this, "Failed to load chat.", Toast.LENGTH_SHORT).show();
+                });
+    }
+    private void parseAndDisplayChatHistory(String htmlContent) {
+        if (htmlContent == null || htmlContent.isEmpty()) return;
+
+        chatMessages.clear();
+        // This is a simplified parser. It splits the content by the "<h3>" tags.
+        // A more robust solution might use an HTML parsing library like Jsoup.
+        String[] parts = htmlContent.split("<h3>");
+        for (String part : parts) {
+            if (part.trim().isEmpty()) continue;
+
+            boolean isUser = part.startsWith("You:");
+            String message;
+
+            if (isUser) {
+                // For user messages, we strip out all HTML tags to get the plain text.
+                message = part.replace("You:</h3>", "").replaceAll("<[^>]*>", "").trim();
+            } else if (part.startsWith("Gemini:")) {
+                // For Gemini messages, we keep the inner HTML for styled rendering.
+                message = part.replace("Gemini:</h3>", "").replace("<br>", "").trim();
+            } else {
+                continue; // Skip parts that don't match, like the initial <h1>
+            }
+
+            chatMessages.add(new ChatMessage(message, isUser));
+        }
+        chatAdapter.notifyDataSetChanged();
+        if (!chatMessages.isEmpty()) {
+            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        }
+    }
     private void sendMessage() {
         String prompt = inputEditText.getText().toString().trim();
         if (prompt.isEmpty()) {
@@ -498,6 +601,140 @@ public class GeminiChatActivity extends AppCompatActivity {
 
     }
 
+    // In GeminiChatActivity.java
+    private void getNoteFromFirebase(String noteCloudId, FirebaseNoteFetchCallback callback) {
+        if (currentUser == null) {
+            callback.onFetchFailed(new Exception("User not logged in."));
+            return;
+        }
+        if (noteCloudId == null || noteCloudId.isEmpty()) {
+            callback.onNoteFetched(null);
+            return;
+        }
+
+        db.collection("users").document(currentUser.getUid())
+                .collection("notes").document(noteCloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Convert the Firestore document into a Note object
+                        Note note = documentSnapshot.toObject(Note.class);
+                        // Return the note via the callback
+                        callback.onNoteFetched(note);
+                    } else {
+                        // The note doesn't exist in Firebase, which is an error state
+                        callback.onNoteFetched(null); // Pass null to indicate not found
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // An error occurred (e.g., no internet)
+                    Log.w(TAG, "Error fetching single note from Firebase", e);
+                    callback.onFetchFailed(e);
+                });
+    }
+    public void saveNote() {
+        // <= 1 to ignore an initial AI greeting if nothing else was said
+        if (chatMessages == null || chatMessages.size() <= 1) {
+            Toast.makeText(this, "Chat is empty, nothing to save.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final String title = noteTitleEditText.getText().toString().trim();
+
+        progressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Saving chat...", Toast.LENGTH_SHORT).show();
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            // --- Convert chat history to a single HTML string ---
+            StringBuilder chatHtmlBuilder = new StringBuilder();
+            chatHtmlBuilder.append("<h1>Notes AI Chat Summary</h1>");
+
+            boolean isFirstMessage = true;
+            for (ChatMessage message : chatMessages) {
+                // Skip the default welcome message if it's the first one
+                if (isFirstMessage && !message.isUser()) {
+                    isFirstMessage = false;
+                    continue;
+                }
+                if (message.getMessage() == null || message.getMessage().trim().isEmpty()) continue;
+
+                if (message.isUser()) {
+                    chatHtmlBuilder.append("<h3>You:</h3>");
+                    // Wrap user's plain text in a paragraph tag for consistent formatting
+                    chatHtmlBuilder.append("<p>").append(message.getMessage()).append("</p>");
+                } else {
+                    chatHtmlBuilder.append("<h3>Gemini:</h3>");
+                    // The AI message already contains rich HTML, so append it directly
+                    chatHtmlBuilder.append(message.getMessage());
+                }
+                chatHtmlBuilder.append("<br>");
+            }
+            String finalNoteContent = chatHtmlBuilder.toString();
+            // ---
+            getNoteFromFirebase(currentNoteUuid, new FirebaseNoteFetchCallback() {
+                @Override
+                public void onNoteFetched(Note note){
+                    if (isExistingNote && currentNoteUuid != null && currentNoteUuid.length() > 0) {
+                        note.setUserFirebaseId(currentNoteUuid);
+                        note.setTitle("AI Chat on " + receivedDateFromActivities); // Update title with new date
+                    } else {
+                        note = new Note();
+                        String newNoteId = UUID.randomUUID().toString();
+                        note.setUserFirebaseId(newNoteId);
+                        note.setTitle("AI Chat on " + receivedDateFromActivities);
+                        // Update activity state so subsequent saves are updates
+                        currentNoteUuid = newNoteId;
+                        isExistingNote = true;
+                    }
+
+                    StringBuilder stringBuilder = new StringBuilder();
+                    if(title.length() == 0){
+                        stringBuilder.append("AI note" + receivedDateFromActivities);
+                    }
+                    note.setTitle(stringBuilder.toString());
+                    note.setFontColor("ainote");
+
+                    // --- Set/Update note properties ---
+                    note.setContent(finalNoteContent);
+                    note.setDate(receivedDateFromActivities); // Update the last modified date
+
+                    // --- Save DIRECTLY to Firebase ---
+                    if (currentUser != null) {
+
+                        db.collection("users").document(currentUser.getUid())
+                                .collection("notes").document(note.getUserFirebaseId())
+                                .set(note)
+                                .addOnSuccessListener(aVoid -> runOnUiThread(() -> {
+                                    progressBar.setVisibility(View.GONE);
+                                    Toast.makeText(GeminiChatActivity.this, "Chat saved successfully!", Toast.LENGTH_LONG).show();
+                                    // Inform NotesListActivity to refresh its list from Firebase
+                                    Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                                }))
+                                .addOnFailureListener(e -> runOnUiThread(() -> {
+                                    progressBar.setVisibility(View.GONE);
+                                    Log.e(TAG, "Error saving chat note to Firebase.", e);
+                                    Toast.makeText(GeminiChatActivity.this, "Error saving chat.", Toast.LENGTH_SHORT).show();
+                                }));
+                    }
+                }
+
+                @Override
+                public void onFetchFailed(Exception e) {
+
+                }
+            });
+
+            // --- Check if we are UPDATING an existing note or CREATING a new one ---
+
+
+        });
+    }
+
+    // You'll also need this helper method if it's not already in your activity
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        return sdf.format(new Date());
+    }
 
     public void attachfile(){
         Toast.makeText(getApplicationContext(),"pdf clicked",Toast.LENGTH_LONG).show();
@@ -512,9 +749,7 @@ public class GeminiChatActivity extends AppCompatActivity {
             Toast.makeText(this, "No file manager found to pick a PDF.", Toast.LENGTH_SHORT).show();
         }
     }
-    public void saveNote(){
 
-    }
     public void showLanguageSelectionDialog(){
 
     }
@@ -606,7 +841,8 @@ public class GeminiChatActivity extends AppCompatActivity {
     public void init(){
 
         suggestionRecyclerView = findViewById(R.id.suggestion_recycler_view);
-
+        chatRecyclerView = findViewById(R.id.chat_recycler_view);
+        noteTitleEditText = findViewById(R.id.noteTitleEditText);
         // 3. Set up the suggestion adapter and click listener
         suggestionAdapter = new SuggestionAdapter(suggestionList, suggestion -> {
             inputEditText.setText(suggestion);sendMessage();
@@ -617,9 +853,6 @@ public class GeminiChatActivity extends AppCompatActivity {
         suggestionRecyclerView.setLayoutManager(layoutManager);
         suggestionRecyclerView.setAdapter(suggestionAdapter);    // 5. Populate the initial list of suggestions
         loadInitialSuggestions();
-        // --- END: SETUP SUGGESTIONS ---
-
-
             pdfPickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {

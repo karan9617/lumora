@@ -557,12 +557,12 @@ public class NotesListActivity extends AppCompatActivity {
                 }
                 Intent intent;
                 String noteContent = note.getContent();
-                String title = note.getTitle();
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
-                if (noteContent.startsWith("AI_Chat_on_prefix")) {
+                if (note.getFontColor() != null && !note.getFontColor().isEmpty() && note.getFontColor().equalsIgnoreCase("ainote")) {
                     intent = new Intent(NotesListActivity.this, GeminiChatActivity.class);
                     // Pass the Note's Cloud ID to GeminiChatActivity so it can load the history
                     intent.putExtra("note_cloud_id", note.getUserFirebaseId());
+                    Log.d("com.noteaiapp.keyboardai","AI gemini note opened");
                 }
                 // --- END: THIS IS THE FIX ---
                 else if(isListNote){
