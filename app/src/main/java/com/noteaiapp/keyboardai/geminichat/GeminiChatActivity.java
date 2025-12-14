@@ -100,7 +100,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     private SpeechRecognizer speechRecognizer;
     private static final int CAMERA_PERMISSION_CODE = 100;
     // 1. Add these member variables at the top of the class
-    private static final int MAX_PDF_SIZE_MB = 1; // Set a 5MB limit
+    private static final int MAX_PDF_SIZE_MB = 5; // Set a 5MB limit
     private ActivityResultLauncher<Intent> pdfPickerLauncher;
     private String attachedPdfText = ""; // To hold the extracted text
     EditText noteTitleEditText;
@@ -927,12 +927,16 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 public void onNoteFetched(Note note){
                     if (isExistingNote && currentNoteUuid != null && currentNoteUuid.length() > 0) {
                         note.setUserFirebaseId(currentNoteUuid);
+                        if(folderName.length() != 0){
+                            note.setFontFamily(folderName);
+                        }
                     } else {
                         note = new Note();
                         String newNoteId = UUID.randomUUID().toString();
                         note.setUserFirebaseId(newNoteId);
                         // Update activity state so subsequent saves are updates
                         currentNoteUuid = newNoteId;
+                        note.setFontFamily(folderName);
                         isExistingNote = true;
                     }
                     if(title != null && title.length() > 0){
@@ -942,7 +946,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                         note.setTitle("Notes AI Chat");
                     }
                     note.setFontColor("ainote");
-                    note.setFontFamily(folderName);
+
                     // --- Set/Update note properties ---
                     note.setContent(finalNoteContent);
                     note.setDate(receivedDateFromActivities); // Update the last modified date
