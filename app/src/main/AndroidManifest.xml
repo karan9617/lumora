@@ -129,7 +129,7 @@
         <activity
             android:name=".customnote.GeminiNoteActivity"
             android:exported="true"
-            android:label="@string/login_label"
+
             android:windowSoftInputMode="adjustResize"
 
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />

@@ -55,6 +55,7 @@ import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.geminichat.GeminiChatActivity;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.noteaiapp.keyboardai.operationactivity.ArchivesActivity;
@@ -118,7 +119,7 @@ public class FolderNotesActivity extends AppCompatActivity {
     private NoteRepository noteRepository;
     TextView initialtext;
     FloatingActionButton fabAddNote;
-    LinearLayout option_text_layout, option_drawings_layout,option_list_layout,option_image_layout;
+    LinearLayout option_text_layout, option_drawings_layout,option_list_layout,option_image_layout,option_ai_note_layout;
     private DrawerLayout drawerLayout;
     ItemTouchHelper itemTouchHelper;//itemTouchHelperPinned;
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
@@ -238,6 +239,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
+        option_ai_note_layout = findViewById(R.id.option_ai_note_layout);
         option_list_layout = findViewById(R.id.option_list_layout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -396,6 +398,15 @@ public class FolderNotesActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(FolderNotesActivity.this, Notepad.class);
+                intent.putExtra(EXTRA_FOLDER_NAME, folderName);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
+        option_ai_note_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(FolderNotesActivity.this, GeminiChatActivity.class);
                 intent.putExtra(EXTRA_FOLDER_NAME, folderName);
                 startActivity(intent);
                 hideOptions();

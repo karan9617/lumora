@@ -71,6 +71,7 @@ import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.geminichat.GeminiChatActivity;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.noteaiapp.keyboardai.operationactivity.trashfiles.NotesRepositoryTrash;
@@ -307,7 +308,14 @@ public class ArchivesActivity extends AppCompatActivity {
                 Intent intent;
                 String noteContent = note.getContent();
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
-                if(isListNote){
+                if (note.getFontColor() != null && !note.getFontColor().isEmpty() && note.getFontColor().equalsIgnoreCase("ainote")) {
+                    intent = new Intent(ArchivesActivity.this, GeminiChatActivity.class);
+                    // Pass the Note's Cloud ID to GeminiChatActivity so it can load the history
+                    intent.putExtra("note_cloud_id", note.getUserFirebaseId());
+                    Log.d("com.noteaiapp.keyboardai","AI gemini note opened");
+                }
+                // --- END: THIS IS THE FIX ---
+                else if(isListNote){
                     intent = new Intent(ArchivesActivity.this, ListItemsActivity.class);
                 }
                 else if(note.getFontColor() != null && !note.getFontColor().isEmpty() && note.getFontColor().equalsIgnoreCase("imagenote")){

@@ -193,6 +193,33 @@
                             android:textSize="16sp" />
                         -->
                 <LinearLayout
+                    android:id="@+id/option_ai_note_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="7dp"
+                    android:background="@drawable/rounded_background"
+                    android:padding="12dp"
+                    android:elevation="4dp">
+                    <TextView
+                        android:id="@+id/option_ai_note"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/option_ai_note_layout"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+
+                        />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_text_icon"
+                        app:tint="@android:color/white"
+                        android:contentDescription="Custom note icon" />
+                </LinearLayout>
+                <LinearLayout
                     android:id="@+id/option_text_layout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

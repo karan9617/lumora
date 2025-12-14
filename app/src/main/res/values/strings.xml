@@ -229,4 +229,6 @@
     <string name="option_ai_note_layout">AI Note</string>
     <string name="mindmaplabel">MindMap</string>
     <string name="attach">Attach</string>
+    <string name="translate_chat">Translate Chat</string>
+    <string name="share_chat">Share Chat</string>
 </resources>

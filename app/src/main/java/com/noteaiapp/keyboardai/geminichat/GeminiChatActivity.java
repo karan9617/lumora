@@ -17,6 +17,7 @@ import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
@@ -32,8 +33,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
+import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+import androidx.core.text.HtmlCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -43,19 +48,27 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
+import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
+import com.noteaiapp.keyboardai.BuildConfig;
 import com.noteaiapp.keyboardai.Models.ChatMessage;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.adapter.ChatAdapter;
 import com.noteaiapp.keyboardai.adapter.SuggestionAdapter;
+import com.noteaiapp.keyboardai.camera.CameraActivity;
+import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
 import com.noteaiapp.keyboardai.interfaces.GeminiAPIKey;
 
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,19 +87,25 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.noteaiapp.keyboardai.interfaces.GeminiMindMapCallback;
+import com.noteaiapp.keyboardai.mindmap.MindMapActivity;
+
 import okhttp3.RequestBody;
 
-public class GeminiChatActivity extends AppCompatActivity {
+public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter.SelectionListener {
 
     private static final String TAG = "com.noteaiapp.keyboardai";
     // IMPORTANT: Make sure you have your API Key here, or load it securely
     private boolean isListening = false;
     private SpeechRecognizer speechRecognizer;
+    private static final int CAMERA_PERMISSION_CODE = 100;
     // 1. Add these member variables at the top of the class
     private static final int MAX_PDF_SIZE_MB = 1; // Set a 5MB limit
     private ActivityResultLauncher<Intent> pdfPickerLauncher;
     private String attachedPdfText = ""; // To hold the extracted text
     EditText noteTitleEditText;
+    private List<ChatMessage> filteredChatMessages; // <-- ADD THIS
+    private ActionMode actionMode; // To hold the contextual action bar
 
     private ImageView voiceicon;
     private Intent recognizerIntent;
@@ -103,18 +122,24 @@ public class GeminiChatActivity extends AppCompatActivity {
     private ProgressBar progressBar,listeningProgress;
 
     private ChatAdapter chatAdapter;
+    SearchView search_view;
     private RecyclerView suggestionRecyclerView;
     private SuggestionAdapter suggestionAdapter;
     private List<String> suggestionList = new ArrayList<>();
     private List<ChatMessage> chatMessages;
+    public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
     public MaterialToolbar toolbar;
     private FirebaseUser currentUser;
     private FirebaseFirestore db;
     private FirebaseStorage storage;
     private String currentNoteUuid = "";
+    private ImageButton cameraIcon;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
+    private static final int REQUEST_CAMERA_PERMISSION = 100;
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
+    private String ocrCameraText = "";
+    private String folderName = "";
 
     private final OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS) // Set connection timeout
@@ -130,8 +155,9 @@ public class GeminiChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_gemini_chat);
         progressBar = findViewById(R.id.chat_progress_bar);
         init();
+        listener();
         chatMessages = new ArrayList<>();
-        chatAdapter = new ChatAdapter(chatMessages, GeminiChatActivity.this);
+        chatAdapter = new ChatAdapter(chatMessages, GeminiChatActivity.this, (ChatAdapter.SelectionListener) GeminiChatActivity.this);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         chatRecyclerView.setLayoutManager(layoutManager);
         chatRecyclerView.setAdapter(chatAdapter);
@@ -154,6 +180,7 @@ public class GeminiChatActivity extends AppCompatActivity {
         else{
             receivedDateFromActivities = (getIntent().getStringExtra("note_date") == null)? getCurrentDate(): getIntent().getStringExtra("note_date");
         }
+        this.folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) == null)? "":(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
 
         // Initialize UI components
 
@@ -349,9 +376,34 @@ public class GeminiChatActivity extends AppCompatActivity {
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
         }
     }
+    private void sendOCRMessage() {
+        String prompt = inputEditText.getText().toString().trim();
+        if (prompt.isEmpty()) {
+            return;
+        }
+
+        // 1. Add user's message to the list and update UI
+        addMessage("Image uploaded with text:"+prompt, true);
+        // add another user prompt to the list asking "what would you like to do with the image?"
+        addMessage("What would you like to do with the image?", false);
+        inputEditText.setText(""); // Clear the input field
+
+        // 2. Get the response from Gemini
+    }
     private void sendMessage() {
         String prompt = inputEditText.getText().toString().trim();
         if (prompt.isEmpty()) {
+            return;
+        }
+
+        // 1. Add user's message to the list and update UI
+        addMessage(prompt, true);
+        inputEditText.setText(""); // Clear the input field
+        getGeminiResponse(prompt);
+    }
+    private void sendCameraText(String ocrTextInput) {
+        String prompt = inputEditText.getText().toString().trim();
+        if (ocrTextInput.isEmpty()) {
             return;
         }
 
@@ -362,7 +414,6 @@ public class GeminiChatActivity extends AppCompatActivity {
         // 2. Get the response from Gemini
         getGeminiResponse(prompt);
     }
-
     private void addMessage(String message, boolean isUser) {
         // Add the message to the list
         chatMessages.add(new ChatMessage(message, isUser));
@@ -596,12 +647,216 @@ public class GeminiChatActivity extends AppCompatActivity {
             shareAINote();
             return true;
         } else if (id == R.id.mindmap) {
+            StringBuilder totalContent = new StringBuilder();
+            for (ChatMessage message : chatMessages) {
+                Log.d(TAG, "saving Message: " + message.getMessage());
+                if (message.getMessage() == null || message.getMessage().trim().isEmpty()) continue;
+                totalContent.append(message.getMessage());
+            }
+            generateMindMapWithContent(totalContent.toString());
             return true;
         }
         return true;
     }
-    public void shareAINote(){
+    private void generateMindMapWithContent(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            Toast.makeText(this, "No content to generate mind map", Toast.LENGTH_SHORT).show();
+            progressBar.setVisibility(View.GONE);
+            return;
+        }
 
+        // Show loading indicator
+        progressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Generating smart mind map...", Toast.LENGTH_SHORT).show();
+
+        // Call Gemini to generate structured mind map
+        generateMindMapStructureWithGemini(content, new GeminiMindMapCallback() {
+            @Override
+            public void onStructureGenerated(String structuredText) {
+                progressBar.setVisibility(View.GONE);
+
+                Intent intent = new Intent(GeminiChatActivity.this, MindMapActivity.class);
+                intent.putExtra("notecontent", structuredText);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onGenerationFailed(Exception e) {
+                progressBar.setVisibility(View.GONE);
+
+                Log.e(TAG, "Gemini mind map generation failed.", e);
+                Toast.makeText(GeminiChatActivity.this,
+                        "AI analysis failed. Showing basic map.",
+                        Toast.LENGTH_LONG).show();
+
+                // Fallback: Launch with the original text
+                Intent intent = new Intent(GeminiChatActivity.this, MindMapActivity.class);
+                intent.putExtra("notecontent", content);
+                startActivity(intent);
+            }
+        });
+    }
+    private void generateMindMapStructureWithGemini(String noteContent, GeminiMindMapCallback callback) {
+        if (noteContent == null || noteContent.trim().isEmpty()) {
+            callback.onGenerationFailed(new Exception("Note is empty."));
+            return;
+        }
+
+        // Check content length and truncate if necessary (Gemini has token limits)
+        String processedContent = noteContent;
+        boolean isTruncated = false;
+
+        // Rough estimate: 1 token ≈ 4 characters, limit to ~30k characters for safety
+        int maxChars = 30000;
+        if (processedContent.length() > maxChars) {
+            processedContent = processedContent.substring(0, maxChars);
+            isTruncated = true;
+        }
+
+        // Enhanced prompt for potentially complex/long content from PDFs
+        String prompt = "You are a helpful assistant that specializes in creating structured mind maps from text content.\n" +
+                "Analyze the following content and generate a comprehensive hierarchical mind map structure.\n\n" +
+                "RULES:\n" +
+                "1. Identify the main themes/topics. These will be your primary nodes.\n" +
+                "2. Group related information under appropriate parent nodes.\n" +
+                "3. Create a logical hierarchy with clear parent-child relationships.\n" +
+                "4. If the content is from multiple sources (note + PDFs), organize them coherently.\n" +
+                "5. Your output MUST be a simple indented list. Use two spaces for each level of indentation.\n" +
+                "6. Do NOT use any bullet points, dashes, asterisks, numbers (like 1. or 1.1), or any other characters before the text.\n" +
+                "7. Keep node text concise but meaningful (under 50 characters per node when possible).\n" +
+                "8. Maximum depth of 4 levels to keep the mind map readable.\n\n" +
+                "EXAMPLE OUTPUT FORMAT:\n" +
+                "Main Topic\n" +
+                "  Sub-Topic 1\n" +
+                "    Detail A\n" +
+                "    Detail B\n" +
+                "  Sub-Topic 2\n" +
+                "    Detail C\n\n" +
+                (isTruncated ? "NOTE: The content was truncated due to length. Focus on the main themes and key points.\n\n" : "") +
+                "Content to analyze:\n\n\"" + processedContent + "\"";
+
+        // Use a background thread for the network call
+        Executors.newSingleThreadExecutor().execute(() -> {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .build();
+
+            try {
+                // Create the JSON payload
+                JSONObject jsonBody = new JSONObject();
+                JSONObject contents = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", prompt);
+                parts.put(textPart);
+                contents.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(contents));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+                Request request = new Request.Builder()
+                        .url(API_URL + GeminiAPIKey.API_KEY)
+                        .post(body)
+                        .build();
+
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String structuredText = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
+
+                    // Use the callback to return the result to the UI thread
+                    runOnUiThread(() -> callback.onStructureGenerated(structuredText));
+                } else {
+                    throw new IOException("API call failed with code: " + response.code());
+                }
+            } catch (Exception e) {
+                runOnUiThread(() -> callback.onGenerationFailed(e));
+            }
+        });
+    }
+    public void shareAINote(){
+        if (chatMessages == null || chatMessages.isEmpty()) {
+            Toast.makeText(this, "There is nothing in the chat to share.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        progressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Generating PDF...", Toast.LENGTH_SHORT).show();
+
+        // Perform file I/O and PDF generation on a background thread
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                // 2. Generate a single HTML string from the chat history.
+                StringBuilder htmlBuilder = new StringBuilder();
+                htmlBuilder.append("<html><head><style>body{font-family:sans-serif;} h3{margin-bottom:0;} p{margin-top:0;} pre{background-color:#f0f0f0; padding:10px; border-radius:5px;}</style></head><body>");
+                htmlBuilder.append("<h1>Notes AI Chat Transcript</h1>");
+
+                for (ChatMessage message : chatMessages) {
+                    if (message.getMessage() == null || message.getMessage().trim().isEmpty()) continue;
+
+                    if (message.isUser()) {
+                        htmlBuilder.append("<h3>You:</h3>");
+                        // Sanitize user input to prevent it from being interpreted as HTML
+                        String sanitizedMessage = message.getMessage().replace("<", "&lt;").replace(">", "&gt;");
+                        htmlBuilder.append("<p>").append(sanitizedMessage).append("</p>");
+                    } else {
+                        htmlBuilder.append("<h3>Gemini:</h3>");
+                        // AI message already contains HTML, so just append it
+                        htmlBuilder.append(message.getMessage());
+                    }
+                    htmlBuilder.append("<br>");
+                }
+                htmlBuilder.append("</body></html>");
+                String finalHtml = htmlBuilder.toString();
+
+                // 3. Create a temporary PDF file in the app's cache directory.
+                //    This matches the <cache-path> in your file_paths.xml
+                File pdfFile = new File(getCacheDir(), "chat_transcript_" + System.currentTimeMillis() + ".pdf");
+
+                // 4. Use iText to convert the HTML string to a PDF file.
+                PdfWriter writer = new PdfWriter(new FileOutputStream(pdfFile));
+                PdfDocument pdf = new PdfDocument(writer);
+                HtmlConverter.convertToPdf(finalHtml, pdf, null);
+                pdf.close();
+
+                // 5. Get a content URI for the file using the FileProvider.
+                //    The authority must match what's in your AndroidManifest.xml
+                Uri fileUri = FileProvider.getUriForFile(
+                        GeminiChatActivity.this,
+                        BuildConfig.APPLICATION_ID + ".fileprovider", // This generates "com.noteaiapp.keyboardai.provider"
+                        pdfFile
+                );
+
+                // 6. Create the Share Intent.
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType("application/pdf");
+                shareIntent.putExtra(Intent.EXTRA_SUBJECT, "AI Chat Transcript");
+                shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Grant permission for other apps to read the file
+
+                // Switch back to the UI thread to launch the share sheet
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    startActivity(Intent.createChooser(shareIntent, "Share PDF Via"));
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error generating or sharing PDF", e);
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(GeminiChatActivity.this, "Failed to generate PDF.", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     // In GeminiChatActivity.java
@@ -687,7 +942,7 @@ public class GeminiChatActivity extends AppCompatActivity {
                         note.setTitle("Notes AI Chat");
                     }
                     note.setFontColor("ainote");
-
+                    note.setFontFamily(folderName);
                     // --- Set/Update note properties ---
                     note.setContent(finalNoteContent);
                     note.setDate(receivedDateFromActivities); // Update the last modified date
@@ -714,20 +969,13 @@ public class GeminiChatActivity extends AppCompatActivity {
                                 }));
                     }
                 }
-
                 @Override
                 public void onFetchFailed(Exception e) {
-
                 }
             });
-
-            // --- Check if we are UPDATING an existing note or CREATING a new one ---
-
-
         });
     }
 
-    // You'll also need this helper method if it's not already in your activity
     private String getCurrentDate() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         return sdf.format(new Date());
@@ -748,8 +996,153 @@ public class GeminiChatActivity extends AppCompatActivity {
     }
 
     public void showLanguageSelectionDialog(){
-
+        final String[] languages = {getApplicationContext().getString(R.string.spanish_text),
+                getApplicationContext().getString(R.string.french_text),
+                getApplicationContext().getString(R.string.german_text),
+                getApplicationContext().getString(R.string.japanese_text),
+                getApplicationContext().getString(R.string.hindi_text),
+                getApplicationContext().getString(R.string.russian_text),
+                getApplicationContext().getString(R.string.english_text)
+        };
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.translate_to)
+                .setItems(languages, (dialog, which) -> {
+                    String selectedLanguage = languages[which];
+                    translateNoteWithGemini(selectedLanguage);
+                });
+        builder.create().show();
     }
+    public void translateNoteWithGemini(String language){
+        // 1. Check if there's a conversation to translate.
+        if (chatMessages == null || chatMessages.isEmpty()) {
+            Toast.makeText(this, "Chat is empty, nothing to translate.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        progressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Translating chat to " + language + "...", Toast.LENGTH_SHORT).show();
+
+        // Perform all heavy lifting on a background thread.
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                // 2. Build a single string from the entire chat history.
+                StringBuilder conversationText = new StringBuilder();
+                conversationText.append("--- START OF CONVERSATION ---\n");
+                for (ChatMessage message : chatMessages) {
+                    if (message.getMessage() == null || message.getMessage().trim().isEmpty()) continue;
+
+                    // Use HtmlCompat to strip any HTML tags for a clean text version.
+                    String plainTextMessage = HtmlCompat.fromHtml(message.getMessage(), HtmlCompat.FROM_HTML_MODE_LEGACY).toString();
+
+                    if (message.isUser()) {
+                        conversationText.append("User: ").append(plainTextMessage).append("\n");
+                    } else {
+                        conversationText.append("Gemini: ").append(plainTextMessage).append("\n");
+                    }
+                }
+                conversationText.append("--- END OF CONVERSATION ---");
+
+                // 3. Create a specific, detailed prompt for the translation task.
+                String translationPrompt = "You are an expert translator. Translate the following conversation into " + language + ".\n" +
+                        "RULES:\n" +
+                        "1. Preserve the 'User:' and 'Gemini:' labels for each line.\n" +
+                        "2. Translate only the content after the labels.\n" +
+                        "3. Your entire output must ONLY be the translated conversation. Do not add any extra commentary or explanations.\n\n" +
+                        "Conversation to translate:\n\n" + conversationText.toString();
+
+                // 4. Construct the JSON payload for the API call.
+                JSONObject jsonBody = new JSONObject();
+                JSONObject content = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", translationPrompt);
+                parts.put(textPart);
+                content.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(content));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+
+                // Use the UNARY endpoint. It is faster and simpler for a single-turn task like this.
+                String unaryApiUrl = GeminiAPIKey.API_URL_GEMINI + GeminiAPIKey.API_KEY;
+
+                Request request = new Request.Builder()
+                        .url(unaryApiUrl)
+                        .post(body)
+                        .build();
+
+                // 5. Execute the API call synchronously.
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String translatedConversation = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
+
+                    // 6. Update the UI with the translated content on the main thread.
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        replaceChatWithTranslation(translatedConversation);
+                        Toast.makeText(GeminiChatActivity.this, "Chat translated!", Toast.LENGTH_LONG).show();
+                    });
+
+                } else {
+                    // Handle API errors on the main thread
+                    final String errorBody = response.body() != null ? response.body().string() : "No error body";
+                    Log.e(TAG, "Gemini Translation Error: " + response.code() + " -> " + errorBody);
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(this, "Error: Translation failed with code " + response.code(), Toast.LENGTH_SHORT).show();
+                    });
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error during Gemini translation process: " + e.getMessage(), e);
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(this, "An error occurred during translation.", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+    // Add this helper method to your GeminiChatActivity class
+
+    private void replaceChatWithTranslation(String translatedConversation) {
+        if (translatedConversation == null || translatedConversation.isEmpty()) {
+            return;
+        }
+
+        // This is a simple parser that assumes the format "Role: Content"
+        List<ChatMessage> translatedMessages = new ArrayList<>();
+        String[] lines = translatedConversation.split("\n");
+
+        for (String line : lines) {
+            if (line.startsWith("User:")) {
+                String message = line.substring(5).trim();
+                translatedMessages.add(new ChatMessage(message, true));
+            } else if (line.startsWith("Gemini:")) {
+                String message = line.substring(7).trim();
+                // For simplicity, we add the translated text as plain text.
+                // You could send it back to the formatter for HTML if needed.
+                translatedMessages.add(new ChatMessage(message, false));
+            }
+        }
+
+        // Clear the old chat and add the new, translated messages.
+        chatMessages.clear();
+        chatMessages.addAll(translatedMessages);
+        chatAdapter.notifyDataSetChanged(); // Use notifyDataSetChanged as the entire list has changed.
+
+        if (!chatMessages.isEmpty()) {
+            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        }
+    }
+
     // You can override onPostResume if you need to, but it's not required for this functionality.
     @Override
     protected void onPostResume() {
@@ -793,6 +1186,13 @@ public class GeminiChatActivity extends AppCompatActivity {
                 }
             }
         }
+        else  if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //openCamera();
+            } else {
+                Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
     // Add this helper method to your GeminiChatActivity.java
 
@@ -834,9 +1234,58 @@ public class GeminiChatActivity extends AppCompatActivity {
         suggestionList.add("What are the counter-arguments?");
         suggestionAdapter.notifyDataSetChanged();
     }
+// In GeminiChatActivity.java
+
+    private void filterChatMessages(String query) {
+        // Clear the previous search results
+        filteredChatMessages.clear();
+
+        if (query.isEmpty()) {
+            // If the query is empty, show the full chat history
+            chatAdapter.setMessages(chatMessages);
+        } else {
+            // Loop through the original, complete list of messages
+            for (ChatMessage message : chatMessages) {
+                // Check if the message content contains the query (case-insensitive)
+                if (message.getMessage() != null && message.getMessage().toLowerCase().contains(query.toLowerCase())) {
+                    // If it matches, add it to the filtered list
+                    filteredChatMessages.add(message);
+                }
+            }
+            // Update the adapter to show only the filtered results
+            chatAdapter.setMessages(filteredChatMessages);
+        }
+        chatAdapter.notifyDataSetChanged();
+    }
 
     public void init(){
+        if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+        }
+        search_view = findViewById(R.id.search_view);
+        filteredChatMessages = new ArrayList<>();
+        search_view.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                // This is called when the user presses the search button on the keyboard
+                filterChatMessages(query);
+                return true;
+            }
 
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                // This is called every time the user types a character
+                // We can filter in real-time
+                filterChatMessages(newText);
+                return true;
+            }
+        });
+        search_view.setOnCloseListener(() -> {
+            // Restore the adapter with the original, complete list of messages
+            chatAdapter.setMessages(chatMessages);
+            return false;
+        });
+        cameraIcon = findViewById(R.id.cameraIcon);
         suggestionRecyclerView = findViewById(R.id.suggestion_recycler_view);
         chatRecyclerView = findViewById(R.id.chat_recycler_view);
         noteTitleEditText = findViewById(R.id.noteTitleEditText);
@@ -937,5 +1386,79 @@ public class GeminiChatActivity extends AppCompatActivity {
         });
     }
 
+    private final ActivityResultLauncher<Intent> cameraLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    String ocrText = result.getData().getStringExtra("ocr_text");
+                    if (ocrText != null && !ocrText.isEmpty()) {
+                        ocrCameraText = ocrText;
+                        inputEditText.setText(ocrCameraText);
+                        sendOCRMessage();
+                    } else {
+                        Toast.makeText(this, "No text detected", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+    public void listener(){
+        cameraIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(GeminiChatActivity.this, CameraActivity.class);
+                cameraLauncher.launch(i);
+            }
+        });
+    }
+    @Override
+    public void onSelectionModeChanged(boolean isEnabled) {
+        if (isEnabled && actionMode == null) {
+            // Start the action mode
+            actionMode = startSupportActionMode(actionModeCallback);
+        } else if (!isEnabled && actionMode != null) {
+            // Finish the action mode
+            actionMode.finish();
+        }
+    }
+
+    @Override
+    public void onSelectionCountChanged(int count) {
+        if (actionMode != null) {
+            // Update the title of the action bar
+            actionMode.setTitle(count + " selected");
+        }
+    }
+
+    private final ActionMode.Callback actionModeCallback = new ActionMode.Callback() {
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            // Inflate the menu for the contextual action bar
+            getMenuInflater().inflate(R.menu.chat_selection_menu, menu);
+            return true; // Return true to show the action mode
+        }
+
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return false; // Return false because nothing is prepared
+        }
+
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            if (item.getItemId() == R.id.action_delete) {
+                chatAdapter.deleteSelectedMessages();
+                Toast.makeText(GeminiChatActivity.this, "Messages deleted", Toast.LENGTH_SHORT).show();
+
+                // Finish the action mode. This will automatically call onDestroyActionMode.
+                mode.finish();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+            // This is called when the action mode is finished (e.g., back button or action completed)
+            chatAdapter.exitSelectionMode();
+            actionMode = null;
+        }
+    };
 
 }

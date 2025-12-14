@@ -25,6 +25,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.noteaiapp.keyboardai.Models.ChatMessage;
 import com.noteaiapp.keyboardai.R;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 // --- Make the Adapter generic for RecyclerView.ViewHolder ---
@@ -35,12 +37,20 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int VIEW_TYPE_GEMINI = 2;
     private static final int VIEW_TYPE_PDF = 3;
 
-    private final List<ChatMessage> chatMessages;
+    private List<ChatMessage> chatMessages;
     Context context;
+    private final List<Integer> selectedPositions = new ArrayList<>();
+    private boolean isSelectionMode = false;
+    private final SelectionListener selectionListener;
+    public interface SelectionListener {
+        void onSelectionModeChanged(boolean isEnabled);
+        void onSelectionCountChanged(int count);
+    }
 
-    public ChatAdapter(List<ChatMessage> chatMessages, Context context) {
+    public ChatAdapter(List<ChatMessage> chatMessages, Context context, SelectionListener listener) {
         this.chatMessages = chatMessages;
         this.context = context;
+        this.selectionListener = listener;
     }
 
     // --- getItemViewType is now correct ---
@@ -55,7 +65,66 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return VIEW_TYPE_GEMINI;
         }
     }
+    public void toggleSelection(int position) {
+        if (selectedPositions.contains(position)) {
+            selectedPositions.remove(Integer.valueOf(position));
+        } else {
+            selectedPositions.add(position);
+        }
+        notifyItemChanged(position);
 
+        // If the last item is deselected, exit selection mode
+        if (selectedPositions.isEmpty()) {
+            exitSelectionMode();
+        } else if (!isSelectionMode) {
+            // If the first item is selected, enter selection mode
+            isSelectionMode = true;
+            selectionListener.onSelectionModeChanged(true);
+        }
+        if (isSelectionMode) {
+            selectionListener.onSelectionCountChanged(selectedPositions.size());
+        }
+    }
+    public void exitSelectionMode() {
+        isSelectionMode = false;
+        List<Integer> positionsToUpdate = new ArrayList<>(selectedPositions);
+        selectedPositions.clear();
+        for (int position : positionsToUpdate) {
+            notifyItemChanged(position); // Redraw only previously selected items
+        }
+        selectionListener.onSelectionModeChanged(false);
+    }
+    public void setMessages(List<ChatMessage> newMessages) {
+        this.chatMessages = newMessages;
+        // Don't call notifyDataSetChanged() here; let the activity control it.
+    }
+    public void deleteSelectedMessages() {
+        if (selectedPositions.isEmpty()) {
+            return;
+        }
+        Collections.sort(selectedPositions, Collections.reverseOrder());
+
+        for (int position : selectedPositions) {
+            if (position < chatMessages.size()) {
+                chatMessages.remove(position);
+                // This is the correct method to call for removals.
+                // It tells the RecyclerView to run the "remove" animation.
+                notifyItemRemoved(position);
+            }
+        }
+        // --- END: THIS IS THE FIX ---
+
+        // Clear the selection list after deletion
+        selectedPositions.clear();
+        isSelectionMode = false; // We are exiting selection mode
+    }
+    public List<ChatMessage> getSelectedMessages() {
+        List<ChatMessage> selectedMessages = new ArrayList<>();
+        for (int position : selectedPositions) {
+            selectedMessages.add(chatMessages.get(position));
+        }
+        return selectedMessages;
+    }
     // --- onCreateViewHolder now returns the correct ViewHolder for each type ---
     @NonNull
     @Override
@@ -124,6 +193,23 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
                 break;
         }
+        if (selectedPositions.contains(position)) {
+            // If it is selected, set a light blue highlight color on its background.
+            holder.itemView.setBackgroundColor(Color.parseColor("#B0E0E6")); // Light blue/cyan highlight
+        } else {
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT);
+        }
+        holder.itemView.setOnClickListener(v -> {
+            if (isSelectionMode) {
+                toggleSelection(holder.getAdapterPosition());
+            }
+            // Add any regular click logic here if needed
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            toggleSelection(holder.getAdapterPosition());
+            return true; // Consume the long click event
+        });
     }
 
     // --- The rest of your methods ---

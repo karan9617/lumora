@@ -120,4 +120,5 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.itextpdf:kernel:7.2.5")
     implementation("com.itextpdf:layout:7.2.5")
+    implementation("com.itextpdf:html2pdf:4.0.5")
 }

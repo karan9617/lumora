@@ -62,6 +62,7 @@ import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
 import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.geminichat.GeminiChatActivity;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
@@ -328,6 +329,7 @@ public class CalendarActivity extends AppCompatActivity {
     Animation slideDownAnimation;
     OutOfMonthDecorator outOfMonthDecorator;
     private String TAG = "com.noteaiapp.keyboardai";
+    LinearLayout option_ai_note_layout;
     View transparent_overlay;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -336,6 +338,7 @@ public class CalendarActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_calendar);
         fabAddNote = findViewById(R.id.fabAddNote);
+        option_ai_note_layout = findViewById(R.id.option_ai_note_layout);
         optionsLayout = findViewById(R.id.options_layout);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         mAuth = FirebaseAuth.getInstance();
@@ -351,6 +354,7 @@ public class CalendarActivity extends AppCompatActivity {
             finish(); // Close this activity
             return;   // IMPORTANT: Stop the rest of onCreate from running
         }
+
         noteActivityLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -499,7 +503,14 @@ public class CalendarActivity extends AppCompatActivity {
                 Intent intent;
                 String noteContent = note.getContent();
                 boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
-                if(isListNote){
+                if (note.getFontColor() != null && !note.getFontColor().isEmpty() && note.getFontColor().equalsIgnoreCase("ainote")) {
+                    intent = new Intent(CalendarActivity.this, GeminiChatActivity.class);
+                    // Pass the Note's Cloud ID to GeminiChatActivity so it can load the history
+                    intent.putExtra("note_cloud_id", note.getUserFirebaseId());
+                    Log.d("com.noteaiapp.keyboardai","AI gemini note opened");
+                }
+                // --- END: THIS IS THE FIX ---
+                else if(isListNote){
                     intent = new Intent(CalendarActivity.this, ListItemsActivity.class);
                 }
                 else if (note.getContent() != null && !note.getContent().isEmpty()) {
@@ -762,6 +773,20 @@ public class CalendarActivity extends AppCompatActivity {
                 String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
                 intent.putExtra(DATE_EXTRA_KEY, dateString);
                 noteActivityLauncher.launch(intent); // <-- THE FIX
+                hideOptions();
+            }
+        });
+        option_ai_note_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(CalendarActivity.this, GeminiChatActivity.class);
+                CalendarDay selectedDay = calendarView.getSelectedDate();
+                if (selectedDay == null) {
+                    selectedDay = CalendarDay.today();
+                }
+                String dateString = DateConverter.formatCalendarDay(selectedDay, "yyyy-MM-dd HH:mm:ss");
+                intent.putExtra(DATE_EXTRA_KEY, dateString);
+                startActivity(intent);
                 hideOptions();
             }
         });

@@ -4,7 +4,7 @@
     <item
         android:id="@+id/action_attach"
         android:title="@string/attach"
-        android:icon="@drawable/attach_icon_white"
+        android:icon="@drawable/pdf_icon"
         app:showAsAction="ifRoom"
         />
     <item
@@ -17,16 +17,10 @@
 
     <item
         android:id="@+id/action_translate"
-        android:title="@string/translate_text"
+        android:title="@string/translate_chat"
         app:showAsAction="never"
         android:contentDescription="Translate the current note" />
 
-    <item
-        android:id="@+id/action_correct_text"
-        android:title="@string/correct_text_values"
-        android:icon="@drawable/ic_spellcheck"
-        app:showAsAction="ifRoom"
-        android:contentDescription="Correct spelling and grammar" />
 
     <item
         android:id="@+id/mindmap"
@@ -35,7 +29,7 @@
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_share"
-        android:title="Share Note"
+        android:title="@string/share_chat"
         android:icon="@drawable/ic_share"
         app:showAsAction="ifRoom" />
 </menu>
