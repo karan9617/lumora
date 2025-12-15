@@ -207,4 +207,12 @@
     <string name="drawer_logout_text">退出登录</string>
     <string name="snackbar_text">您已离线。请连接互联网以实现无缝同步。</string>
     <string name="connect">连接</string>
+
+    <string name="option_ai_note_layout">AI 笔记</string>
+    <string name="mindmaplabel">思维导图</string>
+    <string name="attach">附加</string>
+    <string name="translate_chat">翻译聊天</string>
+    <string name="share_chat">分享聊天</string>
+    <string name="textViewChatAI">8. NotesAI 聊天：\n- 创建 AI 驱动的聊天，通过笔记对任何内容进行提问和研究。</string>
+
 </resources>

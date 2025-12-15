@@ -14,14 +14,14 @@
 
         app:showAsAction="ifRoom"
         />
-
+<!--
     <item
         android:id="@+id/action_translate"
         android:title="@string/translate_chat"
         app:showAsAction="never"
         android:contentDescription="Translate the current note" />
 
-
+-->
     <item
         android:id="@+id/mindmap"
         android:title="MindMap"

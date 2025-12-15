@@ -1,5 +1,6 @@
 package com.noteaiapp.keyboardai.camera;
 
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -9,7 +10,9 @@ import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -52,6 +55,7 @@ public class CameraActivity extends AppCompatActivity {
     private FirebaseStorage storage; // <-- ADD THIS
 
     private static final int CAMERA_PERMISSION_CODE = 101;
+    private ProgressBar processingProgressBar;
     private FirebaseUser currentUser;
 
     @Override
@@ -62,6 +66,7 @@ public class CameraActivity extends AppCompatActivity {
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         previewView = findViewById(R.id.previewView);
         captureButton = findViewById(R.id.captureButton);
+        processingProgressBar = findViewById(R.id.processingProgressBar); // <-- ADD THIS
         overlayView = findViewById(R.id.overlayView);
         cameraExecutor = Executors.newSingleThreadExecutor();
         storage = FirebaseStorage.getInstance();
@@ -115,6 +120,7 @@ public class CameraActivity extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     if (bitmap != null) {
+                        processingProgressBar.setVisibility(View.VISIBLE);
                         // Crop to selected rectangle
                         RectF rect = overlayView.getSelectedRect();
                         Bitmap cropped = cropBitmap(bitmap, rect, previewView.getWidth(), previewView.getHeight());
@@ -140,7 +146,7 @@ public class CameraActivity extends AppCompatActivity {
     private void uploadImageAndRunOcr(Bitmap bitmap) {
         if (bitmap == null) return;
 
-        Toast.makeText(this, "Uploading image...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Uploading image, please keep your hands still.", Toast.LENGTH_SHORT).show();
 
         // Prepare the bitmap for upload
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -164,12 +170,14 @@ public class CameraActivity extends AppCompatActivity {
 
                     }).addOnFailureListener(e -> {
                         Log.e("CameraActivity", "Failed to get download URL", e);
+                        processingProgressBar.setVisibility(View.GONE);
                         Toast.makeText(this, "Failed to get image URL.", Toast.LENGTH_SHORT).show();
                         finish(); // Finish with a failure
                     });
                 })
                 .addOnFailureListener(e -> {
                     Log.e("CameraActivity", "Image upload failed", e);
+                    processingProgressBar.setVisibility(View.GONE);
                     Toast.makeText(this, "Image upload failed.", Toast.LENGTH_SHORT).show();
                     finish(); // Finish with a failure
                 });

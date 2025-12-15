@@ -200,6 +200,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             case VIEW_TYPE_PDF:
                 PdfViewHolder pdfViewHolder = (PdfViewHolder) holder;
                 String message = chatMessage.getMessage();
+                String[] pdfsplit = message.split(":");
                 // Set a preview of the attached content
                 pdfViewHolder.messageText.setText("PDF Attached: " + message.substring(0, Math.min(message.length(), 40)) + "...");
                 // The icon is already set in the XML, so we don't need to change it.

@@ -231,4 +231,21 @@
     <string name="attach">Attach</string>
     <string name="translate_chat">Translate Chat</string>
     <string name="share_chat">Share Chat</string>
+    <string name="textViewChatAI">8. NotesAI Chat:\n- Create AI powdered chat, ask queries and research through notes on any content.</string>
+
+    <string name="error_message">Error: Failed to get response.</string>
+    <string name="error_occured">An error occurred.</string>
+    <string name="failed_load">Failed to load chat.</string>
+    <string name="could_not_find_chat">Error: Could not find chat history.</string>
+    <string name="note_id_missing">Error: Note ID or user is missing.</string>
+    <string name="auto_saving">Auto-saving...</string>
+    <string name="message_deleted">Messages deleted</string>
+    <string name="failed_display_capture">Failed to display captured image.</string>
+    <string name="no_text_found_image">No text found in the image.</string>
+    <string name="pdf_attached">PDF attached successfully! Type your prompt.</string>
+    <string name="pdf_large">PDF is too large</string>
+    <string name="camera_permission_denied">Camera permission denied</string>
+    <string name="microphone_access">Microphone access is required for voice input</string>
+    <string name="permission_granted">Permission granted. Tap the icon again to listen.</string>
+    <string name="error_occured_translate">An error occurred during translation.</string>
 </resources>

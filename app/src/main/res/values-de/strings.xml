@@ -205,4 +205,12 @@
     <string name="drawer_logout_text">Abmelden</string>
     <string name="snackbar_text">Sie sind offline. Verbinden Sie sich mit dem Internet für eine nahtlose Synchronisierung.</string>
     <string name="connect">VERBINDEN</string>
+
+    <string name="option_ai_note_layout">KI-Notiz</string>
+    <string name="mindmaplabel">Mindmap</string>
+    <string name="attach">Anhängen</string>
+    <string name="translate_chat">Chat übersetzen</string>
+    <string name="share_chat">Chat teilen</string>
+    <string name="textViewChatAI">8. NotesAI-Chat:\n- Erstellen Sie einen KI-gestützten Chat, stellen Sie Fragen und recherchieren Sie Inhalte mithilfe von Notizen.</string>
+
 </resources>

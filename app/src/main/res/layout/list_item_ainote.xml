@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#032E52"
+        android:background="#4D7DA6"
         android:padding="12dp">
 
         <!-- Title and Date (same as your other notes) -->

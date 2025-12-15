@@ -207,4 +207,12 @@
     <string name="drawer_logout_text">Sair</string>
     <string name="snackbar_text">Você está offline. Conecte-se à internet para uma sincronização perfeita.</string>
     <string name="connect">CONECTAR</string>
+
+    <string name="option_ai_note_layout">Nota de IA</string>
+    <string name="mindmaplabel">Mapa Mental</string>
+    <string name="attach">Anexar</string>
+    <string name="translate_chat">Traduzir Chat</string>
+    <string name="share_chat">Compartilhar Chat</string>
+    <string name="textViewChatAI">8. Chat NotesAI:\n- Crie um chat com tecnologia de IA, faça perguntas e pesquise conteúdos por meio de notas.</string>
+
 </resources>

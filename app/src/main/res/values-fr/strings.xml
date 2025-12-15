@@ -208,4 +208,12 @@
     <string name="drawer_logout_text">Déconnexion</string>
     <string name="snackbar_text">Vous êtes hors ligne. Connectez-vous à Internet pour une synchronisation fluide.</string>
     <string name="connect">CONNECTER</string>
+
+    <string name="option_ai_note_layout">Note IA</string>
+    <string name="mindmaplabel">Carte Mentale</string>
+    <string name="attach">Joindre</string>
+    <string name="translate_chat">Traduire le chat</string>
+    <string name="share_chat">Partager le chat</string>
+    <string name="textViewChatAI">8. Chat NotesAI :\n- Créez un chat alimenté par l’IA, posez des questions et effectuez des recherches à partir de vos notes.</string>
+
 </resources>

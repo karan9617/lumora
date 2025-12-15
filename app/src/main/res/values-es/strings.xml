@@ -205,4 +205,12 @@
     <string name="drawer_logout_text">Cerrar sesión</string>
     <string name="snackbar_text">Estás sin conexión. Conéctate a Internet para una sincronización sin interrupciones.</string>
     <string name="connect">CONECTAR</string>
+
+    <string name="option_ai_note_layout">Nota de IA</string>
+    <string name="mindmaplabel">Mapa Mental</string>
+    <string name="attach">Adjuntar</string>
+    <string name="translate_chat">Traducir chat</string>
+    <string name="share_chat">Compartir chat</string>
+    <string name="textViewChatAI">8. Chat NotesAI:\n- Cree un chat impulsado por IA, haga preguntas e investigue contenido a través de notas.</string>
+
 </resources>

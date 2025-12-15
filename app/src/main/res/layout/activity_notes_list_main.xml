@@ -217,7 +217,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
-                    android:src="@drawable/ic_text_icon"
+                    android:src="@drawable/ai_note_image"
                     app:tint="@android:color/white"
                     android:contentDescription="Custom note icon" />
             </LinearLayout>

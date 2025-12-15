@@ -207,4 +207,12 @@
     <string name="drawer_logout_text">लॉगआउट</string>
     <string name="snackbar_text">आप ऑफ़लाइन हैं। निर्बाध सिंक के लिए इंटरनेट से कनेक्ट करें।</string>
     <string name="connect">कनेक्ट</string>
+
+    <string name="option_ai_note_layout">AI नोट</string>
+    <string name="mindmaplabel">माइंड मैप</string>
+    <string name="attach">संलग्न करें</string>
+    <string name="translate_chat">चैट अनुवाद करें</string>
+    <string name="share_chat">चैट साझा करें</string>
+    <string name="textViewChatAI">8. NotesAI चैट:\n- AI आधारित चैट बनाएं, किसी भी सामग्री पर नोट्स के माध्यम से प्रश्न पूछें और शोध करें।</string>
+
 </resources>

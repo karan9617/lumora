@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.noteaiapp.keyboardai.Models.ChatMessage;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
@@ -156,7 +157,12 @@ public class NotesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
                 // Extract plain text for the preview, stripping all HTML tags.
                 if (isUser) {
+
                     message = part.replace("You:</h3>", "").replaceAll("<[^>]*>", "").trim();
+                    if(message.contains("https://firebasestorage.googleapis.com")){
+                        message = "Image";
+                    }
+
                 } else if (part.startsWith("Gemini:")) {
                     // For Gemini, we also strip the HTML for this short preview
                     message = part.replace("Gemini:</h3>", "").replaceAll("<[^>]*>", "").trim();

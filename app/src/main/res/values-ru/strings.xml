@@ -207,4 +207,12 @@
     <string name="drawer_logout_text">Выйти</string>
     <string name="snackbar_text">Вы офлайн. Подключитесь к интернету для бесперебойной синхронизации.</string>
     <string name="connect">ПОДКЛЮЧИТЬ</string>
+
+    <string name="option_ai_note_layout">AI Заметка</string>
+    <string name="mindmaplabel">Интеллект-карта</string>
+    <string name="attach">Прикрепить</string>
+    <string name="translate_chat">Перевести чат</string>
+    <string name="share_chat">Поделиться чатом</string>
+    <string name="textViewChatAI">8. NotesAI Чат:\n- Создавайте чат на базе ИИ, задавайте вопросы и исследуйте заметки по любому контенту.</string>
+
 </resources>

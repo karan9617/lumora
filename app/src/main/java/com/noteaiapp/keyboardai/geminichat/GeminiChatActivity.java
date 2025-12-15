@@ -45,6 +45,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -95,6 +96,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.noteaiapp.keyboardai.interfaces.GeminiFormattingCallback;
 import com.noteaiapp.keyboardai.interfaces.GeminiMindMapCallback;
 import com.noteaiapp.keyboardai.mindmap.MindMapActivity;
 
@@ -106,6 +108,8 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     // IMPORTANT: Make sure you have your API Key here, or load it securely
     private boolean isListening = false;
     private SpeechRecognizer speechRecognizer;
+    private boolean isExistingNote = false;
+    private boolean isChatModified = false;
     private static final int CAMERA_PERMISSION_CODE = 100;
     private final Handler autoSaveHandler = new Handler(Looper.getMainLooper());
     private final Runnable autoSaveRunnable = new Runnable() {
@@ -115,7 +119,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
             // We'll add a check to ensure we only save if there are changes
             if (isExistingNote) { // Only auto-save notes that have been saved at least once
                 Log.d(TAG, "Auto-saving note...");
-                Toast.makeText(GeminiChatActivity.this, "Auto-saving...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(GeminiChatActivity.this, R.string.auto_saving, Toast.LENGTH_SHORT).show();
                 saveNote();
             }
         }
@@ -147,7 +151,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     private static final String API_URL = GeminiAPIKey.API_URL_GEMINI+GeminiAPIKey.API_KEY;
 
     private RecyclerView chatRecyclerView;
-    private boolean isExistingNote = false;
+
     private EditText inputEditText;
     private static final int PERMISSION_REQUEST_CODE = 1;
 
@@ -351,7 +355,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
         progressBar.setVisibility(View.VISIBLE);
 
         if (currentNoteUuid == null || currentUser == null) {
-            Toast.makeText(this, "Error: Note ID or user is missing.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.note_id_missing, Toast.LENGTH_SHORT).show();
             noteTitleEditText.setText("AI Chat...");
             progressBar.setVisibility(View.GONE);
             return;
@@ -372,13 +376,13 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                             generateDynamicSuggestions(); // Generate suggestions based on the loaded chat
                         }
                     } else {
-                        Toast.makeText(this, "Error: Could not find chat history.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, R.string.could_not_find_chat, Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
                     progressBar.setVisibility(View.GONE);
                     Log.e(TAG, "Error loading chat note from Firebase", e);
-                    Toast.makeText(this, "Failed to load chat.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.failed_load, Toast.LENGTH_SHORT).show();
                 });
     }
     private void parseAndDisplayChatHistory(String htmlContent) {
@@ -407,6 +411,15 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                     chatMessages.add(message1);
                     continue;
                 }
+                else if(part.contains("pdf:")){
+                    message = part.replace("You:</h3>", "").replaceAll("<[^>]*>", "").trim();
+                    ChatMessage message1 = new ChatMessage();
+                    message1.setType("pdf");
+                    message1.setMessage(message);
+                    message1.setUser(true);
+                    chatMessages.add(message1);
+                    continue;
+                }
                 else{
                     message = part.replace("You:</h3>", "").replaceAll("<[^>]*>", "").trim();
                 }
@@ -414,7 +427,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 //user messages, we strip out all HTML tags to get the plain text.
             } else if (part.startsWith("NotesAI:")) {
                 // For Gemini messages, we keep the inner HTML for styled rendering.
-                message = part.replace("NotesAI:</h3>", "").replace("<br>", "").trim();
+                message = part.replace("NotesAI:</h3>", "");
             } else {
                 continue; // Skip parts that don't match, like the initial <h1>
             }
@@ -425,44 +438,78 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
         }
     }
-    private void sendOCRMessage() {
-        String prompt = inputEditText.getText().toString().trim();
-        if (prompt.isEmpty()) {
-            return;
-        }
+    // Add this new method to GeminiChatActivity.java
 
-        // 1. Add user's message to the list and update UI
-        addMessage("Image uploaded with text:"+prompt, true);
-        // add another user prompt to the list asking "what would you like to do with the image?"
-        addMessage("What would you like to do with the image?", false);
-        inputEditText.setText(""); // Clear the input field
+    private void formatAiResponseWithGemini(String rawText, GeminiFormattingCallback callback) {// 1. Create a highly specific prompt for the formatting task.
+        String formattingPrompt = "You are an expert HTML formatter. Analyze the following text and wrap it in the appropriate HTML tags for an Android app.\n" +
+                "Follow these rules precisely:\n" +
+                "- Use <h3> for main headings.\n" +
+                "- Use <p> for paragraphs.\n" +
+                "- Use <ul> and <li> for bullet points.\n" +
+                "- Use <pre><code> for code blocks, preserving all indentation and line breaks.\n" +
+                "- Use <b> for bold and <i> for italic.\n" +
+                "- Your entire output must ONLY be the formatted HTML. Do not add any extra commentary.\n\n" +
+                "Text to format:\n\n\"" + rawText + "\"";
 
-        // 2. Get the response from Gemini
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                // 2. Construct the JSON payload for this simple, single-turn request.
+                JSONObject jsonBody = new JSONObject();
+                JSONArray contentsArray = new JSONArray();
+                JSONObject content = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", formattingPrompt);
+                parts.put(textPart);
+                content.put("parts", parts);
+                contentsArray.put(content);
+                jsonBody.put("contents", contentsArray);
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+
+                // Use the UNARY endpoint for this simple task. It's faster.
+                Request request = new Request.Builder()
+                        .url(GeminiAPIKey.API_URL_GEMINI + GeminiAPIKey.API_KEY)
+                        .post(body)
+                        .build();
+
+                // 3. Execute the synchronous API call.
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String formattedHtml = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
+
+                    // 4. Return the result via the callback on the UI thread.
+                    runOnUiThread(() -> callback.onFormattingComplete(formattedHtml));
+                } else {
+                    throw new IOException("Formatter API call failed with code: " + response.code());
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error during Gemini formatting step: " + e.getMessage(), e);
+                runOnUiThread(callback::onFormattingFailed);
+            }
+        });
     }
     private void sendMessage() {
         String prompt = inputEditText.getText().toString().trim();
         if (prompt.isEmpty()) {
             return;
         }
-
+        isChatModified = true; // <-- ADD THIS
         // 1. Add user's message to the list and update UI
         addMessage(prompt, true);
         triggerAutoSave();
         inputEditText.setText(""); // Clear the input field
         getGeminiResponse(prompt);
-    }
-    private void addImgTextMessage(String text) {
-        if (text == null || text.trim().isEmpty()) return;
-
-        ChatMessage message = new ChatMessage();
-        message.setType("imagetext"); // A specific type for OCR text
-        message.setMessage(text);
-        message.setUser(true); // The user initiated this action
-
-        chatMessages.add(message);
-        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-        triggerAutoSave();
     }
 
     private void addMessage(String message, boolean isUser) {
@@ -486,25 +533,12 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
     }
     private void addPdfMessage(String message, boolean isUser, Bitmap imageUri) {
-        ChatMessage chatMessage = new ChatMessage(message, isUser);
+        ChatMessage chatMessage = new ChatMessage("pdf:"+message, true);
         chatMessage.setImage(imageUri);
         chatMessage.setIsImageFlag(true);
-        chatMessage.setMessage(message);
-        chatMessage.setUser(isUser);
+        chatMessage.setMessage("pdf:"+message);
+        chatMessage.setUser(true);
         chatMessage.setType("pdf");
-        chatMessages.add(chatMessage);
-        // Notify the adapter that a new item has been inserted
-        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-        // Scroll to the bottom to show the latest message
-        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-    }
-    private void addImgMessage(String message, boolean isUser, Bitmap imageUri) {
-        ChatMessage chatMessage = new ChatMessage(message, isUser);
-        chatMessage.setImage(imageUri);
-        chatMessage.setIsImageFlag(true);
-        chatMessage.setMessage(message);
-        chatMessage.setUser(isUser);
-        chatMessage.setType("image");
         chatMessages.add(chatMessage);
         // Notify the adapter that a new item has been inserted
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
@@ -597,13 +631,14 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
                         addMessage(finalGeminiResponse, false);
+                        isChatModified = true;
                         generateDynamicSuggestions();
                     });
                 } else {
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
                         Toast.makeText(GeminiChatActivity.this,
-                                "Error: Failed to get response.", Toast.LENGTH_SHORT).show();
+                                R.string.error_message, Toast.LENGTH_SHORT).show();
                     });
                 }
             } catch (Exception e) {
@@ -612,7 +647,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                     progressBar.setVisibility(View.GONE);
                     triggerAutoSave();
                     Toast.makeText(GeminiChatActivity.this,
-                            "An error occurred.", Toast.LENGTH_SHORT).show();
+                            R.string.error_occured, Toast.LENGTH_SHORT).show();
                 });
             }
         });
@@ -706,10 +741,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
             saveNote();
             return true;
         }
-        if (id == R.id.action_translate) {
-            showLanguageSelectionDialog();
-            return true;
-        } if (id == R.id.action_share) {
+        else if (id == R.id.action_share) {
             shareAINote();
             return true;
         } else if (id == R.id.mindmap) {
@@ -959,7 +991,38 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     public void saveNote() {
         // <= 1 to ignore an initial AI greeting if nothing else was said
         if (chatMessages == null || chatMessages.size() <= 1) {
-            Toast.makeText(this, "Chat is empty, nothing to save.", Toast.LENGTH_SHORT).show();
+            if (isExistingNote && currentNoteUuid != null && currentUser != null) {
+                // If it's an existing note, delete it from Firebase.
+                Log.d(TAG, "Chat is empty. Deleting note with ID: " + currentNoteUuid);
+                progressBar.setVisibility(View.VISIBLE);
+                Toast.makeText(this, "Empty chat, deleting note...", Toast.LENGTH_SHORT).show();
+
+                db.collection("users").document(currentUser.getUid())
+                        .collection("notes").document(currentNoteUuid)
+                        .delete()
+                        .addOnSuccessListener(aVoid -> runOnUiThread(() -> {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(GeminiChatActivity.this, "Note deleted.", Toast.LENGTH_SHORT).show();
+
+                            // Inform NotesListActivity to refresh its list from Firebase
+                            Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
+                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+
+                            supportFinishAfterTransition(); // Close the activity
+                        }))
+                        .addOnFailureListener(e -> runOnUiThread(() -> {
+                            progressBar.setVisibility(View.GONE);
+                            Log.e(TAG, "Error deleting note from Firebase.", e);
+                            Toast.makeText(GeminiChatActivity.this, "Error deleting note.", Toast.LENGTH_SHORT).show();
+                            supportFinishAfterTransition(); // Still close the activity
+                        }));
+            } else {
+                // If this was a new, unsaved chat, there's nothing to delete.
+                // Just show the toast and close the activity.
+                Toast.makeText(this, "Chat is empty, nothing to save.", Toast.LENGTH_SHORT).show();
+                supportFinishAfterTransition();
+            }
+
             return;
         }
         final String title = noteTitleEditText.getText().toString().trim();
@@ -1027,6 +1090,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                                     progressBar.setVisibility(View.GONE);
                                     Toast.makeText(GeminiChatActivity.this, "Chat saved successfully!", Toast.LENGTH_LONG).show();
                                     // Inform NotesListActivity to refresh its list from Firebase
+                                    isChatModified = false;
                                     Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
                                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
                                     //supportFinishAfterTransition();
@@ -1065,159 +1129,44 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
         }
     }
 
-    public void showLanguageSelectionDialog(){
-        final String[] languages = {getApplicationContext().getString(R.string.spanish_text),
-                getApplicationContext().getString(R.string.french_text),
-                getApplicationContext().getString(R.string.german_text),
-                getApplicationContext().getString(R.string.japanese_text),
-                getApplicationContext().getString(R.string.hindi_text),
-                getApplicationContext().getString(R.string.russian_text),
-                getApplicationContext().getString(R.string.english_text)
-        };
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.translate_to)
-                .setItems(languages, (dialog, which) -> {
-                    String selectedLanguage = languages[which];
-                    translateNoteWithGemini(selectedLanguage);
-                });
-        builder.create().show();
-    }
-    public void translateNoteWithGemini(String language){
-        // 1. Check if there's a conversation to translate.
-        if (chatMessages == null || chatMessages.isEmpty()) {
-            Toast.makeText(this, "Chat is empty, nothing to translate.", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-        progressBar.setVisibility(View.VISIBLE);
-        Toast.makeText(this, "Translating chat to " + language + "...", Toast.LENGTH_SHORT).show();
-
-        // Perform all heavy lifting on a background thread.
-        Executors.newSingleThreadExecutor().execute(() -> {
-            try {
-                // 2. Build a single string from the entire chat history.
-                StringBuilder conversationText = new StringBuilder();
-                conversationText.append("--- START OF CONVERSATION ---\n");
-                for (ChatMessage message : chatMessages) {
-                    if (message.getMessage() == null || message.getMessage().trim().isEmpty()) continue;
-
-                    // Use HtmlCompat to strip any HTML tags for a clean text version.
-                    String plainTextMessage = HtmlCompat.fromHtml(message.getMessage(), HtmlCompat.FROM_HTML_MODE_LEGACY).toString();
-
-                    if (message.isUser()) {
-                        conversationText.append("User: ").append(plainTextMessage).append("\n");
-                    } else {
-                        conversationText.append("NotesAI: ").append(plainTextMessage).append("\n");
-                    }
-                }
-                conversationText.append("--- END OF CONVERSATION ---");
-
-                // 3. Create a specific, detailed prompt for the translation task.
-                String translationPrompt = "You are an expert translator. Translate the following conversation into " + language + ".\n" +
-                        "RULES:\n" +
-                        "1. Preserve the 'User:' and 'NotesAI:' labels for each line.\n" +
-                        "2. Translate only the content after the labels.\n" +
-                        "3. Your entire output must ONLY be the translated conversation. Do not add any extra commentary or explanations.\n\n" +
-                        "Conversation to translate:\n\n" + conversationText.toString();
-
-                // 4. Construct the JSON payload for the API call.
-                JSONObject jsonBody = new JSONObject();
-                JSONObject content = new JSONObject();
-                JSONArray parts = new JSONArray();
-                JSONObject textPart = new JSONObject();
-                textPart.put("text", translationPrompt);
-                parts.put(textPart);
-                content.put("parts", parts);
-                jsonBody.put("contents", new JSONArray().put(content));
-
-                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
-
-                // Use the UNARY endpoint. It is faster and simpler for a single-turn task like this.
-                String unaryApiUrl = GeminiAPIKey.API_URL_GEMINI + GeminiAPIKey.API_KEY;
-
-                Request request = new Request.Builder()
-                        .url(unaryApiUrl)
-                        .post(body)
-                        .build();
-
-                // 5. Execute the API call synchronously.
-                okhttp3.Response response = client.newCall(request).execute();
-
-                if (response.isSuccessful() && response.body() != null) {
-                    String responseBody = response.body().string();
-                    JSONObject jsonResponse = new JSONObject(responseBody);
-                    String translatedConversation = jsonResponse.getJSONArray("candidates")
-                            .getJSONObject(0)
-                            .getJSONObject("content")
-                            .getJSONArray("parts")
-                            .getJSONObject(0)
-                            .getString("text")
-                            .trim();
-
-                    // 6. Update the UI with the translated content on the main thread.
-                    runOnUiThread(() -> {
-                        progressBar.setVisibility(View.GONE);
-                        replaceChatWithTranslation(translatedConversation);
-                        Toast.makeText(GeminiChatActivity.this, "Chat translated!", Toast.LENGTH_LONG).show();
-                    });
-
-                } else {
-                    // Handle API errors on the main thread
-                    final String errorBody = response.body() != null ? response.body().string() : "No error body";
-                    Log.e(TAG, "NotesAI Translation Error: " + response.code() + " -> " + errorBody);
-                    runOnUiThread(() -> {
-                        progressBar.setVisibility(View.GONE);
-                        Toast.makeText(this, "Error: Translation failed with code " + response.code(), Toast.LENGTH_SHORT).show();
-                    });
-                }
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error during NotesAI translation process: " + e.getMessage(), e);
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "An error occurred during translation.", Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
-    }
-    // Add this helper method to your GeminiChatActivity class
-
-    private void replaceChatWithTranslation(String translatedConversation) {
-        if (translatedConversation == null || translatedConversation.isEmpty()) {
-            return;
-        }
-
-        // This is a simple parser that assumes the format "Role: Content"
-        List<ChatMessage> translatedMessages = new ArrayList<>();
-        String[] lines = translatedConversation.split("\n");
-
-        for (String line : lines) {
-            if (line.startsWith("User:")) {
-                String message = line.substring(5).trim();
-                translatedMessages.add(new ChatMessage(message, true));
-            } else if (line.startsWith("NotesAI:")) {
-                String message = line.substring(7).trim();
-                // For simplicity, we add the translated text as plain text.
-                // You could send it back to the formatter for HTML if needed.
-                translatedMessages.add(new ChatMessage(message, false));
-            }
-        }
-
-        // Clear the old chat and add the new, translated messages.
-        chatMessages.clear();
-        chatMessages.addAll(translatedMessages);
-        chatAdapter.notifyDataSetChanged(); // Use notifyDataSetChanged as the entire list has changed.
-
-        if (!chatMessages.isEmpty()) {
-            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-        }
-    }
 
     // You can override onPostResume if you need to, but it's not required for this functionality.
     @Override
     protected void onPostResume() {
         super.onPostResume();
     }
+
+    @Override
+    public void onBackPressed() {
+
+        if (isChatModified) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Unsaved Changes")
+                    .setMessage("Do you want to save your changes before exiting?")
+                    .setPositiveButton("Save", (dialog, which) -> {
+                        // User clicked "Save"
+                        saveNote();
+                        // Note: We let the saveNote method's success listener handle finishing the activity.
+                    })
+                    .setNegativeButton("Discard", (dialog, which) -> {
+                        // User clicked "Discard"
+                        // Close the activity without saving.
+                        super.onBackPressed();
+                    })
+                    .setNeutralButton("Cancel", (dialog, which) -> {
+                        // User clicked "Cancel"
+                        // Just dismiss the dialog and do nothing.
+                        dialog.dismiss();
+                    })
+                    .show();
+        } else {
+            // 3. If there are no unsaved changes, just perform the default back action.
+                super.onBackPressed();
+        }
+
+        }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -1228,7 +1177,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 // --- Case 1: User GRANTED the permission. ---
                 Log.d(TAG, "Permission granted by user in dialog.");
                 // Inform the user and let them tap again, or start listening immediately.
-                Toast.makeText(this, "Permission granted. Tap the icon again to listen.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.permission_granted, Toast.LENGTH_LONG).show();
                 // Or, to start immediately: toggleListening();
 
             } else {
@@ -1252,7 +1201,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                             .show();
                 } else {
                     // User just denied it for this session. Show a simple toast.
-                    Toast.makeText(this, "Microphone access is required for voice input.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.microphone_access, Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -1260,7 +1209,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 //openCamera();
             } else {
-                Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.camera_permission_denied, Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -1400,7 +1349,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                     if (size > MAX_PDF_SIZE_MB * 1024 * 1024) {
                         runOnUiThread(() -> {
                             progressBar.setVisibility(View.GONE);
-                            Toast.makeText(this, "PDF is too large (Max " + MAX_PDF_SIZE_MB + "MB).", Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, R.string.pdf_large+" (Max " + MAX_PDF_SIZE_MB + "MB).", Toast.LENGTH_LONG).show();
                         });
                         return; // Stop processing
                     }
@@ -1442,7 +1391,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 runOnUiThread(() -> {
                     addPdfMessage(this.attachedPdfText, true, null);
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "PDF attached successfully! Type your prompt.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.pdf_attached, Toast.LENGTH_LONG).show();
                 });
 
             } catch (Exception e) {
@@ -1486,12 +1435,11 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                         Log.d(TAG, "Image path from gemini CameraActivity: " + imagePath);
                     } else {
                         // This toast now correctly means that CameraActivity didn't find any text.
-                        Toast.makeText(this, "No text found in the image.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, R.string.no_text_found_image, Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     // This is the toast you were seeing. It means the result was not RESULT_OK.
                     Log.w(TAG, "CameraActivity returned a non-OK result or null data.");
-                    Toast.makeText(this, "No image was captured or task was cancelled.", Toast.LENGTH_SHORT).show();
                 }
                 // --- END: THIS IS THE FIX ---
             });
@@ -1504,7 +1452,14 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
             imageMessage.setType("image"); // Set the type to "image"
             imageMessage.setUser(true);    // The user sent this image
             imageMessage.setMessage(imagePath + ";"+content);
+
+            ChatMessage imageMessage2 = new ChatMessage();
+            imageMessage2.setType("text"); // Set the type to "image"
+            imageMessage2.setUser(true);    // The user sent this image
+            imageMessage2.setMessage("What would you like to do with the image?");
+
             chatMessages.add(imageMessage);
+            chatMessages.add(imageMessage2);
             chatAdapter.notifyItemInserted(chatMessages.size() - 1);
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
 
@@ -1513,7 +1468,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to load bitmap from URI for chat display", e);
-            Toast.makeText(this, "Failed to display captured image.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.failed_display_capture, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1571,10 +1526,10 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
             if (item.getItemId() == R.id.action_delete) {
                 chatAdapter.deleteSelectedMessages();
-                Toast.makeText(GeminiChatActivity.this, "Messages deleted", Toast.LENGTH_SHORT).show();
-
+                Toast.makeText(GeminiChatActivity.this, R.string.message_deleted, Toast.LENGTH_SHORT).show();
+                isChatModified = true;
                 // Finish the action mode. This will automatically call onDestroyActionMode.
-                mode.finish();
+               // mode.finish();
                 return true;
             }
             return false;
