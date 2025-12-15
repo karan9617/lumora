@@ -19,10 +19,11 @@ public class OnboardingAdapter extends FragmentStateAdapter {
     // You can customize the page content here
     private String[] descriptions;
     private int[] images = {
-            R.mipmap.logotransparent, // You'll need to create these drawable resources
-            R.drawable.ic_large_pen,
-            R.drawable.ic_eraser,
-            R.drawable.ic_check_circle_24
+            R.drawable.logobgremoved, // You'll need to create these drawable resources
+            R.drawable.list_icon,
+            R.drawable.ic_voice_icon,
+            R.drawable.ic_color_lens,
+            R.drawable.outline_bolt_24_white
     };
 
     public OnboardingAdapter(@NonNull FragmentActivity fragmentActivity) {
@@ -40,13 +41,15 @@ public class OnboardingAdapter extends FragmentStateAdapter {
                 activityContext.getString(R.string.welcome_text),
                 activityContext.getString(R.string.create_note_initial_text),
                 activityContext.getString(R.string.voice_enabled_ai_text),
-                activityContext.getString(R.string.sketch_photo_text)
+                activityContext.getString(R.string.sketch_photo_text),
+                activityContext.getString(R.string.ai_chat_text)
         };
         this.descriptions = new String[]{
                 activityContext.getString(R.string.welcome_note_text_ai),
                 activityContext.getString(R.string.quick_notes_welcome_page_text),
                 activityContext.getString(R.string.voice_enabled_initial_text),
-                activityContext.getString(R.string.draw_sketch_welcome_page)
+                activityContext.getString(R.string.draw_sketch_welcome_page),
+                activityContext.getString(R.string.ai_chat_description)
         };
     }
 

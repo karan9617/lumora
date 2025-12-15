@@ -356,7 +356,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
 
         if (currentNoteUuid == null || currentUser == null) {
             Toast.makeText(this, R.string.note_id_missing, Toast.LENGTH_SHORT).show();
-            noteTitleEditText.setText("AI Chat...");
+            noteTitleEditText.setText("NotesAI Notebook...");
             progressBar.setVisibility(View.GONE);
             return;
         }
@@ -758,7 +758,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     }
     private void generateMindMapWithContent(String content) {
         if (content == null || content.trim().isEmpty()) {
-            Toast.makeText(this, "No content to generate mind map", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.no_content_for_mindmap, Toast.LENGTH_SHORT).show();
             progressBar.setVisibility(View.GONE);
             return;
         }
@@ -784,7 +784,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
 
                 Log.e(TAG, "Gemini mind map generation failed.", e);
                 Toast.makeText(GeminiChatActivity.this,
-                        "AI analysis failed. Showing basic map.",
+                        R.string.analysis_failed,
                         Toast.LENGTH_LONG).show();
 
                 // Fallback: Launch with the original text
@@ -1013,13 +1013,11 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                         .addOnFailureListener(e -> runOnUiThread(() -> {
                             progressBar.setVisibility(View.GONE);
                             Log.e(TAG, "Error deleting note from Firebase.", e);
-                            Toast.makeText(GeminiChatActivity.this, "Error deleting note.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(GeminiChatActivity.this, R.string.error_deleting_chat, Toast.LENGTH_SHORT).show();
                             supportFinishAfterTransition(); // Still close the activity
                         }));
             } else {
-                // If this was a new, unsaved chat, there's nothing to delete.
-                // Just show the toast and close the activity.
-                Toast.makeText(this, "Chat is empty, nothing to save.", Toast.LENGTH_SHORT).show();
+
                 supportFinishAfterTransition();
             }
 
@@ -1046,7 +1044,6 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                     // The AI message already contains rich HTML, so append it directly
                     chatHtmlBuilder.append(message.getMessage());
                 }
-                chatHtmlBuilder.append("<br>");
             }
             String finalNoteContent = chatHtmlBuilder.toString();
             Log.d(TAG, "Final HTML: " + finalNoteContent);
@@ -1072,7 +1069,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                         note.setTitle(title);
                     }
                     else{
-                        note.setTitle("Notes AI Chat");
+                        note.setTitle("NotesAI Notebook");
                     }
                     note.setFontColor("ainote");
 
@@ -1088,7 +1085,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                                 .set(note)
                                 .addOnSuccessListener(aVoid -> runOnUiThread(() -> {
                                     progressBar.setVisibility(View.GONE);
-                                    Toast.makeText(GeminiChatActivity.this, "Chat saved successfully!", Toast.LENGTH_LONG).show();
+                                    Toast.makeText(GeminiChatActivity.this, R.string.chat_saved, Toast.LENGTH_LONG).show();
                                     // Inform NotesListActivity to refresh its list from Firebase
                                     isChatModified = false;
                                     Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
@@ -1098,7 +1095,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                                 .addOnFailureListener(e -> runOnUiThread(() -> {
                                     progressBar.setVisibility(View.GONE);
                                     Log.e(TAG, "Error saving chat note to Firebase.", e);
-                                    Toast.makeText(GeminiChatActivity.this, "Error saving chat.", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(GeminiChatActivity.this, "Error saving chat. Please try again.", Toast.LENGTH_SHORT).show();
                                     //supportFinishAfterTransition();
                                 }));
                     }
@@ -1116,16 +1113,13 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     }
 
     public void attachfile(){
-        Toast.makeText(getApplicationContext(),"pdf clicked",Toast.LENGTH_LONG).show();
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("application/pdf"); // Only show PDF files
-
-        // Launch the file picker
         try {
             pdfPickerLauncher.launch(intent);
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "No file manager found to pick a PDF.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_manager_not_found, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1142,19 +1136,19 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
 
         if (isChatModified) {
             new AlertDialog.Builder(this)
-                    .setTitle("Unsaved Changes")
-                    .setMessage("Do you want to save your changes before exiting?")
-                    .setPositiveButton("Save", (dialog, which) -> {
+                    .setTitle(R.string.unsaved_changes_text)
+                    .setMessage(R.string.do_you_want_to_save)
+                    .setPositiveButton(R.string.save_menu, (dialog, which) -> {
                         // User clicked "Save"
                         saveNote();
                         // Note: We let the saveNote method's success listener handle finishing the activity.
                     })
-                    .setNegativeButton("Discard", (dialog, which) -> {
+                    .setNegativeButton(R.string.discard_text, (dialog, which) -> {
                         // User clicked "Discard"
                         // Close the activity without saving.
                         super.onBackPressed();
                     })
-                    .setNeutralButton("Cancel", (dialog, which) -> {
+                    .setNeutralButton(R.string.cancel_list, (dialog, which) -> {
                         // User clicked "Cancel"
                         // Just dismiss the dialog and do nothing.
                         dialog.dismiss();
@@ -1398,7 +1392,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 Log.e(TAG, "Error processing PDF with iText", e);
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "Failed to read PDF.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.failed_note_text, Toast.LENGTH_SHORT).show();
                 });
 
             }
@@ -1529,7 +1523,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 Toast.makeText(GeminiChatActivity.this, R.string.message_deleted, Toast.LENGTH_SHORT).show();
                 isChatModified = true;
                 // Finish the action mode. This will automatically call onDestroyActionMode.
-               // mode.finish();
+                mode.finish();
                 return true;
             }
             return false;

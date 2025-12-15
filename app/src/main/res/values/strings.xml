@@ -248,4 +248,14 @@
     <string name="microphone_access">Microphone access is required for voice input</string>
     <string name="permission_granted">Permission granted. Tap the icon again to listen.</string>
     <string name="error_occured_translate">An error occurred during translation.</string>
+    <string name="failed_note_text">Failed to read PDF.</string>
+    <string name="file_manager_not_found">No file manager found to pick a PDF.</string>
+    <string name="chat_saved">Chat saved successfully!</string>
+    <string name="error_deleting_chat">Error deleting note.</string>
+    <string name="analysis_failed">NotesAI analysis failed. Showing basic map.</string>
+    <string name="no_content_for_mindmap">No content to generate mind map</string>
+    <string name="do_you_want_to_save">Do you want to save your changes before exiting?</string>
+    <string name="unsaved_changes_text">Unsaved Changes</string>
+    <string name="ai_chat_text">NotesAI notebook</string>
+    <string name="ai_chat_description">Chat with real NotesAI Chat to solve any query and create AI powered notebook.</string>
 </resources>

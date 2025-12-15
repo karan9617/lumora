@@ -215,4 +215,30 @@
     <string name="share_chat">चैट साझा करें</string>
     <string name="textViewChatAI">8. NotesAI चैट:\n- AI आधारित चैट बनाएं, किसी भी सामग्री पर नोट्स के माध्यम से प्रश्न पूछें और शोध करें।</string>
 
+    <string name="error_message">त्रुटि: प्रतिक्रिया प्राप्त करने में विफल।</string>
+    <string name="error_occured">एक त्रुटि हुई।</string>
+    <string name="failed_load">चैट लोड करने में विफल।</string>
+    <string name="could_not_find_chat">त्रुटि: चैट इतिहास नहीं मिला।</string>
+    <string name="note_id_missing">त्रुटि: नोट ID या उपयोगकर्ता अनुपलब्ध है।</string>
+    <string name="auto_saving">स्वतः सहेजा जा रहा है...</string>
+    <string name="message_deleted">संदेश हटाए गए</string>
+    <string name="failed_display_capture">कैप्चर की गई छवि प्रदर्शित करने में विफल।</string>
+    <string name="no_text_found_image">छवि में कोई पाठ नहीं मिला।</string>
+    <string name="pdf_attached">PDF सफलतापूर्वक संलग्न किया गया! अपना प्रॉम्प्ट लिखें।</string>
+    <string name="pdf_large">PDF बहुत बड़ा है</string>
+    <string name="camera_permission_denied">कैमरा अनुमति अस्वीकृत</string>
+    <string name="microphone_access">वॉयस इनपुट के लिए माइक्रोफोन की अनुमति आवश्यक है</string>
+    <string name="permission_granted">अनुमति प्रदान की गई। सुनने के लिए आइकन फिर से टैप करें।</string>
+    <string name="error_occured_translate">अनुवाद के दौरान त्रुटि हुई।</string>
+    <string name="failed_note_text">PDF पढ़ने में विफल।</string>
+    <string name="file_manager_not_found">PDF चुनने के लिए कोई फ़ाइल प्रबंधक नहीं मिला।</string>
+    <string name="chat_saved">चैट सफलतापूर्वक सहेजा गया!</string>
+    <string name="error_deleting_chat">नोट हटाने में त्रुटि।</string>
+    <string name="analysis_failed">NotesAI विश्लेषण विफल रहा। मूल मैप दिखाया जा रहा है।</string>
+    <string name="no_content_for_mindmap">माइंड मैप बनाने के लिए कोई सामग्री नहीं है</string>
+    <string name="do_you_want_to_save">क्या आप बाहर निकलने से पहले बदलाव सहेजना चाहते हैं?</string>
+    <string name="unsaved_changes_text">असहेजे गए परिवर्तन</string>
+    <string name="ai_chat_text">NotesAI नोटबुक</string>
+    <string name="ai_chat_description">NotesAI Chat से बातचीत करें, किसी भी प्रश्न को हल करें और AI-संचालित नोटबुक बनाएं।</string>
+
 </resources>

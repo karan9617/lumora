@@ -215,4 +215,30 @@
     <string name="share_chat">Compartilhar Chat</string>
     <string name="textViewChatAI">8. Chat NotesAI:\n- Crie um chat com tecnologia de IA, faça perguntas e pesquise conteúdos por meio de notas.</string>
 
+    <string name="error_message">Erro: falha ao obter resposta.</string>
+    <string name="error_occured">Ocorreu um erro.</string>
+    <string name="failed_load">Falha ao carregar o chat.</string>
+    <string name="could_not_find_chat">Erro: não foi possível encontrar o histórico do chat.</string>
+    <string name="note_id_missing">Erro: ID da nota ou usuário ausente.</string>
+    <string name="auto_saving">Salvando automaticamente...</string>
+    <string name="message_deleted">Mensagens excluídas</string>
+    <string name="failed_display_capture">Falha ao exibir a imagem capturada.</string>
+    <string name="no_text_found_image">Nenhum texto encontrado na imagem.</string>
+    <string name="pdf_attached">PDF anexado com sucesso! Digite seu prompt.</string>
+    <string name="pdf_large">O PDF é muito grande</string>
+    <string name="camera_permission_denied">Permissão da câmera negada</string>
+    <string name="microphone_access">O acesso ao microfone é necessário para entrada de voz</string>
+    <string name="permission_granted">Permissão concedida. Toque no ícone novamente para ouvir.</string>
+    <string name="error_occured_translate">Ocorreu um erro durante a tradução.</string>
+    <string name="failed_note_text">Falha ao ler o PDF.</string>
+    <string name="file_manager_not_found">Nenhum gerenciador de arquivos encontrado para selecionar um PDF.</string>
+    <string name="chat_saved">Chat salvo com sucesso!</string>
+    <string name="error_deleting_chat">Erro ao excluir a nota.</string>
+    <string name="analysis_failed">Falha na análise do NotesAI. Exibindo mapa básico.</string>
+    <string name="no_content_for_mindmap">Nenhum conteúdo para gerar o mapa mental</string>
+    <string name="do_you_want_to_save">Deseja salvar as alterações antes de sair?</string>
+    <string name="unsaved_changes_text">Alterações não salvas</string>
+    <string name="ai_chat_text">Caderno NotesAI</string>
+    <string name="ai_chat_description">Converse com o NotesAI Chat para resolver qualquer dúvida e criar um caderno com IA.</string>
+
 </resources>
