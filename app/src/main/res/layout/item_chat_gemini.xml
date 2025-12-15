@@ -28,6 +28,14 @@
             android:padding="8dp"
             android:layout_gravity="end">
 
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_small_pen"
+                android:layout_gravity="right"
+                android:layout_marginRight="10dp"
+                android:id="@+id/editprompt"
+                />
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"

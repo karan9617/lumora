@@ -11,6 +11,8 @@ import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
+import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.provider.Settings;
 import android.speech.RecognitionListener;
@@ -48,6 +50,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -82,6 +89,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import android.os.Handler;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -99,6 +107,31 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     private boolean isListening = false;
     private SpeechRecognizer speechRecognizer;
     private static final int CAMERA_PERMISSION_CODE = 100;
+    private final Handler autoSaveHandler = new Handler(Looper.getMainLooper());
+    private final Runnable autoSaveRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // This will be called when the countdown finishes
+            // We'll add a check to ensure we only save if there are changes
+            if (isExistingNote) { // Only auto-save notes that have been saved at least once
+                Log.d(TAG, "Auto-saving note...");
+                Toast.makeText(GeminiChatActivity.this, "Auto-saving...", Toast.LENGTH_SHORT).show();
+                saveNote();
+            }
+        }
+    };
+    // In GeminiChatActivity.java
+
+    private void triggerAutoSave() {
+        // 1. Remove any pending auto-save callbacks. This resets the timer.
+        autoSaveHandler.removeCallbacks(autoSaveRunnable);
+
+        // 2. Schedule the auto-save to run after the delay.
+        // This will only execute if another change doesn't happen within AUTO_SAVE_DELAY_MS.
+        autoSaveHandler.postDelayed(autoSaveRunnable, AUTO_SAVE_DELAY_MS);
+    }
+
+    private static final long AUTO_SAVE_DELAY_MS = 10000; // 3 seconds
     // 1. Add these member variables at the top of the class
     private static final int MAX_PDF_SIZE_MB = 5; // Set a 5MB limit
     private ActivityResultLauncher<Intent> pdfPickerLauncher;
@@ -140,6 +173,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
     private String receivedDateFromActivities = "";
     private String ocrCameraText = "";
     private String folderName = "";
+    StorageReference storageRef;
 
     private final OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS) // Set connection timeout
@@ -164,7 +198,9 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         db = FirebaseFirestore.getInstance();
+
         storage = FirebaseStorage.getInstance();
+        storageRef = storage.getReference();
         this.currentNoteUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
 
         if (currentNoteUuid.length() > 0) {
@@ -361,11 +397,24 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
             String message;
 
             if (isUser) {
-                // For user messages, we strip out all HTML tags to get the plain text.
-                message = part.replace("You:</h3>", "").replaceAll("<[^>]*>", "").trim();
-            } else if (part.startsWith("Gemini:")) {
+                if(part.contains("https://firebasestorage.googleapis.com")){
+                    message = part.replace("You:</h3>", "").replaceAll("<[^>]*>", "").trim();
+                    Log.d("com.noteaiapp.keyboardai","firbase image:" + message);
+                    ChatMessage message1 = new ChatMessage();
+                    message1.setType("image");
+                    message1.setMessage(message);
+                    message1.setUser(true);
+                    chatMessages.add(message1);
+                    continue;
+                }
+                else{
+                    message = part.replace("You:</h3>", "").replaceAll("<[^>]*>", "").trim();
+                }
+                // For
+                //user messages, we strip out all HTML tags to get the plain text.
+            } else if (part.startsWith("NotesAI:")) {
                 // For Gemini messages, we keep the inner HTML for styled rendering.
-                message = part.replace("Gemini:</h3>", "").replace("<br>", "").trim();
+                message = part.replace("NotesAI:</h3>", "").replace("<br>", "").trim();
             } else {
                 continue; // Skip parts that don't match, like the initial <h1>
             }
@@ -398,22 +447,24 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
 
         // 1. Add user's message to the list and update UI
         addMessage(prompt, true);
+        triggerAutoSave();
         inputEditText.setText(""); // Clear the input field
         getGeminiResponse(prompt);
     }
-    private void sendCameraText(String ocrTextInput) {
-        String prompt = inputEditText.getText().toString().trim();
-        if (ocrTextInput.isEmpty()) {
-            return;
-        }
+    private void addImgTextMessage(String text) {
+        if (text == null || text.trim().isEmpty()) return;
 
-        // 1. Add user's message to the list and update UI
-        addMessage(prompt, true);
-        inputEditText.setText(""); // Clear the input field
+        ChatMessage message = new ChatMessage();
+        message.setType("imagetext"); // A specific type for OCR text
+        message.setMessage(text);
+        message.setUser(true); // The user initiated this action
 
-        // 2. Get the response from Gemini
-        getGeminiResponse(prompt);
+        chatMessages.add(message);
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        triggerAutoSave();
     }
+
     private void addMessage(String message, boolean isUser) {
         // Add the message to the list
         chatMessages.add(new ChatMessage(message, isUser));
@@ -447,12 +498,26 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
         // Scroll to the bottom to show the latest message
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
     }
+    private void addImgMessage(String message, boolean isUser, Bitmap imageUri) {
+        ChatMessage chatMessage = new ChatMessage(message, isUser);
+        chatMessage.setImage(imageUri);
+        chatMessage.setIsImageFlag(true);
+        chatMessage.setMessage(message);
+        chatMessage.setUser(isUser);
+        chatMessage.setType("image");
+        chatMessages.add(chatMessage);
+        // Notify the adapter that a new item has been inserted
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        // Scroll to the bottom to show the latest message
+        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+    }
     private void getGeminiResponse(String prompt1) {
         progressBar.setVisibility(View.VISIBLE);
 
         // Optimized prompt for better HTML formatting
-        String prompt = "Respond to this prompt using clean HTML formatting:\n\n" +
+        String prompt = "Respond to this prompt using clean HTML formatting (important 100 words maximum reply):\n\n" +
                 "Rules:\n" +
+                "- Use <br> please after main headings and list items (very important)\n" +
                 "- Use <h3> for main headings\n" +
                 "- Use <p> for paragraphs (never use plain text)\n" +
                 "- Use <ul><li> for bullet points\n" +
@@ -464,7 +529,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 "- Keep response around 200 words\n" +
                 "- NO markdown symbols (*, **, ***)\n" +
                 "- Start directly with content, no preamble\n\n" +
-                "User: " + prompt1;
+                "User: " + prompt1 +"Give me the internet links from where you are getting the data";
 
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
@@ -545,6 +610,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 Log.e(TAG, "Error calling Gemini API: " + e.getMessage(), e);
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
+                    triggerAutoSave();
                     Toast.makeText(GeminiChatActivity.this,
                             "An error occurred.", Toast.LENGTH_SHORT).show();
                 });
@@ -803,13 +869,13 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 for (ChatMessage message : chatMessages) {
                     if (message.getMessage() == null || message.getMessage().trim().isEmpty()) continue;
 
-                    if (message.isUser()) {
+                   if (message.isUser()) {
                         htmlBuilder.append("<h3>You:</h3>");
                         // Sanitize user input to prevent it from being interpreted as HTML
                         String sanitizedMessage = message.getMessage().replace("<", "&lt;").replace(">", "&gt;");
                         htmlBuilder.append("<p>").append(sanitizedMessage).append("</p>");
                     } else {
-                        htmlBuilder.append("<h3>Gemini:</h3>");
+                        htmlBuilder.append("<h3>NotesAI:</h3>");
                         // AI message already contains HTML, so just append it
                         htmlBuilder.append(message.getMessage());
                     }
@@ -913,7 +979,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                     // Wrap user's plain text in a paragraph tag for consistent formatting
                     chatHtmlBuilder.append("<p>").append(message.getMessage()).append("</p>");
                 } else {
-                    chatHtmlBuilder.append("<h3>Gemini:</h3>");
+                    chatHtmlBuilder.append("<h3>NotesAI:</h3>");
                     // The AI message already contains rich HTML, so append it directly
                     chatHtmlBuilder.append(message.getMessage());
                 }
@@ -963,13 +1029,13 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                                     // Inform NotesListActivity to refresh its list from Firebase
                                     Intent intent = new Intent("com.noteaiapp.ACTION_NOTE_UPDATED");
                                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-                                    supportFinishAfterTransition();
+                                    //supportFinishAfterTransition();
                                 }))
                                 .addOnFailureListener(e -> runOnUiThread(() -> {
                                     progressBar.setVisibility(View.GONE);
                                     Log.e(TAG, "Error saving chat note to Firebase.", e);
                                     Toast.makeText(GeminiChatActivity.this, "Error saving chat.", Toast.LENGTH_SHORT).show();
-                                    supportFinishAfterTransition();
+                                    //supportFinishAfterTransition();
                                 }));
                     }
                 }
@@ -1041,7 +1107,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                     if (message.isUser()) {
                         conversationText.append("User: ").append(plainTextMessage).append("\n");
                     } else {
-                        conversationText.append("Gemini: ").append(plainTextMessage).append("\n");
+                        conversationText.append("NotesAI: ").append(plainTextMessage).append("\n");
                     }
                 }
                 conversationText.append("--- END OF CONVERSATION ---");
@@ -1049,7 +1115,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 // 3. Create a specific, detailed prompt for the translation task.
                 String translationPrompt = "You are an expert translator. Translate the following conversation into " + language + ".\n" +
                         "RULES:\n" +
-                        "1. Preserve the 'User:' and 'Gemini:' labels for each line.\n" +
+                        "1. Preserve the 'User:' and 'NotesAI:' labels for each line.\n" +
                         "2. Translate only the content after the labels.\n" +
                         "3. Your entire output must ONLY be the translated conversation. Do not add any extra commentary or explanations.\n\n" +
                         "Conversation to translate:\n\n" + conversationText.toString();
@@ -1098,7 +1164,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 } else {
                     // Handle API errors on the main thread
                     final String errorBody = response.body() != null ? response.body().string() : "No error body";
-                    Log.e(TAG, "Gemini Translation Error: " + response.code() + " -> " + errorBody);
+                    Log.e(TAG, "NotesAI Translation Error: " + response.code() + " -> " + errorBody);
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
                         Toast.makeText(this, "Error: Translation failed with code " + response.code(), Toast.LENGTH_SHORT).show();
@@ -1106,7 +1172,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
                 }
 
             } catch (Exception e) {
-                Log.e(TAG, "Error during Gemini translation process: " + e.getMessage(), e);
+                Log.e(TAG, "Error during NotesAI translation process: " + e.getMessage(), e);
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(this, "An error occurred during translation.", Toast.LENGTH_SHORT).show();
@@ -1129,7 +1195,7 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
             if (line.startsWith("User:")) {
                 String message = line.substring(5).trim();
                 translatedMessages.add(new ChatMessage(message, true));
-            } else if (line.startsWith("Gemini:")) {
+            } else if (line.startsWith("NotesAI:")) {
                 String message = line.substring(7).trim();
                 // For simplicity, we add the translated text as plain text.
                 // You could send it back to the formatter for HTML if needed.
@@ -1390,19 +1456,76 @@ public class GeminiChatActivity extends AppCompatActivity implements ChatAdapter
         });
     }
 
+// In GeminiChatActivity.java
+
+//1. Make sure you have Firebase Storage initialized in onCreate()
+// private FirebaseStorage storage;
+// private StorageReference storageRef;
+// storage = FirebaseStorage.getInstance();
+// storageRef = storage.getReference();
+
     private final ActivityResultLauncher<Intent> cameraLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                // --- START: THIS IS THE FIX ---
+
+                // 1. Check if the result is valid
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    String ocrText = result.getData().getStringExtra("ocr_text");
-                    if (ocrText != null && !ocrText.isEmpty()) {
-                        ocrCameraText = ocrText;
-                        inputEditText.setText(ocrCameraText);
-                        sendOCRMessage();
+
+                    // 2. Directly get the OCR text that CameraActivity already detected for you.
+                    String detectedText = result.getData().getStringExtra("ocr_text");
+
+                    // 3. Check if the OCR text is valid.
+                    if (detectedText != null && !detectedText.trim().isEmpty()) {
+                        // 4. OCR was successful! Call your existing method to add the text to the chat.
+                        Log.d(TAG, "Received OCR text from CameraActivity: " + detectedText);
+                        //addImgTextMessage(detectedText);
+                        String imagePath = result.getData().getStringExtra("image_path");
+                        if (imagePath != null && !imagePath.isEmpty()) {
+                            addCapturedImageToChat(imagePath,detectedText);
+                        }
+                        Log.d(TAG, "Image path from gemini CameraActivity: " + imagePath);
                     } else {
-                        Toast.makeText(this, "No text detected", Toast.LENGTH_SHORT).show();
+                        // This toast now correctly means that CameraActivity didn't find any text.
+                        Toast.makeText(this, "No text found in the image.", Toast.LENGTH_SHORT).show();
                     }
+                } else {
+                    // This is the toast you were seeing. It means the result was not RESULT_OK.
+                    Log.w(TAG, "CameraActivity returned a non-OK result or null data.");
+                    Toast.makeText(this, "No image was captured or task was cancelled.", Toast.LENGTH_SHORT).show();
                 }
+                // --- END: THIS IS THE FIX ---
             });
+// Add this new helper method to GeminiChatActivity.java
+
+    private void addCapturedImageToChat(String imagePath,String content) {
+        if (imagePath == null) return;
+        try {
+            ChatMessage imageMessage = new ChatMessage();
+            imageMessage.setType("image"); // Set the type to "image"
+            imageMessage.setUser(true);    // The user sent this image
+            imageMessage.setMessage(imagePath + ";"+content);
+            chatMessages.add(imageMessage);
+            chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+
+            // You can optionally trigger an auto-save here as well
+            // triggerAutoSave();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load bitmap from URI for chat display", e);
+            Toast.makeText(this, "Failed to display captured image.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // You'll need a modified addImgMessage method
+    private void addImgMessage(ChatMessage message) {
+        chatMessages.add(message);
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        triggerAutoSave();
+    }
+
+
     public void listener(){
         cameraIcon.setOnClickListener(new View.OnClickListener() {
             @Override

@@ -6,9 +6,13 @@ public class ChatMessage {
     private String message;
     private boolean isUser;
     private Bitmap image;
+
     private boolean isImage; // New flag to identify message type
 
     private String type;
+    public ChatMessage(){
+
+    }
     public ChatMessage(String message, boolean isUser) {
         this.message = message;
         this.isUser = isUser;
