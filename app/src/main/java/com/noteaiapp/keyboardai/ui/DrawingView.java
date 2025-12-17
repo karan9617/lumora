@@ -256,6 +256,13 @@ public class DrawingView extends View {
         }
 
         if (isRectangleMode) {
+            // Update the live rectangle
+            if (currentRect == null) {
+                // Initialize it here as a safeguard, using the first touch point.
+                startX = mX; // mX and mY hold the initial ACTION_DOWN coordinates
+                startY = mY;
+                currentRect = new Rect();
+            }
             endX = x;
             endY = y;
             // Update the live rectangle
@@ -462,8 +469,12 @@ public class DrawingView extends View {
         }
     }
     public void setBackgroundImage(Bitmap image) {
+        if (image == null) {
+            this.backgroundImage = null;
+            invalidate(); // Redraw the view without a background
+            return; // Exit the method early
+        }
         this.backgroundImage = image;
-
         // Make a new bitmap to combine the background image and existing drawing
         Bitmap combinedBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
         Canvas combinedCanvas = new Canvas(combinedBitmap);

@@ -1,0 +1,15 @@
+<!-- In res/layout/mini_bubble_user.xml -->
+<TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/user_chat_bubble"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
+    android:layout_marginTop="4dp"
+    android:textColor="@android:color/white"
+    android:textSize="12sp"
+    android:layout_gravity="end"/>
+

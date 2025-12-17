@@ -39,8 +39,8 @@ public class NotesRepositoryTrash {
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
         values.put(NotesDbHelper.COLUMN_ORDER, note.getOrder());
         values.put(NotesDbHelper.COLUMN_PINNED, note.isPinned() ? 1 : 0);
-        //values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
-        //values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, (note.getFontFamily() == null)?"":(note.getFontFamily()));
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, (note.getUserFirebaseId() == null)?"":note.getUserFirebaseId());
         values.put(NotesDbHelper.COLUMN_FONT_COLOR, (note.getFontColor() == null)?"":(note.getFontColor()));
 
         long newRowId = db.insert(NotesDbHelper.TABLE_NOTES, null, values);
@@ -68,9 +68,9 @@ public class NotesRepositoryTrash {
                 note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
                 note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
                 note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-                //   note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
-                //   note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
-                //   note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
+                note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+                note.setUserFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+                note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
 
                 notes.add(note);
             } while (cursor.moveToNext());
@@ -132,9 +132,9 @@ public class NotesRepositoryTrash {
             note.setImagePath(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_IMAGE_PATH)));
             note.setOrder(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_ORDER)));
             note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_PINNED)) > 0);
-            //  note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
-            //  note.setFontSize(cursor.getFloat(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
-            //  note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
+            note.setFontFamily(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_FAMILY)));
+            note.setUserFirebaseId(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_SIZE)));
+            note.setFontColor(cursor.getString(cursor.getColumnIndexOrThrow(NotesDbHelper.COLUMN_FONT_COLOR)));
         }
         cursor.close();
         db.close();
@@ -148,9 +148,9 @@ public class NotesRepositoryTrash {
         values.put(NotesDbHelper.COLUMN_CONTENT, note.getContent());
         values.put(NotesDbHelper.COLUMN_COLOR, note.getColor());
         values.put(NotesDbHelper.COLUMN_IMAGE_PATH, note.getImagePath());
-        //  values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
-        //  values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getFontSize());
-        //  values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
+        values.put(NotesDbHelper.COLUMN_FONT_FAMILY, note.getFontFamily());
+        values.put(NotesDbHelper.COLUMN_FONT_SIZE, note.getUserFirebaseId());
+        values.put(NotesDbHelper.COLUMN_FONT_COLOR, note.getFontColor());
 
         int updatedRows = db.update(NotesDbHelper.TABLE_NOTES,
                 values,
@@ -191,6 +191,37 @@ public class NotesRepositoryTrash {
         return deletedRows;
     }
 
+    public int deleteNoteByCloudId(String cloudId) {
+        // 1. Ensure the cloudId is valid before attempting to delete.
+        if (cloudId == null || cloudId.isEmpty()) {
+            Log.e("NoteRepository", "Cannot delete note, the provided cloudId is null or empty.");
+            return 0;
+        }
+
+        // 2. Get a writable instance of the database.
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        try {
+            String selection = NotesDbHelper.COLUMN_FONT_SIZE + " = ?";
+            String[] selectionArgs = { cloudId };
+            deletedRows = db.delete(NotesDbHelper.TABLE_NOTES,
+                    selection,
+                    selectionArgs);
+            if (deletedRows > 0) {
+                Log.d("NoteRepository", "Successfully deleted note with cloudId: " + cloudId);
+            } else {
+                Log.w("NoteRepository", "No note found with cloudId to delete: " + cloudId);
+            }
+        } catch (Exception e) {
+            Log.e("NoteRepository", "Error deleting note by cloudId", e);
+        } finally {
+            db.close();
+        }
+
+        // 6. Return the number of rows affected.
+        return deletedRows;
+    }
     // --- New Label-related methods ---
     public long addLabel(Label label) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_attach"
+        android:title="@string/attach"
+        android:icon="@drawable/pdf_icon"
+        app:showAsAction="ifRoom"
+        />
+    <item
+        android:id="@+id/action_save"
+        android:title="@string/save_menu"
+        android:iconTint="@color/white"
+
+        app:showAsAction="ifRoom"
+        />
+<!--
+    <item
+        android:id="@+id/action_translate"
+        android:title="@string/translate_chat"
+        app:showAsAction="never"
+        android:contentDescription="Translate the current note" />
+
+-->
+    <item
+        android:id="@+id/mindmap"
+        android:title="MindMap"
+        android:icon="@drawable/ic_color_lens"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_share"
+        android:title="@string/share_chat"
+        android:icon="@drawable/ic_share"
+        app:showAsAction="ifRoom" />
+</menu>

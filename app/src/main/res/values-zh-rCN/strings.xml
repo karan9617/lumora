@@ -202,4 +202,43 @@
     <string name="keep_notes_folder">保留笔记，删除文件夹</string>
     <string name="folder_deleted_toast">文件夹及其所有笔记已删除</string>
     <string name="folder_remove_desc">您希望如何处理此文件夹中的笔记？</string>
+
+    <string name="login_label">登录</string>
+    <string name="drawer_logout_text">退出登录</string>
+    <string name="snackbar_text">您已离线。请连接互联网以实现无缝同步。</string>
+    <string name="connect">连接</string>
+
+    <string name="option_ai_note_layout">AI 笔记</string>
+    <string name="mindmaplabel">思维导图</string>
+    <string name="attach">附加</string>
+    <string name="translate_chat">翻译聊天</string>
+    <string name="share_chat">分享聊天</string>
+    <string name="textViewChatAI">8. NotesAI 聊天：\n- 创建 AI 驱动的聊天，通过笔记对任何内容进行提问和研究。</string>
+
+    <string name="error_message">错误：无法获取响应。</string>
+    <string name="error_occured">发生错误。</string>
+    <string name="failed_load">聊天加载失败。</string>
+    <string name="could_not_find_chat">错误：未找到聊天记录。</string>
+    <string name="note_id_missing">错误：缺少笔记 ID 或用户。</string>
+    <string name="auto_saving">正在自动保存...</string>
+    <string name="message_deleted">消息已删除</string>
+    <string name="failed_display_capture">无法显示捕获的图像。</string>
+    <string name="no_text_found_image">图像中未找到文本。</string>
+    <string name="pdf_attached">PDF 已成功附加！请输入提示。</string>
+    <string name="pdf_large">PDF 文件过大</string>
+    <string name="camera_permission_denied">相机权限被拒绝</string>
+    <string name="microphone_access">语音输入需要麦克风权限</string>
+    <string name="permission_granted">权限已授予。再次点击图标即可开始聆听。</string>
+    <string name="error_occured_translate">翻译过程中发生错误。</string>
+    <string name="failed_note_text">读取 PDF 失败。</string>
+    <string name="file_manager_not_found">未找到用于选择 PDF 的文件管理器。</string>
+    <string name="chat_saved">聊天已成功保存！</string>
+    <string name="error_deleting_chat">删除笔记时出错。</string>
+    <string name="analysis_failed">NotesAI 分析失败。正在显示基础思维导图。</string>
+    <string name="no_content_for_mindmap">没有可生成思维导图的内容</string>
+    <string name="do_you_want_to_save">退出前是否保存更改？</string>
+    <string name="unsaved_changes_text">未保存的更改</string>
+    <string name="ai_chat_text">NotesAI 笔记本</string>
+    <string name="ai_chat_description">与 NotesAI Chat 对话，解决任何问题并创建 AI 驱动的笔记本。</string>
+
 </resources>

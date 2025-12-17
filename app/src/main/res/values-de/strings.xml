@@ -201,4 +201,42 @@
     <string name="keep_notes_folder">Notizen behalten, Ordner entfernen</string>
     <string name="folder_deleted_toast">Ordner und alle Notizen gelöscht</string>
     <string name="folder_remove_desc">Was möchten Sie mit den Notizen in diesem Ordner machen?</string>
+    <string name="login_label">Anmelden</string>
+    <string name="drawer_logout_text">Abmelden</string>
+    <string name="snackbar_text">Sie sind offline. Verbinden Sie sich mit dem Internet für eine nahtlose Synchronisierung.</string>
+    <string name="connect">VERBINDEN</string>
+
+    <string name="option_ai_note_layout">KI-Notiz</string>
+    <string name="mindmaplabel">Mindmap</string>
+    <string name="attach">Anhängen</string>
+    <string name="translate_chat">Chat übersetzen</string>
+    <string name="share_chat">Chat teilen</string>
+    <string name="textViewChatAI">8. NotesAI-Chat:\n- Erstellen Sie einen KI-gestützten Chat, stellen Sie Fragen und recherchieren Sie Inhalte mithilfe von Notizen.</string>
+
+    <string name="error_message">Fehler: Antwort konnte nicht abgerufen werden.</string>
+    <string name="error_occured">Ein Fehler ist aufgetreten.</string>
+    <string name="failed_load">Chat konnte nicht geladen werden.</string>
+    <string name="could_not_find_chat">Fehler: Chatverlauf nicht gefunden.</string>
+    <string name="note_id_missing">Fehler: Notiz-ID oder Benutzer fehlt.</string>
+    <string name="auto_saving">Automatisches Speichern...</string>
+    <string name="message_deleted">Nachrichten gelöscht</string>
+    <string name="failed_display_capture">Aufgenommenes Bild konnte nicht angezeigt werden.</string>
+    <string name="no_text_found_image">Kein Text im Bild gefunden.</string>
+    <string name="pdf_attached">PDF erfolgreich angehängt! Geben Sie Ihre Eingabe ein.</string>
+    <string name="pdf_large">PDF ist zu groß</string>
+    <string name="camera_permission_denied">Kameraberechtigung verweigert</string>
+    <string name="microphone_access">Mikrofonzugriff ist für die Spracheingabe erforderlich</string>
+    <string name="permission_granted">Berechtigung erteilt. Tippen Sie erneut auf das Symbol, um zuzuhören.</string>
+    <string name="error_occured_translate">Während der Übersetzung ist ein Fehler aufgetreten.</string>
+    <string name="failed_note_text">PDF konnte nicht gelesen werden.</string>
+    <string name="file_manager_not_found">Kein Dateimanager zum Auswählen eines PDFs gefunden.</string>
+    <string name="chat_saved">Chat erfolgreich gespeichert!</string>
+    <string name="error_deleting_chat">Fehler beim Löschen der Notiz.</string>
+    <string name="analysis_failed">NotesAI-Analyse fehlgeschlagen. Einfache Karte wird angezeigt.</string>
+    <string name="no_content_for_mindmap">Kein Inhalt zum Erstellen einer Mindmap vorhanden</string>
+    <string name="do_you_want_to_save">Möchten Sie Ihre Änderungen vor dem Beenden speichern?</string>
+    <string name="unsaved_changes_text">Ungespeicherte Änderungen</string>
+    <string name="ai_chat_text">NotesAI-Notizbuch</string>
+    <string name="ai_chat_description">Chatten Sie mit NotesAI Chat, um jede Frage zu lösen und ein KI-gestütztes Notizbuch zu erstellen.</string>
+
 </resources>

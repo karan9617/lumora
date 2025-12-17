@@ -22,6 +22,7 @@ import com.noteaiapp.keyboardai.Notepad;
 import com.noteaiapp.keyboardai.NotesListActivity;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 
 import java.io.File;
@@ -136,13 +137,15 @@ public class NotesWidgetProvider extends AppWidgetProvider {
                     // Open DrawingActivity
                     openIntent = new Intent(context, DrawingActivity.class);
                     openIntent.putExtra("note_id", noteId);
-                } else {
-                    // Open Notepad
+                } else if(selectedNote.getFontColor() != null && selectedNote.getFontColor().length() > 0
+                    && selectedNote.getFontColor().equalsIgnoreCase("imagenote")){
+                    openIntent = new Intent(context, ImageNoteActivity.class);
+                    openIntent.putExtra("note_id", noteId);
+                }
+                else {
                     openIntent = new Intent(context, Notepad.class);
                     openIntent.putExtra("note_id", noteId);
                 }
-
-                // PendingIntent for single note
                 PendingIntent pendingIntent = PendingIntent.getActivity(
                         context, (int) noteId, openIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE

@@ -129,6 +129,7 @@
     <string name="notes_pinned_heading">Pinned</string>
     <string name="all_notes_heading">All Notes</string>
     <string name="option_text_layout">Text</string>
+
     <string name="options_draw_layout">Draw</string>
     <string name="sort_notes_by">Sort notes by</string>
     <string name="sort_by_date">Sort by Date</string>
@@ -218,4 +219,43 @@
     <string name="keep_notes_folder">Keep Notes, Remove Folder</string>
     <string name="folder_deleted_toast">Folder and all its notes deleted</string>
     <string name="folder_remove_desc">What would you like to do with the notes inside this folder?</string>
+
+    <string name="login_label">Login</string>
+    <string name="drawer_logout_text">Logout</string>
+    <string name="snackbar_text">You are offline. Connect to internet for seamless sync.</string>
+    <string name="connect">CONNECT</string>
+    <string name="default_web_client_id">1038951036645-qh5u6b25q4ni8pp0g0u8i6dhii9edcpn.apps.googleusercontent.com</string>
+
+    <string name="option_ai_note_layout">AI Note</string>
+    <string name="mindmaplabel">MindMap</string>
+    <string name="attach">Attach</string>
+    <string name="translate_chat">Translate Chat</string>
+    <string name="share_chat">Share Chat</string>
+    <string name="textViewChatAI">8. NotesAI Chat:\n- Create AI powdered chat, ask queries and research through notes on any content.</string>
+
+    <string name="error_message">Error: Failed to get response.</string>
+    <string name="error_occured">An error occurred.</string>
+    <string name="failed_load">Failed to load chat.</string>
+    <string name="could_not_find_chat">Error: Could not find chat history.</string>
+    <string name="note_id_missing">Error: Note ID or user is missing.</string>
+    <string name="auto_saving">Auto-saving...</string>
+    <string name="message_deleted">Messages deleted</string>
+    <string name="failed_display_capture">Failed to display captured image.</string>
+    <string name="no_text_found_image">No text found in the image.</string>
+    <string name="pdf_attached">PDF attached successfully! Type your prompt.</string>
+    <string name="pdf_large">PDF is too large</string>
+    <string name="camera_permission_denied">Camera permission denied</string>
+    <string name="microphone_access">Microphone access is required for voice input</string>
+    <string name="permission_granted">Permission granted. Tap the icon again to listen.</string>
+    <string name="error_occured_translate">An error occurred during translation.</string>
+    <string name="failed_note_text">Failed to read PDF.</string>
+    <string name="file_manager_not_found">No file manager found to pick a PDF.</string>
+    <string name="chat_saved">Chat saved successfully!</string>
+    <string name="error_deleting_chat">Error deleting note.</string>
+    <string name="analysis_failed">NotesAI analysis failed. Showing basic map.</string>
+    <string name="no_content_for_mindmap">No content to generate mind map</string>
+    <string name="do_you_want_to_save">Do you want to save your changes before exiting?</string>
+    <string name="unsaved_changes_text">Unsaved Changes</string>
+    <string name="ai_chat_text">NotesAI notebook</string>
+    <string name="ai_chat_description">Chat with real NotesAI Chat to solve any query and create AI powered notebook.</string>
 </resources>

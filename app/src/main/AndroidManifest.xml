@@ -11,7 +11,10 @@
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.CAMERA" />
-
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Remove AD_ID permission added by Firebase/Google Play Services -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove"/>
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"
@@ -57,7 +60,7 @@
         <activity
             android:name=".widget.AppWidgetConfigureActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.DeviceDefault.Dialog">
+            android:theme="@style/Theme.KeyboardAi">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
@@ -110,6 +113,34 @@
 
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
         <activity
+            android:name=".auth.LoginActivity"
+            android:exported="true"
+            android:label="@string/login_label"
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".auth.SignUpActivity"
+            android:exported="true"
+            android:label="@string/login_label"
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".customnote.GeminiNoteActivity"
+            android:exported="true"
+
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
+            android:name=".mindmap.MindMapActivity"
+            android:exported="true"
+            android:label="@string/mindmaplabel"
+            android:windowSoftInputMode="adjustResize"
+
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+        <activity
             android:name=".OnboardingActivity"
             android:exported="true"
             android:label="@string/app_name"
@@ -156,6 +187,14 @@
             android:screenOrientation="portrait"
             android:label="@string/app_name"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+
+        <activity
+            android:name=".geminichat.GeminiChatActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+
         <activity
             android:name=".camera.CameraActivity"
             android:exported="true"

@@ -1,6 +1,7 @@
 package com.noteaiapp.keyboardai;
 
 
+import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -13,6 +14,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -33,16 +35,27 @@ import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.noteaiapp.keyboardai.Models.Label;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.adapter.NotesAdapter;
 import com.noteaiapp.keyboardai.adapter.NotesAdapterPinned;
+import com.noteaiapp.keyboardai.auth.LoginActivity;
 import com.noteaiapp.keyboardai.calendar.CalendarActivity;
 import com.noteaiapp.keyboardai.data.NoteRepository;
+import com.noteaiapp.keyboardai.geminichat.GeminiChatActivity;
 import com.noteaiapp.keyboardai.imagenote.ImageNoteActivity;
 import com.noteaiapp.keyboardai.listitems.ListItemsActivity;
 import com.noteaiapp.keyboardai.operationactivity.ArchivesActivity;
@@ -58,6 +71,7 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
@@ -82,24 +96,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
 public class FolderNotesActivity extends AppCompatActivity {
+
     private RecyclerView notesRecyclerView;/// notesRecyclerViewPinned;
     private NotesAdapter notesAdapter;
     // private NotesAdapterPinned notesAdapterPinned;
     View transparentOverlay;
+    private String TAG = "com.noteaiapp.keyboardai";
     private List<Note> notesList;
+    private FirebaseUser currentUser;
+
     List<Note> allNotesFromDb;// allPinnedNotesFromDb;
     Toolbar toolbar;
     private NoteRepository noteRepository;
     TextView initialtext;
     FloatingActionButton fabAddNote;
-    LinearLayout option_text_layout, option_drawings_layout,option_list_layout,option_image_layout;
+    LinearLayout option_text_layout, option_drawings_layout,option_list_layout,option_image_layout,option_ai_note_layout;
     private DrawerLayout drawerLayout;
     ItemTouchHelper itemTouchHelper;//itemTouchHelperPinned;
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
@@ -120,7 +140,11 @@ public class FolderNotesActivity extends AppCompatActivity {
     ImageButton shuffle,themeColor;
     NavigationView navigationView;
     private enum DriveAction { BACKUP, RESTORE }
-    String folderName="";
+    public static String folderName="";
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
+    Set<String> globalfolderlist;
+    private ActivityResultLauncher<Intent> noteActivityLauncher;
 
     private BroadcastReceiver noteUpdateReceiver = new BroadcastReceiver() {
         @Override
@@ -134,8 +158,33 @@ public class FolderNotesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_folder);
+        globalfolderlist = new HashSet<>();
+        noteActivityLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    // This is the callback that runs when the launched activity returns.
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        // The user saved a note in Notepad, DrawingActivity, etc.
+                        // It's time to refresh the list.
+                        Log.d("FolderNotesActivity", "Returned from note activity with RESULT_OK. Refreshing notes.");
+                        loadNotesFromDatabase();
+                    }
+                }
+        );
         // UPDATE the activity label to folder name
-
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+        if (currentUser == null) {
+            // No user is signed in, we cannot proceed.
+            // Redirect to the login screen to be safe.
+            Toast.makeText(this, "Please log in to view the calendar.", Toast.LENGTH_SHORT).show();
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(loginIntent);
+            finish(); // Close this activity
+            return;   // IMPORTANT: Stop the rest of onCreate from running
+        }
         // get folder from intent
         this.folderName = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
         setTitle(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
@@ -190,6 +239,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         notesRepositoryTrash = new NotesRepositoryTrash(this);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
+        option_ai_note_layout = findViewById(R.id.option_ai_note_layout);
         option_list_layout = findViewById(R.id.option_list_layout);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -353,6 +403,15 @@ public class FolderNotesActivity extends AppCompatActivity {
                 hideOptions();
             }
         });
+        option_ai_note_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(FolderNotesActivity.this, GeminiChatActivity.class);
+                intent.putExtra(EXTRA_FOLDER_NAME, folderName);
+                startActivity(intent);
+                hideOptions();
+            }
+        });
         option_image_layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -490,7 +549,11 @@ public class FolderNotesActivity extends AppCompatActivity {
                 intent.putExtra("note_date", note.getDate());
                 intent.putExtra("note_color", note.getColor());
                 intent.putExtra("note_image_path",note.getImagePath());
+                intent.putExtra("note_font_size",note.getUserFirebaseId());
+
                 intent.putExtra(EXTRA_FOLDER_NAME,folderName);
+                Log.d(TAG, "note_id: "+note.getId()+" note_title: "+note.getTitle()+" note_content: "+note.getContent()+" note_date: "+note.getDate()+" note_color: "+note.getColor()+" note_image_path: "+note.getImagePath()+" note_font_size: "+note.getUserFirebaseId()+" note_font_color: "+note.getFontColor());
+
                 String transitionName = ViewCompat.getTransitionName(sharedView);
                 if (transitionName != null) {
                     intent.putExtra("TRANSITION_NAME", transitionName);
@@ -516,106 +579,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         }, itemTouchHelper,notesRecyclerView);
         notesRecyclerView.setAdapter(notesAdapter);
         loadFoldersToDrawer();
-      /*
-        ItemTouchHelper.Callback callbackPinned = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
-            @Override
-            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
-                return makeMovementFlags(dragFlags, 0);
-            }
-            @Override
-            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-                int fromPosition = viewHolder.getAdapterPosition();
-                int toPosition = target.getAdapterPosition();
-                notesAdapterPinned.onItemMove(fromPosition, toPosition);
-                return true;
-            }
-            @Override
-            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-            }
-            @Override
-            public void onMoved(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int fromPos, RecyclerView.ViewHolder target, int toPos, int x, int y) {
-                super.onMoved(recyclerView, viewHolder, fromPos, target, toPos, x, y);
-                notesAdapterPinned.onItemsMoved();
-            }
-            @Override
-            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
-                super.onSelectedChanged(viewHolder, actionState);
-                if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
-                    notesAdapterPinned.onItemsMoved();
-                } else if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    if (actionMode == null) {
-                        actionMode = startSupportActionMode(actionModeCallback);
-                    }
-                    int position = viewHolder.getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        selectedNote = pinnedNotes.get(position);
-                        //selectedNote.setSelected(true);
-                    }
-                }
-            }
-            @Override
-            public boolean isLongPressDragEnabled() {
-                // Enable long press drag
-                return false;
-            }
-        };
-
-        itemTouchHelperPinned = new ItemTouchHelper(callbackPinned);
-        itemTouchHelperPinned.attachToRecyclerView(notesRecyclerViewPinned);
-
-        notesAdapterPinned = new NotesAdapterPinned(this, pinnedNotes, new NotesAdapterPinned.OnNoteClickListener() {
-            @Override
-            public void onNoteClick(Note note, View sharedView) {
-                if (actionMode != null) {
-                    actionMode.finish();
-                    return;
-                }
-                Intent intent;
-                String noteContent = note.getContent();
-                boolean isListNote = noteContent != null && noteContent.startsWith(LIST_NOTE_PREFIX);
-                if(isListNote){
-                    intent = new Intent(NotesListActivity.this, ListItemsActivity.class);
-                }
-                else if (note.getContent() != null && !note.getContent().isEmpty()) {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
-                } else if (note.getImagePath() != null && note.getImagePath().length() > 0) {
-                    intent = new Intent(NotesListActivity.this, DrawingActivity.class);
-                } else {
-                    intent = new Intent(NotesListActivity.this, Notepad.class);
-                }
-                intent.putExtra("note_id", note.getId());
-                intent.putExtra("note_title", note.getTitle());
-                intent.putExtra("note_content", note.getContent());
-                intent.putExtra("note_date", note.getDate());
-                intent.putExtra("note_color", note.getColor());
-                intent.putExtra("note_image_path",note.getImagePath());
-
-                String transitionName = ViewCompat.getTransitionName(sharedView);
-                if (transitionName != null) {
-                    intent.putExtra("TRANSITION_NAME", transitionName);
-                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
-                            NotesListActivity.this,
-                            sharedView,
-                            transitionName
-                    );
-                    startActivity(intent, options.toBundle());
-                } else {
-                    startActivity(intent);
-                }
-            }
-        }, new NotesAdapterPinned.OnNoteLongClickListener() {
-            @Override
-            public void onNoteLongClick(View view, Note note, View sharedView) {
-                if (actionMode == null) {
-                    selectedNote = note;
-                    actionMode = startSupportActionMode(actionModeCallback);
-                }
-            }
-        }, itemTouchHelperPinned,notesRecyclerViewPinned);
-        notesRecyclerViewPinned.setAdapter(notesAdapterPinned);*/
         updatePinnedSectionVisibility();
-
         drawerLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -671,19 +635,108 @@ public class FolderNotesActivity extends AppCompatActivity {
 
     private void saveFolder(String folderName) {
         // Get the existing set of folders from SharedPreferences
-        SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
+        /*SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);
         Set<String> folders = new HashSet<>(prefs.getStringSet("folder_set", new HashSet<>()));
 
         // Add the new folder and save the updated set
         folders.add(folderName);
-        prefs.edit().putStringSet("folder_set", folders).apply();
+        prefs.edit().putStringSet("folder_set", folders).apply();*/
+        db.collection("folder").document(currentUser.getUid())
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Set<String> cloudFolders = new HashSet<>();
+                    if (documentSnapshot.exists()) {
+                        List<String> folderArray = (List<String>) documentSnapshot.get("array");
+                        if (folderArray != null) {
+                            cloudFolders.addAll(folderArray);
+                        }
 
+                    }
+                    cloudFolders.add(folderName);
+                    globalfolderlist = cloudFolders;
+                    // Now, update the UI with the fresh data
+                    saveFolderToFirebase(globalfolderlist);
+
+                    updateDrawerMenu(globalfolderlist);
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error fetching folders from Firestore. Using local cache.", e);
+                    // On failure (e.g., offline), just use whatever is in the cache
+                    //loadFoldersToDrawer();
+                });
         // Refresh the navigation drawer to show the new folder
-        loadFoldersToDrawer();
+        //loadFoldersToDrawer();
     }
+    public void saveFolderToFirebase(Set<String> folders){
+        Map<String, Object> folderData = new HashMap<>();
+        folderData.put("array", new ArrayList<>(folders));
 
+        // Save the entire list to the user's folder document
+        db.collection("folder").document(currentUser.getUid())
+                .set(folderData)
+                .addOnSuccessListener(aVoid ->
+                        Log.d(TAG, "Folder list successfully synced to Firestore."))
+                .addOnFailureListener(e -> Log.w(TAG, "Error syncing folder list to Firestore.", e));
+    }
+    public void loadFoldersToDrawer(){
+        db.collection("folder").document(currentUser.getUid())
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Set<String> cloudFolders = new HashSet<>();
+                    if (documentSnapshot.exists()) {
+                        List<String> folderArray = (List<String>) documentSnapshot.get("array");
+                        if (folderArray != null) {
+                            cloudFolders.addAll(folderArray);
+                        }
+                        globalfolderlist = cloudFolders;
+                    }
+                    updateDrawerMenu(cloudFolders);
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error fetching folders from Firestore. Using local cache.", e);
+                    // On failure (e.g., offline), just use whatever is in the cache
+                    //loadFoldersToDrawer();
+                });
+    }
+    public void updateDrawerMenu(Set<String> folders){
+        Menu menu = navigationView.getMenu();
+        SubMenu foldersSubMenu = menu.findItem(R.id.folders_group_item).getSubMenu();
+        foldersSubMenu.clear(); // Clear existing folders to prevent duplicates
+
+        // Add the static "New folder" button first
+        foldersSubMenu.add(R.id.folders_group, R.id.new_folder, Menu.NONE, "New folder")
+                .setIcon(R.drawable.baseline_add_24);
+
+        if (folders != null) {
+            for (String folderName : folders) {
+                MenuItem folderItem = foldersSubMenu.add(R.id.folders_group, Menu.NONE, 0, folderName)
+                        .setIcon(R.drawable.baseline_folder_24);
+
+                // Set a regular click listener to open the folder
+                folderItem.setOnMenuItemClickListener(item -> {
+                    // TODO: Implement logic to show notes for this folder
+                    Toast.makeText(this, "Opening folder: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(FolderNotesActivity.this, FolderNotesActivity.class);
+                    intent.putExtra(EXTRA_FOLDER_NAME, item.getTitle().toString());
+                    startActivity(intent);
+                    drawerLayout.closeDrawers();
+                    return true;
+                });
+
+                // Set a long-click listener to trigger the delete dialog
+                View actionView = new View(this); // Create a dummy view
+                actionView.setOnLongClickListener(v -> {
+                    showDeleteFolderDialog(folderName);
+                    return true;
+                });
+                folderItem.setActionView(actionView);
+
+                // --- END OF NEW PART ---
+            }
+        }
+    }
     // In NotesListActivity.java
-
+    /*
     private void loadFoldersToDrawer() {
         SharedPreferences prefs = getSharedPreferences("notes_app_folders", MODE_PRIVATE);Set<String> folders = prefs.getStringSet("folder_set", null);
 
@@ -724,7 +777,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                 // --- END OF NEW PART ---
             }
         }
-    }
+    }*/
 // Add this method to NotesListActivity.java
 
     private void showDeleteFolderDialog(String folderName) {
@@ -1112,10 +1165,79 @@ public class FolderNotesActivity extends AppCompatActivity {
         optionsLayout.startAnimation(animation);
         isOptionsVisible = false;
     }
+    private void syncNotesFromFirebase(NotesListActivity.FirestoreSyncCallback callback) {
+        if (currentUser == null) {
+            Log.w(TAG, "Cannot sync notes from cloud, user is not logged in.");
+            return; // Don't proceed if there's no user
+        }
+        String userId = currentUser.getUid();
+        Log.d(TAG, "Starting sync from Firestore for user: " + userId);
+        List<Note> notesListFromFirestore = new ArrayList<>();
+        // This is the query to get all notes for the current user
+        db.collection("users").document(userId).collection("notes")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("com.noteaiapp.keyboardai", "Successfully fetched " + task.getResult().size() + " notes from Firestore.");
+
+                        // Perform the heavy database operations on a background thread
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            // Convert each document from Firestore into a Note object
+                            Note cloudNote = document.toObject(Note.class);
+                            notesListFromFirestore.add(cloudNote);
+                        }
+                        callback.onSyncComplete(notesListFromFirestore);
+
+                    } else {
+                        Log.w("com.noteaiapp.keyboardai", "Error getting documents from Firestore: ", task.getException());
+                        callback.onSyncFailed(task.getException());
+                    }
+                });
+    }
     private void loadNotesFromDatabase() {
+        ProgressBar loadingProgressBar = findViewById(R.id.notes_loading_progressbar);
+        loadingProgressBar.setVisibility(View.VISIBLE);
+        syncNotesFromFirebase(new NotesListActivity.FirestoreSyncCallback() {
+            @Override
+            public void onSyncComplete(List<Note> syncedNotes) {
+                Log.d(TAG, "Sync complete. Processing " + syncedNotes.size() + " notes.");
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    List<Note> filteredNotesForUi = new ArrayList<>();
+                    for (Note note : syncedNotes) {
+                        if (note.getFontFamily() != null && note.getFontFamily().length() > 0 && note.getFontFamily().equalsIgnoreCase(FolderNotesActivity.folderName)) {
+                            filteredNotesForUi.add(note);
+                        }
+                    }
+                    runOnUiThread(() -> {
+                        allNotes.clear();
+                        allNotes.addAll(filteredNotesForUi);
+                        allNotesFromDb.clear();
+                        allNotesFromDb.addAll(filteredNotesForUi);
+                        notesList.clear();
+                        notesList.addAll(allNotes);
+                        notesAdapter.notifyDataSetChanged();
+                        updatePinnedSectionVisibility();
+                        loadingProgressBar.setVisibility(View.GONE);
+                        Log.d(TAG, "UI has been refreshed with synced notes size:"+allNotesFromDb.size());
+                    });
+                });
+            }
+
+            @Override
+            public void onSyncFailed(Exception e) {
+                // Handle the failure case
+                runOnUiThread(() -> {
+                    Toast.makeText(FolderNotesActivity.this, "Failed to sync notes.", Toast.LENGTH_SHORT).show();
+                    //loadNotesFromLocalDatabase();
+                });
+            }
+        });
+    }
+    /*
+    private void loadNotesFromLocalDatabase() {
         Log.d("com.noteaiapp.keyboardai","filder name:"+this.folderName);
         new Thread(() -> {
-            List<Note> allNotesFromDb1 = noteRepository.getAllNotes();
+            List<Note> allNotesFromDb1 = noteRepository.getAllNotesForUser(currentUser.getUid());
             allNotesFromDb.clear();
             for(Note note : allNotesFromDb1){
 
@@ -1130,24 +1252,19 @@ public class FolderNotesActivity extends AppCompatActivity {
                     allNotesFromDb.add(currentNote);
                 }
             }
-
             runOnUiThread(() -> {
                 allNotes.clear();
                 allNotes.addAll(allNotesFromDb);
-
-                // pinnedNotes.clear();
-                // pinnedNotes.addAll(allPinnedNotesFromDb);
-
                 notesList.clear();
                 notesList.addAll(allNotes);
-
                 notesAdapter.notifyDataSetChanged();
                 // notesAdapterPinned.notifyDataSetChanged();
                 updatePinnedSectionVisibility();
             });
         }).start();
 
-    }
+    }*/
+
 
     private void filterNotes(String query) {
         List<Note> masterUnpinned = (allNotesFromDb != null) ? allNotesFromDb : new ArrayList<>();
@@ -1196,12 +1313,6 @@ public class FolderNotesActivity extends AppCompatActivity {
     }
 
     public void updatePinnedSectionVisibility(){
-       /* if(pinnedNotes.isEmpty()){
-            pinnedNotesHeader.setVisibility(View.GONE);
-        }
-        else{
-            pinnedNotesHeader.setVisibility(View.VISIBLE);
-        }*/
         if(allNotes.size() == 0){
             initialtext.setVisibility(View.VISIBLE);
         }
@@ -1240,81 +1351,83 @@ public class FolderNotesActivity extends AppCompatActivity {
             int id = item.getItemId();
 
             if (id == R.id.action_share) {
+                final Note noteToShare = selectedNote;
+                if (noteToShare == null) {
+                    mode.finish();
+                    return true;
+                }
 
-                // 1. Check if it's an image/drawing note
-                if (selectedNote.getImagePath() != null && !selectedNote.getImagePath().isEmpty()) {
-                    try {
-                        File imageFile = new File(selectedNote.getImagePath());
+                if (selectedNote.getImagePath() != null && !noteToShare.getImagePath().isEmpty()) {
 
-                        if (!imageFile.exists()) {
-                            mode.finish();
-                            return true;
-                        }
+                    Log.d("NoteShare", "Loading image for sharing from path: " + noteToShare.getImagePath());
 
-                        // ---- Convert transparent image to white background ----
-                        Bitmap originalBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
-                        if (originalBitmap == null) {
-                            mode.finish();
-                            return true;
-                        }
+                    Glide.with(FolderNotesActivity.this).asBitmap()
+                            .load(noteToShare.getImagePath())
+                            .into(new CustomTarget<Bitmap>() {
+                                @Override
+                                public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                                    // This callback runs after Glide has successfully loaded the Bitmap.
+                                    Log.d("NoteShare","Bitmap loaded successfully. Preparing to share.");
+                                    try {
+                                        // The rest of your logic is mostly correct.
+                                        // We process the bitmap and save it to a cache file.
+                                        Bitmap newBitmap = Bitmap.createBitmap(
+                                                resource.getWidth(),
+                                                resource.getHeight(),
+                                                Bitmap.Config.ARGB_8888
+                                        );
+                                        Canvas canvas = new Canvas(newBitmap);
+                                        canvas.drawColor(Color.WHITE); // white background
+                                        canvas.drawBitmap(resource, 0, 0, null);
 
-                        Bitmap newBitmap = Bitmap.createBitmap(
-                                originalBitmap.getWidth(),
-                                originalBitmap.getHeight(),
-                                Bitmap.Config.ARGB_8888
-                        );
+                                        // Save to a temporary file in the cache directory
+                                        File cachePath = new File(getCacheDir(), "images");
+                                        cachePath.mkdirs(); // ensure the directory exists
+                                        File newImageFile = new File(cachePath, "shared_image.png");
+                                        FileOutputStream fos = new FileOutputStream(newImageFile);
+                                        newBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                                        fos.close();
 
-                        Canvas canvas = new Canvas(newBitmap);
-                        canvas.drawColor(Color.WHITE); // white background
-                        canvas.drawBitmap(originalBitmap, 0, 0, null);
+                                        // Use FileProvider to get a secure content URI
+                                        Uri contentUri = FileProvider.getUriForFile(
+                                                FolderNotesActivity.this,
+                                                getApplicationContext().getPackageName() + ".fileprovider",
+                                                newImageFile
+                                        );
 
-                        File rootDir = getApplicationContext().getFilesDir();
-                        // Save the processed bitmap into cache directory
-                        File cachePath = new File(rootDir, "drawing_notes");
-                        if (!cachePath.exists()) cachePath.mkdirs();
-                        File newImageFile = new File(cachePath, "shared_image.png");
+                                        // Create the share intent
+                                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                                        shareIntent.setType("image/png");
+                                        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-                        FileOutputStream fos = new FileOutputStream(newImageFile);
-                        newBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                        fos.close();
+                                        // Add optional text
+                                        String title = noteToShare.getTitle() != null ? noteToShare.getTitle().split(";")[0] : "";
+                                        String shareText = "Title: " + title;
+                                        // You can add cleaned content here if you want
+                                        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
 
+                                        // Start the chooser
+                                        startActivity(Intent.createChooser(shareIntent, "Share image note via"));
 
-                        //File directory = context.getDir("images", Context.MODE_PRIVATE);
+                                    } catch (Exception e) {
+                                        Log.e("NoteShare", "Failed to share image", e);
+                                        Toast.makeText(FolderNotesActivity.this, "Failed to share image.", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
 
-                        // Get content URI using FileProvider
-                        Uri contentUri = FileProvider.getUriForFile(
-                                FolderNotesActivity.this,
-                                getApplicationContext().getPackageName() + ".fileprovider",
-                                newImageFile
-                        );
+                                @Override
+                                public void onLoadCleared(@Nullable Drawable placeholder) {
+                                    // Called if the view is cleared, can be left empty
+                                }
 
-                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                        shareIntent.setType("image/*");
-                        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-
-                        // Add optional text
-                        String title = selectedNote.getTitle() != null ? selectedNote.getTitle().split(";")[0] : "";
-                        String content = (selectedNote.getContent() != null)? selectedNote.getContent():"";
-                        String cleanContent = "";
-                        if(content.length() > 0) {
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                                cleanContent = Html.fromHtml(content, Html.FROM_HTML_MODE_LEGACY).toString();
-                            } else {
-                                cleanContent = Html.fromHtml(content).toString();
-                            }
-                        }
-                        String shareText = "Title: " + title + "\n\n" +
-                                "Description: " + (cleanContent);
-                        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
-
-                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-                        startActivity(Intent.createChooser(shareIntent, "Share image note via"));
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
+                                @Override
+                                public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                                    super.onLoadFailed(errorDrawable);
+                                    Log.e("NoteShare", "Glide failed to load image for sharing.");
+                                    Toast.makeText(FolderNotesActivity.this, "Could not load image to share.", Toast.LENGTH_SHORT).show();
+                                }
+                            });
                 } else {
                     // 2. This is a text note - share as text
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -1329,39 +1442,15 @@ public class FolderNotesActivity extends AppCompatActivity {
                     } else {
                         cleanContent = Html.fromHtml(content).toString();
                     }
-
-// 3. Construct the final share text using the clean content
+                    cleanContent = formatListNoteForSharing(cleanContent);
                     String shareText = title + "\n\n" + cleanContent;
-
                     shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
-
                     startActivity(Intent.createChooser(shareIntent, "Share text note via"));
                 }
 
                 mode.finish();
                 return true;
-            }  /*else if (id == R.id.action_pin) {
-                final List<Note> selectedNotesToPin = notesAdapter.getSelectedNotes();
-                //final List<Note> selectedPinnedNotesToUnpin = notesAdapterPinned.getSelectedNotes();
-
-                // Determine if we are pinning or unpinning.
-                boolean isPinning = !selectedNotesToPin.isEmpty();
-
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    if (isPinning) {
-                        noteRepository.updateNotePinStatusBulk(selectedNotesToPin, true);
-                    } else {
-                        noteRepository.updateNotePinStatusBulk(selectedPinnedNotesToUnpin, false);
-                    }
-
-                    runOnUiThread(() -> {
-                        loadNotesFromDatabase();
-                        Toast.makeText(NotesListActivity.this, isPinning ? "Notes pinned" : "Notes unpinned", Toast.LENGTH_SHORT).show();
-                        mode.finish();
-                    });
-                });
-                return true;
-            }*/
+            }
             else if (id == R.id.action_delete_note) {
                 final List<Note> selectedNotes = notesAdapter.getSelectedNotes();
                 // final List<Note> selectedPinnedNotes = notesAdapterPinned.getSelectedNotes();
@@ -1370,12 +1459,13 @@ public class FolderNotesActivity extends AppCompatActivity {
                     mode.finish();
                     return true;
                 }
-
                 Executors.newSingleThreadExecutor().execute(() -> {
                     // Delete notes from the main list
                     for (Note note : selectedNotes) {
                         notesRepositoryTrash.addNote(note);
-                        noteRepository.deleteNote(note.getId());
+                        noteRepository.deleteNoteByCloudId(note.getUserFirebaseId());
+                        // delete note from firestore as well
+                        db.collection("users").document(currentUser.getUid()).collection("notes").document(note.getUserFirebaseId()).delete();
                     }
                     /* Delete notes from the pinned list
                     for (Note note : selectedPinnedNotes) {
@@ -1404,6 +1494,7 @@ public class FolderNotesActivity extends AppCompatActivity {
                     for (Note note : selectedNotes) {
                         note.setFontFamily("archived");
                         noteRepository.updateNote(note);
+                        db.collection("users").document(currentUser.getUid()).collection("notes").document(note.getUserFirebaseId()).set(note);
                     }
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
@@ -1426,7 +1517,16 @@ public class FolderNotesActivity extends AppCompatActivity {
                     for (Note note : selectedNotes) {
                         note.setFontFamily("");
                         noteRepository.updateNote(note);
+                        String noteCloudId = note.getUserFirebaseId();
+                        if (currentUser != null && noteCloudId != null && !noteCloudId.isEmpty()) {
+                            db.collection("users").document(currentUser.getUid())
+                                    .collection("notes").document(noteCloudId)
+                                    .set(note, SetOptions.merge()) // Use merge to safely update fields
+                                    .addOnSuccessListener(aVoid -> Log.d("FolderNotes", "Note " + noteCloudId + " removed from folder in Firestore."))
+                                    .addOnFailureListener(e -> Log.w("FolderNotes", "Error removing note " + noteCloudId + " from folder in Firestore.", e));
+                        }
                     }
+
                     runOnUiThread(() -> {
                         // Reload data to reflect changes
                         loadNotesFromDatabase();
@@ -1453,7 +1553,25 @@ public class FolderNotesActivity extends AppCompatActivity {
             // notesAdapterPinned.clearSelections();
         }
     };
-
+    private String formatListNoteForSharing(String rawContent) {
+        Log.d("NoteSharing", "Original content: " + rawContent);
+        if (rawContent == null || rawContent.isEmpty() || !rawContent.startsWith(LIST_NOTE_PREFIX)) {
+            return rawContent; // Return the content as-is if it's not a list
+        }
+        String listContent = rawContent.substring(LIST_NOTE_PREFIX.length()).trim();
+        String[] items = listContent.split("\\s*\\[[x\\s]\\]\\s*");
+        StringBuilder formattedList = new StringBuilder();
+        int itemNumber = 1;
+        for (String item : items) {
+            String trimmedItem = item.trim();
+            if (trimmedItem.isEmpty()) {
+                continue;
+            }
+            formattedList.append(itemNumber).append(". ").append(trimmedItem).append("\n");
+            itemNumber++;
+        }
+        return formattedList.toString().trim();
+    }
     private File createImageFile() throws IOException {
         // 1. Create a unique file name with a timestamp
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
@@ -1528,7 +1646,7 @@ public class FolderNotesActivity extends AppCompatActivity {
         Intent intent = new Intent(FolderNotesActivity.this, ImageNoteActivity.class);
         // We pass the image path so the activity knows which image to load.
         // The note doesn't exist yet, so we don't pass a note_id.
-        intent.putExtra("image_path", imagePath);
+        intent.putExtra("note_image_path", imagePath);
         intent.putExtra(EXTRA_FOLDER_NAME,this.folderName);
         startActivity(intent);
     }

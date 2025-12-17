@@ -1,23 +1,40 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.noteaiapp.keyboardai"
     compileSdk = 35
 
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.4.1"
+        versionCode = 22
+        versionName = "1.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField(
+            "String",
+            "GEMINI_API_KEY",
+            "\"${localProperties.getProperty("GEMINI_API_KEY")}\""
+        )
     }
 
     buildTypes {
@@ -90,4 +107,18 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.14.2")
     annotationProcessor("com.github.bumptech.glide:compiler:4.14.2")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation(platform("com.google.firebase:firebase-bom:34.2.0"))
+    implementation("com.google.firebase:firebase-analytics")
+
+    // 1. Add the dependency for Firebase Authentication
+    implementation("com.google.firebase:firebase-auth")
+    // 2. Add the dependency for Google Sign-I
+    implementation("com.google.android.gms:play-services-auth:21.1.0")
+    implementation("com.google.firebase:firebase-firestore")
+
+    // 2. For Cloud Storage (to store images)
+    implementation("com.google.firebase:firebase-storage")
+    implementation("com.itextpdf:kernel:7.2.5")
+    implementation("com.itextpdf:layout:7.2.5")
+    implementation("com.itextpdf:html2pdf:4.0.5")
 }

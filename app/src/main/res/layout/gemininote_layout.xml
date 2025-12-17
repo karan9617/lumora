@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_content_layout"
+    android:layout_width="match_parent"
+    android:background="@color/black"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:transitionName="note_card_transition">
+    <ProgressBar
+        android:id="@+id/correction_progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#E1000000"
+        app:subtitleTextColor="@android:color/white"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:menu="@menu/notesai_menu" >
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/search_view"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            app:queryHint="Search your notes"
+            app:queryBackground="@android:color/transparent"
+            android:textColorHint="@android:color/darker_gray"
+            android:textColor="@android:color/white"
+            android:layout_gravity="right"
+            />
+
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <EditText
+        android:id="@+id/noteTitleEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/toolbar"
+        android:background="@android:color/transparent"
+        android:hint="@string/notepad_title"
+        android:textColor="#706E6E"
+        android:inputType="textCapSentences"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <FrameLayout
+        android:id="@+id/content_frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/button_bar"
+        android:layout_below="@id/noteTitleEditText">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/linear_layout_main"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:id="@+id/linkImage"
+                    android:src="@drawable/pdf_icon"
+                    android:layout_gravity="center_horizontal"
+                    android:visibility="gone"
+                    ></ImageView>
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <EditText
+                        android:id="@+id/resultText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/note_background"
+                        android:gravity="start|top"
+                        android:padding="16dp"
+                        android:soundEffectsEnabled="true"
+                        android:scrollbars="vertical"
+                        android:hint="@string/content_text"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:inputType="textMultiLine" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:id="@+id/imageframelayout">
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardElevation="8dp"
+                        android:id="@+id/imageCard"
+                        app:cardCornerRadius="12dp"
+                        android:visibility="gone"
+                        app:cardUseCompatPadding="true"
+                        app:cardBackgroundColor="@android:color/transparent">
+                        <ImageView
+                            android:id="@+id/imagesketch"
+                            android:layout_width="match_parent"
+                            android:layout_height="300dp"
+                            android:soundEffectsEnabled="true"
+                            android:visibility="invisible" />
+                        <ImageButton
+                            android:id="@+id/clearImageButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_gravity="top|end"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/ic_close"
+                            android:soundEffectsEnabled="true"
+                            android:backgroundTint="@color/white"
+                            android:visibility="invisible"
+                            android:src="@drawable/ic_close"
+                            app:tint="@color/black" />
+                    </androidx.cardview.widget.CardView>
+                </FrameLayout>
+            </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
+
+    <com.noteaiapp.keyboardai.ui.DrawingView
+        android:id="@+id/drawingView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/button_bar"
+        android:layout_below="@id/noteTitleEditText"
+        android:background="@android:color/transparent"
+        android:visibility="gone" />
+
+    <!-- Side Sheet Container -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
+        android:layout_above="@id/button_bar">
+
+        <!-- Side Sheet -->
+        <RelativeLayout
+            android:id="@+id/side_sheet"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="end|center_vertical"
+            android:elevation="16dp"
+            android:layout_marginEnd="-20dp"
+            android:visibility="gone"
+            android:translationX="0dp">
+
+            <!-- Drag Handle Tab (on the left side) -->
+            <LinearLayout
+                android:id="@+id/side_sheet_handle"
+                android:layout_width="30dp"
+                android:layout_height="100dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_alignParentTop="true"
+
+                android:background="@drawable/rounded_background"
+                android:gravity="center"
+
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="40dp"
+                    android:background="@android:color/white" />
+            </LinearLayout>
+
+            <!-- Main Side Sheet Content -->
+            <LinearLayout
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/side_sheet_handle"
+                android:background="@drawable/rounded_background_light"
+                android:orientation="vertical"
+                android:id="@+id/slidersheets"
+                android:padding="8dp"
+                android:gravity="center_horizontal">
+
+                <ImageButton
+                    android:id="@+id/cameraScanButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/rounded_background"
+                    android:src="@drawable/baseline_camera_alt_24"
+                    android:contentDescription="Camera" />
+                <ImageButton
+                    android:id="@+id/linkCreationButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/rounded_background"
+                    android:src="@drawable/ic_link"
+                    android:contentDescription="Camera" />
+                <ImageButton
+                    android:id="@+id/pdfUploadButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/rounded_background"
+                    android:src="@drawable/pdf_icon"
+                    android:contentDescription="Camera" />
+                <ImageButton
+                    android:id="@+id/centerAlignButton"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/rounded_background"
+                    android:src="@drawable/center_align_icon"
+                    android:contentDescription="Camera" />
+
+            </LinearLayout>
+        </RelativeLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/button_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginLeft="10px"
+        android:layout_marginRight="10px"
+        android:layout_marginBottom="8dp"
+        android:soundEffectsEnabled="true"
+        android:gravity="center"
+        android:elevation="16dp"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_toEndOf="@id/side_sheet_handle"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_horizontal|center_vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="58dp"
+
+                    android:layout_marginRight="10dp"
+                    app:hintEnabled="false">
+                    <EditText
+                        android:id="@+id/ai_edit_text"
+                        android:layout_width="match_parent"
+                        android:textColor="@color/black"
+                        android:layout_height="wrap_content"
+                        android:hint="type here.."
+                        android:inputType="textEmailAddress"
+                        />
+                </com.google.android.material.textfield.TextInputLayout>
+                <ImageView
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/ic_voice_icon"
+
+                    android:padding="10dp"
+                    android:soundEffectsEnabled="true"
+                    android:layout_marginRight="55dp"
+                    android:background="@drawable/round_voice_bg"
+                    android:id="@+id/voiceicon" />
+
+
+                <ImageButton
+                    android:id="@+id/clearDrawingButton"
+                    android:visibility="gone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_white_background"
+                    android:src="@drawable/ic_eraser"
+                    android:padding="17px"
+                    android:layout_marginEnd="8dp"
+                    android:text="Erase" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/toggleModeDrawSave"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:soundEffectsEnabled="true"
+                    android:visibility="gone"
+                    android:text="Save" />
+                <ProgressBar
+                    android:id="@+id/listeningProgress"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:visibility="gone"
+                    android:indeterminateTint="@color/white" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+</RelativeLayout>

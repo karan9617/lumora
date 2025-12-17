@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1038951036645",
+    "project_id": "notesai-8474f",
+    "storage_bucket": "notesai-8474f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1038951036645:android:00f3b4005d53f7cc8c060c",
+        "android_client_info": {
+          "package_name": "com.noteaiapp.keyboardai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1038951036645-rkauurc307929cfgdd3k5ign6d425tb0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.noteaiapp.keyboardai",
+            "certificate_hash": "ef18ca25a86d2527984c32f5652ad6ee8fc8299b"
+          }
+        },
+        {
+          "client_id": "1038951036645-qh5u6b25q4ni8pp0g0u8i6dhii9edcpn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQGOppGYyCjVOEq8f88wGL_uz-DOrwApE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1038951036645-qh5u6b25q4ni8pp0g0u8i6dhii9edcpn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

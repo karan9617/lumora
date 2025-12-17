@@ -107,6 +107,14 @@
             android:text="@string/string_instruction"
             android:textSize="16sp"
             android:paddingBottom="12dp"/>
+        <TextView
+            android:id="@+id/textViewChatAI"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#3C3838"
+            android:text="@string/textViewChatAI"
+            android:textSize="16sp"
+            android:paddingBottom="12dp"/>
 
     </LinearLayout>
 </ScrollView>

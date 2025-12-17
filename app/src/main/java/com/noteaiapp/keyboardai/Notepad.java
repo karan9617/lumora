@@ -9,8 +9,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.pdf.PdfDocument;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -49,6 +51,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ProgressBar;
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -65,18 +69,33 @@ import androidx.core.content.FileProvider;
 import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.noteaiapp.keyboardai.Models.Note;
 import com.noteaiapp.keyboardai.camera.CameraActivity;
 import com.noteaiapp.keyboardai.data.FileUtils;
 import com.noteaiapp.keyboardai.data.NoteRepository;
 import com.noteaiapp.keyboardai.data.WordTokenizer;
+import com.noteaiapp.keyboardai.interfaces.FirebaseNoteFetchCallback;
+import com.noteaiapp.keyboardai.interfaces.GeminiAPIKey;
+import com.noteaiapp.keyboardai.interfaces.GeminiMindMapCallback;
+import com.noteaiapp.keyboardai.mindmap.MindMapActivity;
 import com.noteaiapp.keyboardai.processor.WordProcessor;
 import com.noteaiapp.keyboardai.ui.DrawingView;
 import com.noteaiapp.keyboardai.ui.LinkPreviewHelper;
 import com.noteaiapp.keyboardai.widget.NotesWidgetProvider;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.noteaiapp.keyboardai.interfaces.PdfTextExtractionCallback;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -85,6 +104,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import okhttp3.MediaType;
@@ -95,10 +115,22 @@ import okhttp3.RequestBody;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+
+import java.io.InputStream;
+import android.text.style.URLSpan;
+import android.text.Editable;
+import android.net.Uri;
+
 public class Notepad extends AppCompatActivity {
 
-    private static final String TAG = "NotepadActivity";
+    private static final String TAG = "com.noteaiapp.keyboardai";
     ProgressBar correctionProgressBar;
+    private String currentUserUuid = "";
+    private FirebaseUser currentUser;
+    private FirebaseFirestore db;
+    FirebaseAuth mAuth;
+    FirebaseStorage storage = FirebaseStorage.getInstance();
+
     public static final String EXTRA_FOLDER_NAME = "FOLDER_NAME";
     private static final int PERMISSION_REQUEST_CODE = 1;
     // camera
@@ -122,7 +154,6 @@ public class Notepad extends AppCompatActivity {
     private DrawingView drawingView;
     private Button toggleModeDrawSave;
     ImageButton clearDrawingButton,clearImageButton,black_pen,red_pen,boldButton,italicsButton,linkCreationButton,pdfUploadButton,leftAlignButton,centerAlignButton,rightAlignButton;
-    private long noteId = -1;
     private String noteDate;
     private byte[] drawingData;
     private String imagePath;
@@ -148,58 +179,146 @@ public class Notepad extends AppCompatActivity {
     private int noteOrder;
 
     // API Key for Gemini API, will be provided at runtime
-    private static final String API_KEY = "AIzaSyCes8zNYgUuYAfpKGLGYmG5r0oQW5cx_2o";
-   // private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
-   private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
+    private static final String API_URL = GeminiAPIKey.API_URL_GEMINI;
+   //private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + API_KEY;
     private static final String DATE_EXTRA_KEY = "date_specific_notes";
     private boolean dateReceived = false;
     private String receivedDateFromActivities = "";
     private ActivityResultLauncher<Intent> pdfFileLauncher;
+    public void loadNoteData(){
+        String noteTitle = getIntent().getStringExtra("note_title");
+        String noteContent = getIntent().getStringExtra("note_content");
+        noteDate = getIntent().getStringExtra("note_date");
+        selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
+        imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
+        isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
+        // NEW: Retrieve the note's order from the intent
+        noteOrder = getIntent().getIntExtra("note_order", -1);
+        if (this.currentUserUuid != null && this.currentUserUuid.length() != 0) {
+            titleText.setText(noteTitle);
+            loadNote(noteContent);
+            //resultText.setText(noteContent);
+            resultBuilder.append(noteContent);
+            titleBuilder.append(noteTitle);
+        } else {
+            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
+            titleText.setHint("Untitled");
+        }
+    }
+    private void fetchNoteFromFirebase(String cloudId) {
+
+        if (currentUser == null || cloudId == null || cloudId.length() == 0) {
+            Log.w(TAG, "User not logged in, falling back to local database.");
+            loadNoteData();
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        // Show a ProgressBar if you have one
+        Log.d(TAG, "List item user uid:"+userId);
+        db.collection("users").document(userId).collection("notes").document(cloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Log.d(TAG, "Successfully fetched list note from Firestore.");
+                        Note cloudNote = documentSnapshot.toObject(Note.class);
+                        Log.d(TAG, "cloudNote :"+cloudNote.getTitle()+"|cloudNote content:"+cloudNote.getContent());
+
+                        if (cloudNote != null) {
+                            populateUiWithNoteData(cloudNote, cloudId);
+                        }
+                    } else {
+                        Log.w(TAG, "List note not found in Firestore, falling back to local.");
+                        //loadNoteData();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to fetch from Firestore. Falling back to local.", e);
+                    //loadNoteData();
+                });
+    }
+    public void populateUiWithNoteData(Note currentNode, String cloudId){
+        String noteTitle = currentNode.getTitle().split(";")[0];
+        String noteContent = currentNode.getContent();
+        noteDate = this.receivedDateFromActivities;
+        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
+        imagePath = (currentNode == null )? "":currentNode.getImagePath();
+        drawingData = (currentNode == null )? null :FileUtils.loadFileFromPath(currentNode.getImagePath());
+        isPinned = (currentNode == null )? false: currentNode.isPinned();
+        noteOrder = (currentNode == null )? -1:currentNode.getOrder();
+        if (cloudId != null && cloudId.length() != 0) {
+            titleText.setText(noteTitle);
+            loadNote(noteContent);
+            //resultText.setText(noteContent);
+            resultBuilder.append(noteContent);
+            titleBuilder.append(noteTitle);
+        } else {
+            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
+            titleText.setHint("Untitled");
+        }
+        if (imagePath != null && !imagePath.isEmpty()) {
+            Log.d(TAG, "Populating UI with image from path: " + imagePath);
+            imageframelayout.setVisibility(View.VISIBLE);
+            imagesketch.setVisibility(View.VISIBLE);
+            imageCard.setVisibility(View.VISIBLE);
+            clearImageButton.setVisibility(View.VISIBLE);
+
+            // Use Glide to load the image. It handles both local paths and cloud URLs.
+            Glide.with(this).load(imagePath).into(imagesketch);
+        } else {
+            Log.d(TAG, "Note has no image path. Hiding image views.");
+            imageframelayout.setVisibility(View.GONE);
+            imagesketch.setVisibility(View.GONE);
+            imageCard.setVisibility(View.GONE);
+            clearImageButton.setVisibility(View.GONE);
+        }
+        if(imagePath != null && imagePath.length() > 0){
+            Glide.with(this)
+                    .asBitmap() // Important: We need a Bitmap for the drawing view
+                    .load(imagePath)
+                    .into(new CustomTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                            // This callback runs when Glide has finished downloading/loading the Bitmap.
+                            // Now, set it as the background for the DrawingView.
+                            imagesketch.setImageBitmap(resource);
+                            imageframelayout.setVisibility(View.VISIBLE);
+                            imagesketch.setVisibility(View.VISIBLE);
+                            imageCard.setVisibility(View.VISIBLE);
+                            clearImageButton.setVisibility(View.VISIBLE);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                            // Handle case where the view is cleared
+                        }
+                    });
+            imagesketch.setVisibility(View.VISIBLE);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         EdgeToEdge.enable(this);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        //firebase storage
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        storage = FirebaseStorage.getInstance();
+        db = FirebaseFirestore.getInstance();
+        mAuth =FirebaseAuth.getInstance();
+        currentUserUuid = (getIntent().getStringExtra("note_font_size") == null)? "": getIntent().getStringExtra("note_font_size");
 
         postponeEnterTransition();
         init();
         registerListeners();
-        pdfFileLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Uri uri = result.getData().getData();
-                        if (uri != null) {
-                            // Grant persistence read permission access to this URI
-                            final int takeFlags = result.getData().getFlags()
-                                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                            try {
-                                getContentResolver().takePersistableUriPermission(uri, takeFlags);
-                            } catch (SecurityException e) {
-                                Log.e(TAG, "Failed to take persistable URI permission. Content access may be temporary.", e);
-                            }
-
-                            String fileName = getFileName(uri);
-                            insertPdfLink(uri, fileName);
-                        }
-                    }
-                }
-        );
-       // FrameLayout bottomSheet = findViewById(R.id.frameLayout);
-        //BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
-        //behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-
-        // In your onCreate method:
         RelativeLayout sideSheet = findViewById(R.id.side_sheet);
         LinearLayout sideSheetHandle = findViewById(R.id.side_sheet_handle);
 
 // Initially hide the side sheet (off-screen to the right)
         sideSheet.setVisibility(View.VISIBLE);
         sideSheet.setTranslationX(130); // Only the handle is visible (80dp is the sheet width)
-
-// Track if it's open or closed
         final boolean[] isOpen = {false};
 
 // Add touch listener for dragging
@@ -248,7 +367,6 @@ public class Notepad extends AppCompatActivity {
                 return false;
             }
         });
-
 // Also add click listener for quick toggle
         sideSheetHandle.setOnClickListener(v -> {
             if (isOpen[0]) {
@@ -267,8 +385,6 @@ public class Notepad extends AppCompatActivity {
                 isOpen[0] = true;
             }
         });
-
-        ///
         noteRepository = new NoteRepository(this);
         drawingView = findViewById(R.id.drawingView);
         italicsButton = findViewById(R.id.italicsButton);
@@ -280,92 +396,35 @@ public class Notepad extends AppCompatActivity {
         if(italicsButton != null){
             italicsButton.setOnClickListener((v -> applyStyleToSelection(Typeface.ITALIC)));
         }
+        this.folderName = (getIntent().getStringExtra(EXTRA_FOLDER_NAME) == null)? "":(getIntent().getStringExtra(EXTRA_FOLDER_NAME));
+        this.receivedDateFromActivities = (getIntent().getStringExtra(DATE_EXTRA_KEY) == null)? ((getIntent().getStringExtra("note_date") == null)?getCurrentDate():getIntent().getStringExtra("note_date")):(getIntent().getStringExtra(DATE_EXTRA_KEY));
 
-        noteId = getIntent().getLongExtra("note_id", -1);
-        Note currentNode = noteRepository.getNoteById(noteId);
-        String receivedDate = getIntent().getStringExtra(DATE_EXTRA_KEY);
-        String receivedFolder = getIntent().getStringExtra(EXTRA_FOLDER_NAME);
-        if(receivedFolder != null && !receivedFolder.isEmpty()){
-            folderName = receivedFolder;
-        }
-        else{
-            folderName ="";
-        }
-        if(receivedDate != null && !receivedDate.isEmpty()){
-            dateReceived = true;
-            this.receivedDateFromActivities = receivedDate;
-        }
-        else{
-            receivedDateFromActivities = getCurrentDate();
-        }
-        /*
-        String noteTitle = getIntent().getStringExtra("note_title");
-        String noteContent = getIntent().getStringExtra("note_content");
-        noteDate = getIntent().getStringExtra("note_date");
-        selectedColor = getIntent().getIntExtra("note_color", Color.WHITE);
-        imagePath = getIntent().getStringExtra("note_image_path"); // Retrieve the image path
-        drawingData = FileUtils.loadFileFromPath(getIntent().getStringExtra("note_image_path"));
-        */
-        String noteTitle = (currentNode == null )? "":(currentNode.getTitle().split(";")[0]);
-        String noteContent = (currentNode == null )? "":currentNode.getContent();
-        noteDate = (currentNode == null )? "":currentNode.getDate();
-        selectedColor = (currentNode == null )? Color.WHITE:currentNode.getColor();
-        imagePath = (currentNode == null )? "":currentNode.getImagePath();
-        drawingData = (currentNode == null )? null :FileUtils.loadFileFromPath(currentNode.getImagePath());
+        //Note currentNode = noteRepository.getNoteById(noteId);
+        fetchNoteFromFirebase(currentUserUuid);
+
         DrawingActivity.DrawingDataManager.clearDrawingData();
-        /*
-        // NEW: Retrieve the pinned status from the intent
-        isPinned = getIntent().getBooleanExtra("note_is_pinned", false);
-        // NEW: Retrieve the note's order from the intent
-        noteOrder = getIntent().getIntExtra("note_order", -1);*/
-        isPinned = (currentNode == null )? false: currentNode.isPinned();
-        noteOrder = (currentNode == null )? -1:currentNode.getOrder();
-        // setting the imagesketch from the database
-        if(drawingData != null && drawingData.length > 0){
-            Bitmap savedBitmap = noteRepository.loadImageFromInternalStorage(imagePath);
-            // Check if the bitmap was successfully created
-            if (savedBitmap != null) {
-                // Assign the bitmap to your ImageView and make it visible
-                imagesketch.setImageBitmap(savedBitmap);
-                imageframelayout.setVisibility(View.VISIBLE);
-                imagesketch.setVisibility(View.VISIBLE);
-                imageCard.setVisibility(View.VISIBLE);
-                clearImageButton.setVisibility(View.VISIBLE);
-            }
-        }
 
-        if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
-        }
-        if (noteId != -1) {
-            titleText.setText(noteTitle);
-            loadNote(noteContent);
-            //resultText.setText(noteContent);
-            resultBuilder.append(noteContent);
-            titleBuilder.append(noteTitle);
-        } else {
-            noteDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
-            titleText.setHint("Untitled");
-        }
+        // setting the imagesketch from the database
+
         // setting background
         mainContentLayout.setBackgroundColor(selectedColor);
         titleText.setBackground(null);
         resultText.setBackground(null);
         hintTextView.setBackground(null);
-
+        if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+        }
         String transitionName = getIntent().getStringExtra("TRANSITION_NAME");
         if (transitionName != null) {
             ViewCompat.setTransitionName(findViewById(R.id.main_content_layout), transitionName);
         }
         startPostponedEnterTransition();
-
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
         }
 
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
-
         toolbar.setOnMenuItemClickListener(this::onOptionsItemSelected);
 
         // NEW: Call the method to set the correct pin icon when the activity is created.
@@ -610,7 +669,32 @@ public class Notepad extends AppCompatActivity {
             return index;
         }
     }
-
+/*
+    private void extractTextFromPdf(Uri pdfUri, PdfTextExtractionCallback callback) {
+        new Thread(() -> {
+            try (
+                    // Use ContentResolver to open an InputStream from the URI
+                    InputStream inputStream = getContentResolver().openInputStream(pdfUri);
+                    // Create a PdfReader from the stream
+                    PdfReader reader = new PdfReader(inputStream);
+                    // Create a PdfDocument
+                    PdfDocument pdfDocument = new PdfDocument(reader)
+            ) {
+                StringBuilder extractedText = new StringBuilder();
+                // Loop through all pages in the PDF
+                for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++) {
+                    // Use PdfTextExtractor to get the text from each page
+                    String pageText = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(i));
+                    extractedText.append(pageText).append("\n"); // Append page text with a newline
+                }
+                // Return the result on the UI thread
+                runOnUiThread(() -> callback.onTextExtracted(extractedText.toString()));
+            } catch (Exception e) {
+                // Handle any errors on the UI thread
+                runOnUiThread(() -> callback.onExtractionFailed(e));
+            }
+        }).start();
+    }*/
     private void insertPdfLink(Uri uri, String fileName) {
         // The display text will be the file name, possibly prefixed with a PDF icon/label
         String linkText = "[PDF] " + fileName;
@@ -944,7 +1028,28 @@ public class Notepad extends AppCompatActivity {
         }
     }
     public void registerListeners(){
+        pdfFileLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            // Grant persistence read permission access to this URI
+                            final int takeFlags = result.getData().getFlags()
+                                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            try {
+                                getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                            } catch (SecurityException e) {
+                                Log.e(TAG, "Failed to take persistable URI permission. Content access may be temporary.", e);
+                            }
 
+                            String fileName = getFileName(uri);
+                            insertPdfLink(uri, fileName);
+                        }
+                    }
+                }
+        );
         if (search_view != null) {
             search_view.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
@@ -990,6 +1095,9 @@ public class Notepad extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 drawingData = null;
+                // set imagesketch.getDrawable() to null
+                imagesketch.setImageDrawable(null);
+                imageCard.setVisibility(View.GONE);
                 imageframelayout.setVisibility(View.GONE);
                 saveNote();
             }
@@ -1100,23 +1208,46 @@ public class Notepad extends AppCompatActivity {
             }
         });
     }
-    private void drawOnDrawingView(){
-        if (imagePath != null && imagePath.length() > 0) {
-            // Use a ViewTreeObserver to wait until the view is laid out
-            // and its dimensions are available before loading the bitmap.
-            drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    // Ensure the view has valid dimensions before loading the data
-                    if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
-                        drawingView.setDrawingData(drawingData);
-                        // Remove the listener to avoid repeated calls
-                        drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+    private void drawOnDrawingView() {
+        //1. Get the drawable from the ImageView that Glide loaded the image into.
+        Drawable drawable = imagesketch.getDrawable();
+
+        // 2. Check if the drawable exists and is a BitmapDrawable.
+        if (drawable instanceof BitmapDrawable) {
+            Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+
+            if (bitmap != null) {
+                Log.d("Notepad", "Bitmap retrieved from imagesketch. Preparing to draw.");
+                // 3. Convert the Bitmap into a byte array.
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+
+                // 4. Update the activity's main drawingData variable.
+                this.drawingData = byteArray;
+
+                // 5. Use a ViewTreeObserver to safely set the data on the drawingView
+                //    only after it has been measured and laid out on the screen.
+                drawingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        // Ensure the view has valid dimensions before setting the data
+                        if (drawingView.getWidth() > 0 && drawingView.getHeight() > 0) {
+                            Log.d("Notepad", "DrawingView is ready. Setting drawing data.");
+                            drawingView.setDrawingData(drawingData);
+                            // Remove the listener to avoid this from being called repeatedly.
+                            drawingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                Log.w("Notepad", "Could not get Bitmap from imagesketch's drawable.");
+            }
+        } else {
+            Log.w("Notepad", "imagesketch does not contain a valid BitmapDrawable. Cannot edit.");
         }
     }
+
     private void toggleMode() {
         isDrawingMode = !isDrawingMode;
         if (isDrawingMode) {
@@ -1206,10 +1337,6 @@ public class Notepad extends AppCompatActivity {
         } else if (id == R.id.action_color) {
             showColorPickerDialog();
             return true;
-        } else if (id == R.id.action_pin_unpin) {
-            // NEW: Handle the pin/unpin action
-            togglePinStatus();
-            return true;
         }
         else if (id == R.id.action_correct_text) { // NEW: Handle the correct text action
             correctTextWithGemini();
@@ -1223,7 +1350,348 @@ public class Notepad extends AppCompatActivity {
             showLanguageSelectionDialog();
             return true;
         }
+        else if (id == R.id.mindmap) {
+// Show a loading indicator immediately
+            /*String noteContent = resultText.getText().toString();
+
+            // 1. Show a loading indicator to the user
+            correctionProgressBar.setVisibility(View.VISIBLE);
+            Toast.makeText(this, "Generating smart mind map...", Toast.LENGTH_SHORT).show();
+
+            // 2. Call the new Gemini method
+            generateMindMapStructureWithGemini(noteContent, new GeminiMindMapCallback() {
+                @Override
+                public void onStructureGenerated(String structuredText) {
+                    // This runs on success
+
+                    // 3. Hide the loading indicator
+                    correctionProgressBar.setVisibility(View.GONE);
+
+                    // 4. Create the intent and launch MindMapActivity with the NEW structured text
+                    Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                    intent.putExtra("notecontent", structuredText); // Pass the AI-generated structure
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onGenerationFailed(Exception e) {
+                    // This runs on failure
+
+                    // 3. Hide the loading indicator
+                    correctionProgressBar.setVisibility(View.GONE);
+
+                    // 4. Inform the user and fall back to the old behavior
+                    Log.e(TAG, "Gemini mind map generation failed.", e);
+                    Toast.makeText(Notepad.this, "AI analysis failed. Showing basic map.", Toast.LENGTH_LONG).show();
+
+                    // Fallback: Launch with the original raw text
+                    Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                    intent.putExtra("notecontent", resultText.getText().toString());
+                    startActivity(intent);
+                }
+            });
+            // --- END: THIS IS THE FIX ---*/
+            String noteContent = resultText.getText().toString();
+
+            // 1. Check if there are any PDF links in the note
+            List<Uri> pdfUris = extractPdfLinksFromNote();
+
+            if (pdfUris.isEmpty()) {
+                // No PDFs found, proceed with normal mind map generation
+                generateMindMapWithContent(noteContent);
+            } else {
+                // PDFs found, show dialog to ask user
+                showPdfInclusionDialog(noteContent, pdfUris);
+            }
+            return true;
+        }
         return super.onOptionsItemSelected(item);
+    }
+    private List<Uri> extractPdfLinksFromNote() {
+        List<Uri> pdfUris = new ArrayList<>();
+        Editable editable = resultText.getText();
+
+        if (editable == null) {
+            return pdfUris;
+        }
+
+        // Get all URLSpan objects from the text
+        URLSpan[] urlSpans = editable.getSpans(0, editable.length(), URLSpan.class);
+
+        for (URLSpan span : urlSpans) {
+            String url = span.getURL();
+
+            // Check if this is a content URI (local file) or a PDF URL
+            if (url != null && (url.startsWith("content://") || url.toLowerCase().endsWith(".pdf"))) {
+                try {
+                    Uri uri = Uri.parse(url);
+
+                    // Verify it's actually a PDF by checking the MIME type
+                    String mimeType = getContentResolver().getType(uri);
+                    if (mimeType != null && mimeType.equals("application/pdf")) {
+                        pdfUris.add(uri);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing PDF URI: " + url, e);
+                }
+            }
+        }
+
+        return pdfUris;
+    }
+
+    // New method to show dialog asking user about PDF inclusion
+    private void showPdfInclusionDialog(String noteContent, List<Uri> pdfUris) {
+        String message = pdfUris.size() == 1
+                ? "This note contains 1 PDF. Include PDF content in the mind map?"
+                : "This note contains " + pdfUris.size() + " PDFs. Include PDF content in the mind map?";
+
+        new AlertDialog.Builder(this)
+                .setTitle("PDF Content Found")
+                .setMessage(message)
+                .setPositiveButton("Include PDF", (dialog, which) -> {
+                    // Extract text from all PDFs and combine with note content
+                    extractAndGenerateMindMap(noteContent, pdfUris);
+                })
+                .setNegativeButton("Note Only", (dialog, which) -> {
+                    // Generate mind map with just the note content
+                    generateMindMapWithContent(noteContent);
+                })
+                .setNeutralButton("Cancel", null)
+                .show();
+    }
+
+    // New method to extract text from all PDFs and generate mind map
+    private void extractAndGenerateMindMap(String noteContent, List<Uri> pdfUris) {
+        // Show loading indicator
+        correctionProgressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Extracting PDF content...", Toast.LENGTH_SHORT).show();
+
+        // Use a thread to extract all PDF texts
+        new Thread(() -> {
+            StringBuilder combinedContent = new StringBuilder();
+            combinedContent.append(noteContent);
+
+            // Add separator
+            if (!noteContent.trim().isEmpty()) {
+                combinedContent.append("\n\n=== PDF Content ===\n\n");
+            }
+
+            // Extract text from each PDF
+            for (int i = 0; i < pdfUris.size(); i++) {
+                Uri pdfUri = pdfUris.get(i);
+                String fileName = getFileName(pdfUri);
+
+                try {
+                    String pdfText = extractTextFromPdfSync(pdfUri);
+
+                    if (pdfText != null && !pdfText.trim().isEmpty()) {
+                        combinedContent.append("--- From: ").append(fileName).append(" ---\n\n");
+                        combinedContent.append(pdfText).append("\n\n");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error extracting text from PDF: " + fileName, e);
+                    runOnUiThread(() ->
+                            Toast.makeText(this,
+                                    "Warning: Could not extract text from " + fileName,
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                }
+            }
+
+            // Now generate mind map with combined content
+            String finalContent = combinedContent.toString();
+            runOnUiThread(() -> generateMindMapWithContent(finalContent));
+
+        }).start();
+    }
+
+    // Synchronous version of PDF text extraction (for use in thread)
+    private String extractTextFromPdfSync(Uri pdfUri) throws Exception {
+        InputStream inputStream = getContentResolver().openInputStream(pdfUri);
+
+        if (inputStream == null) {
+            throw new Exception("Could not open PDF file");
+        }
+
+        com.itextpdf.kernel.pdf.PdfReader reader = new com.itextpdf.kernel.pdf.PdfReader(inputStream);
+        com.itextpdf.kernel.pdf.PdfDocument pdfDocument = new com.itextpdf.kernel.pdf.PdfDocument(reader);
+
+        StringBuilder extractedText = new StringBuilder();
+
+        for (int i = 1; i <= pdfDocument.getNumberOfPages(); i++) {
+            String pageText = com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor.getTextFromPage(
+                    pdfDocument.getPage(i)
+            );
+            extractedText.append(pageText).append("\n");
+        }
+
+        pdfDocument.close();
+        reader.close();
+        inputStream.close();
+
+        return extractedText.toString();
+    }
+
+    // New centralized method to generate mind map with given content
+    private void generateMindMapWithContent(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            Toast.makeText(this, "No content to generate mind map", Toast.LENGTH_SHORT).show();
+            correctionProgressBar.setVisibility(View.GONE);
+            return;
+        }
+
+        // Show loading indicator
+        correctionProgressBar.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Generating smart mind map...", Toast.LENGTH_SHORT).show();
+
+        // Call Gemini to generate structured mind map
+        generateMindMapStructureWithGemini(content, new GeminiMindMapCallback() {
+            @Override
+            public void onStructureGenerated(String structuredText) {
+                correctionProgressBar.setVisibility(View.GONE);
+
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", structuredText);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onGenerationFailed(Exception e) {
+                correctionProgressBar.setVisibility(View.GONE);
+
+                Log.e(TAG, "Gemini mind map generation failed.", e);
+                Toast.makeText(Notepad.this,
+                        "AI analysis failed. Showing basic map.",
+                        Toast.LENGTH_LONG).show();
+
+                // Fallback: Launch with the original text
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", content);
+                startActivity(intent);
+            }
+        });
+    }
+
+    // Optional: Helper method to get a readable name for the PDF
+    private String getPdfDisplayName(Uri pdfUri, int index) {
+        String fileName = getFileName(pdfUri);
+        if (fileName != null && !fileName.isEmpty()) {
+            return fileName;
+        }
+        return "PDF " + (index + 1);
+    }
+    private GeminiMindMapCallback getGeminiCallback() {
+        return new GeminiMindMapCallback() {
+            @Override
+            public void onStructureGenerated(String structuredText) {
+                // This runs on success from Gemini
+                correctionProgressBar.setVisibility(View.GONE);
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", structuredText); // Pass the AI-generated structure
+                startActivity(intent);
+            }
+
+            @Override
+            public void onGenerationFailed(Exception e) {
+                // This runs on failure from Gemini
+                correctionProgressBar.setVisibility(View.GONE);
+                Log.e(TAG, "Gemini mind map generation failed.", e);
+                Toast.makeText(Notepad.this, "AI analysis failed. Showing basic map.", Toast.LENGTH_LONG).show();
+                // Fallback: Launch with the original raw text
+                Intent intent = new Intent(Notepad.this, MindMapActivity.class);
+                intent.putExtra("notecontent", resultText.getText().toString());
+                startActivity(intent);
+            }
+        };
+    }
+    // 2. Add the new method to call the Gemini API
+    private void generateMindMapStructureWithGemini(String noteContent, GeminiMindMapCallback callback) {
+        if (noteContent == null || noteContent.trim().isEmpty()) {
+            callback.onGenerationFailed(new Exception("Note is empty."));
+            return;
+        }
+
+        // Check content length and truncate if necessary (Gemini has token limits)
+        String processedContent = noteContent;
+        boolean isTruncated = false;
+
+        // Rough estimate: 1 token ≈ 4 characters, limit to ~30k characters for safety
+        int maxChars = 30000;
+        if (processedContent.length() > maxChars) {
+            processedContent = processedContent.substring(0, maxChars);
+            isTruncated = true;
+        }
+
+        // Enhanced prompt for potentially complex/long content from PDFs
+        String prompt = "You are a helpful assistant that specializes in creating structured mind maps from text content.\n" +
+                "Analyze the following content and generate a comprehensive hierarchical mind map structure.\n\n" +
+                "RULES:\n" +
+                "1. Identify the main themes/topics. These will be your primary nodes.\n" +
+                "2. Group related information under appropriate parent nodes.\n" +
+                "3. Create a logical hierarchy with clear parent-child relationships.\n" +
+                "4. If the content is from multiple sources (note + PDFs), organize them coherently.\n" +
+                "5. Your output MUST be a simple indented list. Use two spaces for each level of indentation.\n" +
+                "6. Do NOT use any bullet points, dashes, asterisks, numbers (like 1. or 1.1), or any other characters before the text.\n" +
+                "7. Keep node text concise but meaningful (under 50 characters per node when possible).\n" +
+                "8. Maximum depth of 4 levels to keep the mind map readable.\n\n" +
+                "EXAMPLE OUTPUT FORMAT:\n" +
+                "Main Topic\n" +
+                "  Sub-Topic 1\n" +
+                "    Detail A\n" +
+                "    Detail B\n" +
+                "  Sub-Topic 2\n" +
+                "    Detail C\n\n" +
+                (isTruncated ? "NOTE: The content was truncated due to length. Focus on the main themes and key points.\n\n" : "") +
+                "Content to analyze:\n\n\"" + processedContent + "\"";
+
+        // Use a background thread for the network call
+        Executors.newSingleThreadExecutor().execute(() -> {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .build();
+
+            try {
+                // Create the JSON payload
+                JSONObject jsonBody = new JSONObject();
+                JSONObject contents = new JSONObject();
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("text", prompt);
+                parts.put(textPart);
+                contents.put("parts", parts);
+                jsonBody.put("contents", new JSONArray().put(contents));
+
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
+                Request request = new Request.Builder()
+                        .url(API_URL + GeminiAPIKey.API_KEY)
+                        .post(body)
+                        .build();
+
+                okhttp3.Response response = client.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String structuredText = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
+
+                    // Use the callback to return the result to the UI thread
+                    runOnUiThread(() -> callback.onStructureGenerated(structuredText));
+                } else {
+                    throw new IOException("API call failed with code: " + response.code());
+                }
+            } catch (Exception e) {
+                runOnUiThread(() -> callback.onGenerationFailed(e));
+            }
+        });
     }
     private void showLanguageSelectionDialog() {
         final String[] languages = {getApplicationContext().getString(R.string.spanish_text),
@@ -1277,7 +1745,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // Your existing API_URL
+                        .url(API_URL+GeminiAPIKey.API_KEY) // Your existing API_URL
                         .post(body)
                         .build();
 
@@ -1329,6 +1797,8 @@ public class Notepad extends AppCompatActivity {
      * Takes the current text from the notepad, sends it to the Gemini API for summarization,
      * and appends the result to the end of the note.
      */
+    // In Notepad.java
+
     private void summarizeNoteWithGemini() {
         String originalText = resultText.getText().toString();
         if (originalText.trim().isEmpty()) {
@@ -1336,19 +1806,25 @@ public class Notepad extends AppCompatActivity {
             return;
         }
 
-        // Reuse the same progress bar
         correctionProgressBar.setVisibility(View.VISIBLE);
 
-        // A clear prompt for summarization
-        String prompt = "Summarize the following text into a few concise bullet points. " +
-                "Do not include any introductory phrases or headings.\n\n" +
+        // --- START: THIS IS THE FIX ---
+        // A more detailed and explicit prompt for better formatting.
+        String prompt = "Please provide a summary of the following text. " +
+                "The summary should be well-structured and easy to read.\n\n" +
+                "Follow these rules precisely:\n" +
+                "1. Start with the heading 'Summary of the Note'.\n" +
+                "2. After the heading, present the summary in clean, natural language paragraphs.\n" +
+                "3. DO NOT use any markdown formatting like asterisks (*), dashes (-), or bullet points.\n" +
+                "4. The entire response should only contain the heading and the summary paragraphs.\n\n" +
                 "Original text:\n\"" + originalText + "\"";
+        // --- END: THIS IS THE FIX ---
 
         Executors.newSingleThreadExecutor().execute(() -> {
             OkHttpClient client = new OkHttpClient();
 
             try {
-                // Create the JSON payload for the Gemini API
+                // Create the JSON payload (This part of your code is correct)
                 JSONObject jsonBody = new JSONObject();
                 JSONObject contents = new JSONObject();
                 JSONArray parts = new JSONArray();
@@ -1360,33 +1836,37 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // You already have this defined
+                        .url(API_URL+GeminiAPIKey.API_KEY)
                         .post(body)
                         .build();
 
-                // Synchronous API call
                 okhttp3.Response response = client.newCall(request).execute();
 
                 if (response.isSuccessful() && response.body() != null) {
                     String responseBody = response.body().string();
                     JSONObject jsonResponse = new JSONObject(responseBody);
-                    JSONArray candidates = jsonResponse.getJSONArray("candidates");
-                    JSONObject firstCandidate = candidates.getJSONObject(0);
-                    JSONObject content = firstCandidate.getJSONObject("content");
-                    JSONArray partsArray = content.getJSONArray("parts");
-                    String summary = partsArray.getJSONObject(0).getString("text").trim();
+                    String summary = jsonResponse.getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                            .trim();
 
-                    // *** This is the key part: Append the summary to the existing text ***
-                    String textToAppend = "\n\n---\n\n**Summarized Note:**\n" + summary;
-                    Spannable summaryHtml = (Spannable) HtmlCompat.fromHtml(textToAppend, HtmlCompat.FROM_HTML_MODE_LEGACY);
+                    // --- START: IMPROVED UI UPDATE ---
+                    // We will append the summary with a clear separator.
+                    final String textToAppend = "\n\n" + summary;
 
                     // Update the UI on the main thread
                     runOnUiThread(() -> {
-                        resultText.append(summaryHtml);
+                        // Use append() for plain text. Using HtmlCompat is not necessary here
+                        // as we instructed the AI to not use HTML or Markdown.
+                        resultText.append(textToAppend);
                         isNoteModified = true; // Mark the note as modified
                         correctionProgressBar.setVisibility(View.GONE);
                         Toast.makeText(Notepad.this, "Summary appended!", Toast.LENGTH_SHORT).show();
                     });
+                    // --- END: IMPROVED UI UPDATE ---
 
                 } else {
                     // Handle API errors on the main thread
@@ -1404,6 +1884,7 @@ public class Notepad extends AppCompatActivity {
             }
         });
     }
+
 
     /**
      * Takes the current text from the notepad, sends it to the Gemini API for correction,
@@ -1440,7 +1921,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL) // You already have this defined
+                        .url(API_URL+GeminiAPIKey.API_KEY) // You already have this defined
                         .post(body)
                         .build();
 
@@ -1482,18 +1963,7 @@ public class Notepad extends AppCompatActivity {
     }
 
     // NEW: Method to handle toggling the pin status
-    private void togglePinStatus() {
-        isPinned = !isPinned;
-        setPinIcon(isPinned);
-        if (noteId != -1) {
-            Executors.newSingleThreadExecutor().execute(() -> {
-                noteRepository.updateNotePinStatus(noteId, isPinned);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, isPinned ? "Note pinned!" : "Note unpinned!", Toast.LENGTH_SHORT).show();
-                });
-            });
-        }
-    }
+
 
     // NEW: Method to set the correct icon on the toolbar
     private void setPinIcon(boolean isPinned) {
@@ -1535,14 +2005,56 @@ public class Notepad extends AppCompatActivity {
         });
         builder.show();
     }
+    // DELETE your old 'storetofirebasestorage' and 'savetofirestore' methods
+// ADD this new, combined method to Notepad.java
 
-    public void saveNote() {
-        clearHighlights();
-        NotesWidgetProvider.refreshWidget(getApplicationContext());
-        String content = saveNoteContent();
-        //String content = resultText.getText().toString().trim();
-        WordTokenizer tokenizer = new WordTokenizer(content);
-        List<String> labels = tokenizer.getTokenizedWords();
+    private void uploadAndSyncNoteToFirebase(Note noteWithLocalPath, byte[] imageData, String filename) {
+        if (imageData == null || imageData.length == 0) {
+            Log.d(TAG, "Note " + noteWithLocalPath.getId() + " has no image. Saving metadata to Firestore.");
+            // Set the image path to empty for Firestore and save directly.
+            noteWithLocalPath.setImagePath("");
+            db.collection("users").document(currentUser.getUid()).collection("notes").document(String.valueOf(noteWithLocalPath.getUserFirebaseId()))
+                    .set(noteWithLocalPath)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Note " + noteWithLocalPath.getId() + " metadata saved to Firestore."))
+                    .addOnFailureListener(e -> Log.w(TAG, "Error saving note " + noteWithLocalPath.getId() + " metadata to Firestore.", e));
+            return;
+        }
+        String userId = currentUser.getUid();
+        StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
+        // Start the upload and chain the tasks
+        imageRef.putBytes(imageData)
+                // 1. First, upload the file
+                .continueWithTask(task -> {
+                    if (!task.isSuccessful()) {
+                        // If upload fails, pass the exception down the chain
+                        throw task.getException();
+                    }
+                    // 2. If upload succeeds, get the public download URL
+                    Log.d(TAG, "Image uploaded, getting download URL...");
+                    return imageRef.getDownloadUrl();
+                })
+                // 3. This listener receives the result of getDownloadUrl()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        // --- SUCCESS ---
+                        String downloadUrl = task.getResult().toString();
+                        Log.d(TAG, "Got download URL: " + downloadUrl);
+                        // Update the note object with the correct cloud URL
+                        noteWithLocalPath.setImagePath(downloadUrl);
+                    } else {
+                        // --- FAILURE ---
+                        Log.w(TAG, "Image upload or URL fetch failed for note " + noteWithLocalPath.getId(), task.getException());
+                        // Fallback: save the note with an empty image path
+                        noteWithLocalPath.setImagePath("");
+                    }
+                    // 4. NOW, save the final note object (with either the cloud URL or an empty path) to Firestore
+                    db.collection("users").document(currentUser.getUid()).collection("notes").document(String.valueOf(noteWithLocalPath.getUserFirebaseId()))
+                            .set(noteWithLocalPath)
+                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Final note " + noteWithLocalPath.getId() + " saved to Firestore."))
+                            .addOnFailureListener(e -> Log.w(TAG, "Error saving final note " + noteWithLocalPath.getId() + " to Firestore.", e));
+                });
+    }
+    public void labelcode(List<String> labels,String content){
         if(labels == null) {
             Log.d(TAG, "LABELS is actually NULL!");
         } else if(labels.size() == 0) {
@@ -1554,9 +2066,46 @@ public class Notepad extends AppCompatActivity {
         } else {
             Log.d(TAG, "LABELS: " + labels.get(0) + " : " + labels.get(1) + " (total=" + labels.size() + ")");
         }
+    }
+    public int getFinalBackgroundColorForNote(){
+        int colorToSave = Color.WHITE;
+        Drawable background = mainContentLayout.getBackground();
+        if (background instanceof ColorDrawable) {
+            colorToSave = ((ColorDrawable) background).getColor();
+        }
+        return colorToSave;
+    }
+    public void saveNote() {
+        clearHighlights();
+        NotesWidgetProvider.refreshWidget(getApplicationContext());
+        String content = saveNoteContent();
+        WordTokenizer tokenizer = new WordTokenizer(content);
+        List<String> labels = tokenizer.getTokenizedWords();
+        labelcode(labels,content);
+
         String title = titleText.getText().toString().trim() + ";"+ labels.get(0) + ";" + labels.get(1);
-        byte[] drawingDataToSave = isDrawingMode ? drawingView.getDrawingData() : this.drawingData;
-        byte[] drawingData = (drawingView.getDrawingData() == null || drawingView.getDrawingData().length == 0) ? this.drawingData: drawingView.getDrawingData() ;
+        //byte[] drawingData = (drawingView.getDrawingData() == null || drawingView.getDrawingData().length == 0) ? this.drawingData: drawingView.getDrawingData() ;
+        byte[] drawingData = null;
+        if (isDrawingMode) {
+            // If we are in drawing mode, the drawingView is the source of truth.
+            drawingData = drawingView.getDrawingData();
+        } else {
+            // If not in drawing mode, get the bitmap from the preview ImageView.
+            Drawable drawable = imagesketch.getDrawable();
+            if (drawable instanceof BitmapDrawable) {
+                Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                if (bitmap != null) {
+                    try {
+                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                        drawingData = stream.toByteArray();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error compressing bitmap from ImageView", e);
+                    }
+                }
+            }
+        }
+
         if (title.isEmpty() && content.isEmpty() && (imagePath == null || imagePath.isEmpty())) {
             Toast.makeText(this, "Note is empty, not saved.", Toast.LENGTH_SHORT).show();
             isNoteModified = false;
@@ -1564,66 +2113,127 @@ public class Notepad extends AppCompatActivity {
             return;
         }
         String newimagePath = "";
+        String filename = "drawing_" + System.currentTimeMillis() + ".png";
         if(drawingData != null && drawingData.length > 0){
+            Log.d("com.noteaiapp.keyboardai", "drawingData is not null");
             Bitmap drawingBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
             if(drawingBitmap != null){
-                String filename = "drawing_" + System.currentTimeMillis() + ".png";
-
                 newimagePath = noteRepository.saveImageToInternalStorage(drawingBitmap, filename);
-
             }
         }
-        int colorToSave = Color.WHITE;
-        Drawable background = mainContentLayout.getBackground();
-        if (background instanceof ColorDrawable) {
-            colorToSave = ((ColorDrawable) background).getColor();
-        }
 
-        final int finalColorToSave = colorToSave;
+        final int finalColorToSave = getFinalBackgroundColorForNote();
         final String imagepathfinal = newimagePath;
+
+        byte[] finalDrawingData = drawingData;
         Executors.newSingleThreadExecutor().execute(() -> {
-            if (noteId != -1) {
-                // Update existing note with the new imagePath
-                Note existingNote = new Note(noteId, title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
-                if(this.folderName.length() != 0){
-                    existingNote.setFontFamily(this.folderName);
+            getNoteFromFirebase(currentUserUuid, new FirebaseNoteFetchCallback() {
+                @Override
+                public void onNoteFetched(Note notetoSave) {
+                    if (currentUserUuid != null && currentUserUuid.length() != 0) {
+                        // Update existing note with the new imagePath
+                        //notetoSave = noteRepository.getNoteByCloudId(currentUserUuid);
+                        notetoSave.setTitle(title);
+                        notetoSave.setContent(content);
+                        notetoSave.setDate(receivedDateFromActivities);
+                        notetoSave.setOrder(noteOrder);
+                        notetoSave.setColor(finalColorToSave);
+
+                        notetoSave.setPinned(false);
+                        notetoSave.setImagePath(imagePath);
+                        Log.d("com.noteaiapp.keyboardai", "imagePath existing:"+imagePath);
+                        Log.d("com.noteaiapp.keyboardai", "drawingData existing:"+ finalDrawingData);
+                        //notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, noteOrder, isPinned, imagepathfinal);
+                        if(folderName.length() != 0){
+                            notetoSave.setFontFamily(folderName);
+                        }
+                        notetoSave.setUserFirebaseId(currentUserUuid);
+                        noteRepository.updateNote(notetoSave);
+                        runOnUiThread(() -> {
+                            Toast.makeText(getApplicationContext(), R.string.note_updated, Toast.LENGTH_SHORT).show();
+                            isNoteModified = false;
+                            supportFinishAfterTransition();
+                        });
+                    } else {
+                        // Create a new note with the new imagePath
+                        notetoSave = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
+                        if(folderName.length() != 0){
+                            notetoSave.setFontFamily(folderName);
+                        }
+                        String noteCloudId = UUID.randomUUID().toString(); // generate uuid
+                        notetoSave.setUserFirebaseId(noteCloudId); // set the unique note id
+                        notetoSave.setFontFamily(folderName);
+                        notetoSave.setDate(receivedDateFromActivities);
+                        long newNoteId = noteRepository.addNote(notetoSave); // save to sqlite
+                        notetoSave.setId(newNoteId);
+                        Log.d(TAG, "note family:"+notetoSave.getFontFamily()+"|folder name |"+folderName+"| note setUserFirebaseId:"+notetoSave.getUserFirebaseId());
+
+                        runOnUiThread(() -> {
+                            Toast.makeText(getApplicationContext(), R.string.note_saved_text, Toast.LENGTH_SHORT).show();
+                            isNoteModified = false;
+                            supportFinishAfterTransition();
+                        });
+                    }
+                    uploadAndSyncNoteToFirebase(notetoSave, finalDrawingData,filename);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            setUIChangesBasedOnImage();
+                        }
+                    });
                 }
-                noteRepository.updateNote(existingNote);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, R.string.note_updated, Toast.LENGTH_SHORT).show();
-                    isNoteModified = false;
-                    supportFinishAfterTransition();
-                });
-            } else {
-                // Create a new note with the new imagePath
-                Note newNote = new Note(title, content, receivedDateFromActivities, finalColorToSave, 0, isPinned, imagepathfinal);
-                if(this.folderName.length() != 0){
-                    newNote.setFontFamily(this.folderName);
+
+                @Override
+                public void onFetchFailed(Exception e) {
+
                 }
-                noteRepository.addNote(newNote);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, R.string.note_saved_text, Toast.LENGTH_SHORT).show();
-                    isNoteModified = false;
-                    supportFinishAfterTransition();
-                });
-            }
+            });
+
         });
-        this.drawingData = drawingDataToSave;
 
+    }
+    private void getNoteFromFirebase(String noteCloudId, FirebaseNoteFetchCallback callback) {
+        if (currentUser == null) {
+            callback.onFetchFailed(new Exception("User not logged in."));
+            return;
+        }
+        if (noteCloudId == null || noteCloudId.isEmpty()) {
+            callback.onNoteFetched(null);
+            return;
+        }
+
+        db.collection("users").document(currentUser.getUid())
+                .collection("notes").document(noteCloudId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Convert the Firestore document into a Note object
+                        Note note = documentSnapshot.toObject(Note.class);
+                        // Return the note via the callback
+                        callback.onNoteFetched(note);
+                    } else {
+                        // The note doesn't exist in Firebase, which is an error state
+                        callback.onNoteFetched(null); // Pass null to indicate not found
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // An error occurred (e.g., no internet)
+                    Log.w(TAG, "Error fetching single note from Firebase", e);
+                    callback.onFetchFailed(e);
+                });
+    }
+    public void setUIChangesBasedOnImage(){
         if (drawingData != null && drawingData.length > 0) {
-            if(drawingDataToSave != null && drawingDataToSave.length > 0){
-                Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingDataToSave, 0, drawingDataToSave.length);
-                noteRepository.saveBytesToFile(drawingDataToSave,imagePath);
-                if (savedBitmap != null) {
-                    imagesketch.setImageBitmap(savedBitmap);
-                    imagesketch.setVisibility(View.VISIBLE);
-                    imageCard.setVisibility(View.VISIBLE);
+            Bitmap savedBitmap = BitmapFactory.decodeByteArray(drawingData, 0, drawingData.length);
+            noteRepository.saveBytesToFile(drawingData,imagePath);
+            if (savedBitmap != null) {
+                imagesketch.setImageBitmap(savedBitmap);
+                imagesketch.setVisibility(View.VISIBLE);
+                imageCard.setVisibility(View.VISIBLE);
 
-                    imageframelayout.setVisibility(View.VISIBLE);
-                    clearImageButton.setVisibility(View.VISIBLE);
-                }
+                imageframelayout.setVisibility(View.VISIBLE);
+                clearImageButton.setVisibility(View.VISIBLE);
             }
-
         } else {
             imagesketch.setImageDrawable(null);
             imagesketch.setVisibility(View.GONE);
@@ -1631,7 +2241,6 @@ public class Notepad extends AppCompatActivity {
             imageframelayout.setVisibility(View.GONE);
             clearImageButton.setVisibility(View.GONE);
         }
-
         isNoteModified = false;
         supportFinishAfterTransition();
     }
@@ -1772,7 +2381,7 @@ public class Notepad extends AppCompatActivity {
 
                 RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.parse("application/json"));
                 Request request = new Request.Builder()
-                        .url(API_URL)
+                        .url(API_URL+GeminiAPIKey.API_KEY)
                         .post(body)
                         .build();
 

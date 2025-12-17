@@ -34,17 +34,16 @@
         app:showAsAction="never"
         android:contentDescription="Summarize the current note" />
 
-
+    mindmap
     <item
         android:id="@+id/action_color"
         android:title="@string/color_menu"
         android:icon="@drawable/ic_color_lens"
         app:showAsAction="ifRoom" />
-
-
     <item
-        android:id="@+id/action_pin_unpin"
-        android:title="@string/pin_menu"
-        android:icon="@drawable/ic_pin"
-        />
+        android:id="@+id/mindmap"
+        android:title="MindMap"
+        android:icon="@drawable/ic_color_lens"
+        app:showAsAction="ifRoom" />
+
 </menu>

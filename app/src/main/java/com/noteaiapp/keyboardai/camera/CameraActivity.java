@@ -1,5 +1,6 @@
 package com.noteaiapp.keyboardai.camera;
 
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -9,7 +10,9 @@ import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -26,13 +29,19 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import com.noteaiapp.keyboardai.R;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -43,20 +52,24 @@ public class CameraActivity extends AppCompatActivity {
     private ResizableOverlayView overlayView;
     private ImageCapture imageCapture;
     private ExecutorService cameraExecutor;
+    private FirebaseStorage storage; // <-- ADD THIS
 
     private static final int CAMERA_PERMISSION_CODE = 101;
+    private ProgressBar processingProgressBar;
+    private FirebaseUser currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.camera_activity);
-
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
         previewView = findViewById(R.id.previewView);
         captureButton = findViewById(R.id.captureButton);
+        processingProgressBar = findViewById(R.id.processingProgressBar); // <-- ADD THIS
         overlayView = findViewById(R.id.overlayView);
         cameraExecutor = Executors.newSingleThreadExecutor();
-
+        storage = FirebaseStorage.getInstance();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -107,10 +120,12 @@ public class CameraActivity extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     if (bitmap != null) {
+                        processingProgressBar.setVisibility(View.VISIBLE);
                         // Crop to selected rectangle
                         RectF rect = overlayView.getSelectedRect();
                         Bitmap cropped = cropBitmap(bitmap, rect, previewView.getWidth(), previewView.getHeight());
-                        runTextRecognition(cropped);
+                        uploadImageAndRunOcr(cropped);
+                        //runTextRecognition(cropped);
                     } else {
                         Toast.makeText(CameraActivity.this, "Failed to capture image", Toast.LENGTH_SHORT).show();
                     }
@@ -125,6 +140,81 @@ public class CameraActivity extends AppCompatActivity {
         });
     }
 
+    // In CameraActivity.java
+
+    // 1. CREATE THIS NEW METHOD TO HANDLE THE UPLOAD
+    private void uploadImageAndRunOcr(Bitmap bitmap) {
+        if (bitmap == null) return;
+
+        Toast.makeText(this, "Uploading image, please keep your hands still.", Toast.LENGTH_SHORT).show();
+
+        // Prepare the bitmap for upload
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos);
+        byte[] data = baos.toByteArray();
+        String filename = UUID.randomUUID().toString() + ".jpg";
+        String userId = currentUser.getUid();
+        // Create a unique path in Firebase Storage
+        StorageReference imageRef = storage.getReference().child("images/" + userId + "/" + filename);
+
+        // Start the upload
+        imageRef.putBytes(data)
+                .addOnSuccessListener(taskSnapshot -> {
+                    // Upload successful, now get the permanent download URL
+                    imageRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                        String imageUrl = downloadUri.toString();
+                        Log.d("CameraActivity", "Image uploaded successfully. URL: " + imageUrl);
+
+                        // NOW that we have the URL, we can run OCR and return both results.
+                        runTextRecognition(bitmap, imageUrl);
+
+                    }).addOnFailureListener(e -> {
+                        Log.e("CameraActivity", "Failed to get download URL", e);
+                        processingProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(this, "Failed to get image URL.", Toast.LENGTH_SHORT).show();
+                        finish(); // Finish with a failure
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("CameraActivity", "Image upload failed", e);
+                    processingProgressBar.setVisibility(View.GONE);
+                    Toast.makeText(this, "Image upload failed.", Toast.LENGTH_SHORT).show();
+                    finish(); // Finish with a failure
+                });
+    }
+
+    // 2. MODIFY runTextRecognition TO ACCEPT THE IMAGE URL
+    private void runTextRecognition(Bitmap bitmap, String imageUrl) { // <-- Pass the imageUrl
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        InputImage image = InputImage.fromBitmap(bitmap, 0); // Your selection is here, this is correct.
+
+        recognizer.process(image)
+                .addOnSuccessListener(visionText -> {
+                    String resultText = visionText.getText();
+                    Log.d("OCR_RESULT", "Detected text: " + resultText);
+
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("ocr_text", resultText);
+
+                    // --- START: THIS IS THE FIX ---
+                    // Now you have the permanent cloud URL to return as the "image_path"
+                    resultIntent.putExtra("image_path", imageUrl);
+                    // --- END: THIS IS THE FIX ---
+
+                    setResult(RESULT_OK, resultIntent);
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("OCR", "Failed to read text", e);
+                    // Even if OCR fails, we can still return the image URL
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("ocr_text", ""); // Return empty text
+                    resultIntent.putExtra("image_path", imageUrl); // Still return the image
+                    setResult(RESULT_OK, resultIntent);
+                    finish();
+                });
+    }
+/*
     private void runTextRecognition(Bitmap bitmap) {
         TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
         InputImage image = InputImage.fromBitmap(bitmap, 0);
@@ -135,6 +225,7 @@ public class CameraActivity extends AppCompatActivity {
                     Log.d("OCR_RESULT", "Detected text: " + resultText);  // <-- ADD THIS
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("ocr_text", resultText);
+                    resultIntent.putExtra("image_path", imagePath); // <-- YOU MUST ADD THIS
                     setResult(RESULT_OK, resultIntent);
                     finish();
                 })
@@ -144,7 +235,7 @@ public class CameraActivity extends AppCompatActivity {
                     setResult(RESULT_CANCELED);
                     finish();
                 });
-    }
+    }*/
 
     private Bitmap cropBitmap(Bitmap source, RectF overlayRect, int previewWidth, int previewHeight) {
         // Scale overlay rect to bitmap size

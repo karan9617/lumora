@@ -6,25 +6,38 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.noteaiapp.keyboardai.R;
 import com.noteaiapp.keyboardai.data.EmailValidator;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Feedback extends AppCompatActivity {
 
     private EditText nameInput, emailInput, feedbackInput;
     private Button submitButton;
     private static final String RECIPIENT_EMAIL = "notes.app.company@gmail.com";
-
+    private FirebaseFirestore db;
+    private FirebaseUser currentUser;
+    private String TAG = "com.noteaiapp.keyboardai";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_feedback);
+
+        db = FirebaseFirestore.getInstance();
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
         // Initialize views
         nameInput = findViewById(R.id.editTextName);
@@ -48,6 +61,7 @@ public class Feedback extends AppCompatActivity {
                         if(EmailValidator.isValidEmail(email)){
                             if(feedback.length() > 10){
                                 Toast.makeText(getApplicationContext(),R.string.feedback_successful,Toast.LENGTH_SHORT).show();
+                                sendFeedbackEmail(name, email, feedback);
                             }
                             else{
                                 Toast.makeText(getApplicationContext(),R.string.elaborate_feedback_text,Toast.LENGTH_SHORT).show();
@@ -76,30 +90,44 @@ public class Feedback extends AppCompatActivity {
     // New method to create and launch the email Intent
     private void sendFeedbackEmail(String name, String senderEmail, String feedback) {
 
-        // 1. Construct the email subject
-        String subject = "NotesAI Feedback from " + name;
-
-        // 2. Construct the email body
-        String body = "Name: " + name + "\n" +
-                "Contact Email: " + senderEmail + "\n\n" +
-                "Feedback/Message:\n" + feedback;
-
-        // 3. Create the Intent
-        Intent intent = new Intent(Intent.ACTION_SENDTO);
-        // Use mailto: URI scheme to ensure only email apps handle it
-        intent.setData(Uri.parse("mailto:"));
-
-        // Add the recipients, subject, and body
-        intent.putExtra(Intent.EXTRA_EMAIL, new String[]{RECIPIENT_EMAIL});
-        intent.putExtra(Intent.EXTRA_SUBJECT, subject);
-        intent.putExtra(Intent.EXTRA_TEXT, body);
-
-        // 4. Launch the email client
-        try {
-            startActivity(Intent.createChooser(intent, "Send feedback using..."));
-        } catch (android.content.ActivityNotFoundException ex) {
-            // Handle case where no email app is installed
-            Toast.makeText(this, "No email client installed.", Toast.LENGTH_SHORT).show();
+       // firebase code to store the feedback
+        if (currentUser == null) {
+            Toast.makeText(this, "You must be logged in to send feedback.", Toast.LENGTH_SHORT).show();
+            // Optional: Send them to the login screen
+            // startActivity(new Intent(Feedback.this, LoginActivity.class));
+            return;
         }
+
+        // 1. Create a data model for the feedback. A HashMap is perfect for this.
+        Map<String, Object> feedbackData = new HashMap<>();
+        feedbackData.put("name", name);
+        feedbackData.put("email", senderEmail);
+        feedbackData.put("message", feedback);
+        feedbackData.put("timestamp", FieldValue.serverTimestamp()); // Adds a server-side timestamp
+
+        // 2. Get the current user's ID.
+        String userId = currentUser.getUid();
+
+        // 3. Add the feedback as a new document to the user's feedback subcollection.
+        // The path will be: feedback/{userId}/user_feedback/{auto-generated-id}
+        db.collection("feedback")
+                .document(userId)
+                .collection("user_feedback")
+                .add(feedbackData) // .add() automatically generates a unique ID for the document
+                .addOnSuccessListener(documentReference -> {
+                    // This runs on the UI thread, so it's safe to show a Toast.
+                    Log.d(TAG, "Feedback successfully saved to Firestore with ID: " + documentReference.getId());
+                    Toast.makeText(Feedback.this, "Feedback sent successfully!", Toast.LENGTH_SHORT).show();
+
+                    // Clear the fields and finish the activity on success
+                    nameInput.setText("");
+                    emailInput.setText("");
+                    feedbackInput.setText("");
+                    finish(); // Close the feedback activity
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error saving feedback", e);
+                    Toast.makeText(Feedback.this, "Error sending feedback. Please try again.", Toast.LENGTH_SHORT).show();
+                });
     }
 }

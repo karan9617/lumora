@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_marginTop="20dp"
+    android:layout_marginBottom="20dp"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurfaceContainerLowest"
+    tools:context=".mindmap.MindMapActivity">
+
+    <!-- Main Content Area for the Mind Map -->
+    <com.noteaiapp.keyboardai.mindmap.MindMapView
+        android:id="@+id/mindMapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
+        android:background="?attr/colorSurfaceContainer" />
+
+    <!-- A Floating Toolbar for Primary Actions -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/top_toolbar_card"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="16dp"
+                    android:text="Mind Map Editor"
+                    android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+                <!-- Primary Action: Generate -->
+
+                <!-- Secondary Action: Export -->
+                <ImageButton
+                    android:id="@+id/btnExport"
+                    style="?attr/materialIconButtonFilledTonalStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Export as Image"
+                    app:srcCompat="@drawable/outline_download_24" />
+                <ImageButton
+                    android:id="@+id/shareButton"
+                    style="?attr/materialIconButtonFilledTonalStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Share as Image"
+                    app:srcCompat="@drawable/ic_share" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <TextView
+        android:id="@+id/hint_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="100dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        android:background="@drawable/rounded_darkblack_background"
+        android:text="Hint: Drag the nodes to position them."
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:elevation="13dp"
+
+        android:alpha="0.0"
+        android:visibility="gone" />
+
+    <!-- Floating Action Buttons (FABs) for Layout Options -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:id="@+id/layout_controls_container"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:gravity="end"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical">
+
+            <!-- Zoom Out Button (-) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_zoom_out"
+                style="?attr/materialIconButtonFilledTonalStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Zoom Out"
+                app:icon="@drawable/ic_zoomout" />
+
+            <!-- Zoom In Button (+) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_zoom_in"
+                style="?attr/materialIconButtonFilledTonalStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Zoom In"
+                app:icon="@drawable/ic_zoomin" />
+
+        </LinearLayout>
+        <!-- Use Chips for a modern, compact look -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/layout_chip_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/btnHierarchicalLayout"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Hierarchical"
+                app:chipIcon="@drawable/ic_hierarchial"
+                />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/btnTreeLayout"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tree"
+                app:chipIcon="@drawable/ic_tree"
+                />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/btnRadialLayout"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Radial"
+                app:chipIcon="@drawable/ic_radial" />
+        </com.google.android.material.chip.ChipGroup>
+
+
+    </LinearLayout>
+
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

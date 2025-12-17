@@ -203,4 +203,43 @@
     <string name="keep_notes_folder">Conserver les notes, supprimer le dossier</string>
     <string name="folder_deleted_toast">Dossier et toutes ses notes supprimés</string>
     <string name="folder_remove_desc">Que souhaitez-vous faire des notes contenues dans ce dossier ?</string>
+
+    <string name="login_label">Connexion</string>
+    <string name="drawer_logout_text">Déconnexion</string>
+    <string name="snackbar_text">Vous êtes hors ligne. Connectez-vous à Internet pour une synchronisation fluide.</string>
+    <string name="connect">CONNECTER</string>
+
+    <string name="option_ai_note_layout">Note IA</string>
+    <string name="mindmaplabel">Carte Mentale</string>
+    <string name="attach">Joindre</string>
+    <string name="translate_chat">Traduire le chat</string>
+    <string name="share_chat">Partager le chat</string>
+    <string name="textViewChatAI">8. Chat NotesAI :\n- Créez un chat alimenté par l’IA, posez des questions et effectuez des recherches à partir de vos notes.</string>
+
+    <string name="error_message">Erreur : échec de l’obtention de la réponse.</string>
+    <string name="error_occured">Une erreur s’est produite.</string>
+    <string name="failed_load">Échec du chargement du chat.</string>
+    <string name="could_not_find_chat">Erreur : historique du chat introuvable.</string>
+    <string name="note_id_missing">Erreur : ID de note ou utilisateur manquant.</string>
+    <string name="auto_saving">Enregistrement automatique...</string>
+    <string name="message_deleted">Messages supprimés</string>
+    <string name="failed_display_capture">Impossible d’afficher l’image capturée.</string>
+    <string name="no_text_found_image">Aucun texte trouvé dans l’image.</string>
+    <string name="pdf_attached">PDF joint avec succès ! Saisissez votre invite.</string>
+    <string name="pdf_large">Le PDF est trop volumineux</string>
+    <string name="camera_permission_denied">Autorisation de la caméra refusée</string>
+    <string name="microphone_access">L’accès au microphone est requis pour la saisie vocale</string>
+    <string name="permission_granted">Autorisation accordée. Appuyez à nouveau sur l’icône pour écouter.</string>
+    <string name="error_occured_translate">Une erreur s’est produite lors de la traduction.</string>
+    <string name="failed_note_text">Échec de la lecture du PDF.</string>
+    <string name="file_manager_not_found">Aucun gestionnaire de fichiers trouvé pour sélectionner un PDF.</string>
+    <string name="chat_saved">Chat enregistré avec succès !</string>
+    <string name="error_deleting_chat">Erreur lors de la suppression de la note.</string>
+    <string name="analysis_failed">L’analyse NotesAI a échoué. Affichage de la carte de base.</string>
+    <string name="no_content_for_mindmap">Aucun contenu pour générer une carte mentale</string>
+    <string name="do_you_want_to_save">Voulez-vous enregistrer vos modifications avant de quitter ?</string>
+    <string name="unsaved_changes_text">Modifications non enregistrées</string>
+    <string name="ai_chat_text">Bloc-notes NotesAI</string>
+    <string name="ai_chat_description">Discutez avec NotesAI Chat pour résoudre toute question et créer un bloc-notes alimenté par l’IA.</string>
+
 </resources>
