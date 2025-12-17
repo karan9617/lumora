@@ -23,8 +23,8 @@ android {
         applicationId = "com.noteaiapp.keyboardai"
         minSdk = 24
         targetSdk = 35
-        versionCode = 22
-        versionName = "1.5.1"
+        versionCode = 24
+        versionName = "1.6.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

@@ -38,7 +38,6 @@
             android:layout_centerInParent="true"
             android:background="@drawable/rounded_purple_background"
             android:padding="24dp"
-            android:elevation="8dp"
             android:layout_marginLeft="10dp"
             android:fontFamily="@font/latoregular"
             android:layout_marginRight="10dp"
@@ -180,6 +179,7 @@
             android:orientation="vertical"
             android:gravity="end"
             android:layout_marginRight="20dp"
+            android:elevation="10dp"
             android:visibility="gone">
     <!--
             <TextView
